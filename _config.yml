@@ -1,4 +1,4 @@
-title: Silent Keeper
+title: Orange
 description: Being a human
 
 url: https://www.silentkeeper.art
@@ -16,13 +16,13 @@ navigation:
     url: /index.html
   - title: About
     url: /about
-  - title: Contact
-    url: /contact
+  # - title: Contact
+    # url: /contact
+  
 
 social:
   github: rootindark
-  twitter: rootindark
-  facebook: rootindark
-  email: noreplay@mail.com
+  email: tosilentkeeper@gmail.com
+  
 
 google_analytics: ""
