@@ -1,0 +1,1930 @@
+---
+layout: null
+---
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>针推门诊管理系统 Pro</title>
+    <!-- 外部依赖 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.16.4/dist/index.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e88e5',      
+                        secondary: '#64b5f6',    
+                        success: '#10b981',      
+                        warning: '#f59e0b',      
+                        danger: '#ef4444',       
+                        purple: '#8b5cf6',       
+                        dark: '#1f2937',         
+                        light: '#f3f4f6'         
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.2s ease-out',
+                        'slide-down': 'slideDown 0.3s ease-out forwards',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .btn { @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed; }
+            .btn-primary { @apply bg-primary text-white hover:bg-blue-600 shadow-sm hover:shadow; }
+            .btn-secondary { @apply bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm; }
+            .btn-danger { @apply bg-danger text-white hover:bg-red-600 shadow-sm; }
+            .input-field { @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-colors; }
+            .card { @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden; }
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        }
+    </style>
+</head>
+<body class="bg-light text-dark min-h-screen font-sans antialiased selection:bg-primary/20">
+
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 backdrop-blur-md bg-white/90">
+        <div class="container mx-auto px-4 h-16 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="app.showPage('patients')">
+                <div class="bg-primary/10 p-2 rounded-lg text-primary">
+                    <i class="fa fa-stethoscope text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-gray-800">针推管理 Pro</h1>
+            </div>
+            <nav class="hidden md:flex space-x-1">
+                <button class="nav-link px-4 py-2 rounded-lg font-medium text-primary bg-primary/5 transition-colors" data-page="patients">
+                    <i class="fa fa-users mr-1.5"></i>患者管理
+                </button>
+                <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="dashboard">
+                    <i class="fa fa-lightbulb-o mr-1.5"></i>经营洞察
+                </button>
+                <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="settings">
+                    <i class="fa fa-pie-chart mr-1.5"></i>报表维护
+                </button>
+            </nav>
+            <div id="data-status-badge" class="hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                <span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 系统就绪
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6 mb-24 md:mb-10">
+        <!-- ================= 患者管理页面 ================= -->
+        <section id="patients-page" class="page-section animate-fade-in">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">患者档案</h2>
+                    <p class="text-sm text-gray-500 mt-1">管理门诊所有患者信息及私域标签</p>
+                </div>
+                <button onclick="ui.openPatientModal()" class="btn btn-primary shadow-blue-500/30">
+                    <i class="fa fa-user-plus mr-2"></i>初诊建档
+                </button>
+            </div>
+
+            <div class="card p-4 mb-6 flex flex-col md:flex-row gap-4">
+                <div class="relative flex-grow group">
+                    <i class="fa fa-search absolute left-3.5 top-3 text-gray-400 group-focus-within:text-primary transition-colors"></i>
+                    <input type="text" id="search-input" placeholder="支持多词联合搜索，如：李伟 失眠..." class="input-field pl-10 bg-gray-50 focus:bg-white border-transparent focus:border-primary">
+                    <button id="clear-search" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 hidden"><i class="fa fa-times-circle"></i></button>
+                </div>
+                <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30 transition-all shrink-0">
+                    <span class="text-sm text-gray-500 whitespace-nowrap pl-2"><i class="fa fa-filter mr-1"></i>剩余次数：</span>
+                    <input type="number" id="filter-min" placeholder="最小" class="w-16 bg-transparent border-none text-center text-sm focus:ring-0 outline-none text-gray-700 placeholder-gray-400">
+                    <span class="text-gray-300 mx-1">~</span>
+                    <input type="number" id="filter-max" placeholder="最大" class="w-16 bg-transparent border-none text-center text-sm focus:ring-0 outline-none text-gray-700 placeholder-gray-400">
+                </div>
+            </div>
+
+            <div class="card min-h-[300px]">
+                <div class="overflow-x-auto no-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 border-b border-gray-100 text-sm text-gray-500">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold whitespace-nowrap w-24">快速录入</th>
+                                <th class="px-6 py-4 font-semibold whitespace-nowrap">患者信息 & 标签</th>
+                                <th class="px-6 py-4 font-semibold whitespace-nowrap">近期动态</th>
+                                <th class="px-6 py-4 font-semibold whitespace-nowrap w-32 text-center">剩余额度</th>
+                                <th class="px-6 py-4 text-right font-semibold whitespace-nowrap">资料操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patient-list-body" class="divide-y divide-gray-100">
+                            <!-- 动态渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="bg-gray-50 px-6 py-3 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
+                    <span>筛选结果：<span id="total-count" class="font-bold text-primary text-base">0</span> 人</span>
+                    <div class="flex items-center space-x-4">
+                        <span id="page-indicator">1 / 1</span>
+                        <div class="flex space-x-1">
+                            <button id="prev-page" class="p-1.5 rounded hover:bg-gray-200 text-gray-600 disabled:opacity-30 transition-colors"><i class="fa fa-chevron-left"></i></button>
+                            <button id="next-page" class="p-1.5 rounded hover:bg-gray-200 text-gray-600 disabled:opacity-30 transition-colors"><i class="fa fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 经营洞察 (统计) 页面 ================= -->
+        <section id="dashboard-page" class="page-section hidden animate-fade-in">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">经营洞察看板</h2>
+                    <p class="text-sm text-gray-500 mt-1">诊所核心指标与多维数据报表</p>
+                </div>
+                <div class="flex items-center space-x-2 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm">
+                    <input type="date" id="stat-start-date" class="border-none text-sm bg-transparent focus:ring-0 text-gray-700 cursor-pointer">
+                    <span class="text-gray-300">~</span>
+                    <input type="date" id="stat-end-date" class="border-none text-sm bg-transparent focus:ring-0 text-gray-700 cursor-pointer">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                <div class="card p-5 border-l-4 border-l-primary hover:-translate-y-1 transition-transform relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-sm text-gray-500 font-medium">总建档患者</p><h3 id="card-total-patients" class="text-3xl font-bold mt-1 text-gray-800">0</h3></div>
+                        <i class="fa fa-users text-primary/10 text-4xl absolute -right-2 -bottom-2"></i>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3">区间新增: <span id="card-new-patients" class="text-primary font-bold">0</span></p>
+                </div>
+                
+                <div class="card p-5 border-l-4 border-l-success hover:-translate-y-1 transition-transform relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-sm text-gray-500 font-medium flex items-center gap-1">近期活跃 <i class="fa fa-info-circle text-gray-300" title="过去30天内有业务记录的患者"></i></p><h3 id="card-active-patients" class="text-3xl font-bold mt-1 text-gray-800">0</h3></div>
+                        <i class="fa fa-heartbeat text-success/10 text-4xl absolute -right-2 -bottom-2"></i>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3">活跃率: <span id="card-active-rate" class="text-success font-bold">0%</span></p>
+                </div>
+                
+                <div class="card p-5 border-l-4 border-l-purple-500 hover:-translate-y-1 transition-transform relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-sm text-gray-500 font-medium">整体留存率</p><h3 id="card-retention-rate" class="text-3xl font-bold mt-1 text-gray-800">0%</h3></div>
+                        <i class="fa fa-magnet text-purple-500/10 text-4xl absolute -right-2 -bottom-2"></i>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-3" title="就诊天数 ≥ 2天的患者占总人数比例">复诊天数 ≥ 2天</p>
+                </div>
+                
+                <div class="card p-5 border-l-4 border-l-danger hover:-translate-y-1 transition-transform relative overflow-hidden bg-gradient-to-br from-white to-red-50/30 lg:col-span-2">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-sm text-gray-500 font-medium">区间总营收 (流水)</p><h3 id="card-total-revenue" class="text-3xl font-bold mt-1 text-danger">¥0</h3></div>
+                        <i class="fa fa-cny text-danger/10 text-4xl absolute -right-2 -bottom-2"></i>
+                    </div>
+                    <div class="flex justify-between items-end mt-3">
+                        <p class="text-xs text-gray-400 flex gap-3"><span>开单: <span id="card-rev-pur" class="font-bold text-gray-600">¥0</span></span><span>药品: <span id="card-rev-med" class="font-bold text-gray-600">¥0</span></span></p>
+                        <p class="text-xs text-danger font-bold bg-red-100/50 px-2 py-0.5 rounded">预计净入: <span id="card-total-income">¥0.00</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图表区 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="card p-6 h-80 flex flex-col lg:col-span-2">
+                    <h4 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fa fa-area-chart text-primary mr-2"></i>区间业务趋势</h4>
+                    <div class="flex-grow relative w-full h-full"><canvas id="trend-chart"></canvas></div>
+                </div>
+                <div class="card p-6 h-80 flex flex-col lg:col-span-1">
+                    <h4 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fa fa-pie-chart text-primary mr-2"></i>全量渠道分布</h4>
+                    <div class="flex-grow relative w-full h-full"><canvas id="source-chart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- 排行榜与月度报表 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="card p-6 flex flex-col lg:col-span-1">
+                    <h4 class="font-bold text-gray-800 mb-4 flex items-center justify-between">
+                        <span><i class="fa fa-trophy text-warning mr-2"></i>高净值患者 TOP10</span>
+                        <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">历史总流水</span>
+                    </h4>
+                    <div class="overflow-y-auto no-scrollbar flex-grow max-h-[400px]">
+                        <table class="w-full text-sm text-left">
+                            <tbody id="top10-list-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card p-6 flex flex-col lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-gray-800 flex items-center"><i class="fa fa-table text-primary mr-2"></i>月度财务综合交叉表</h4>
+                        <button onclick="dataStore.exportInsightTable()" class="btn btn-secondary border-primary/30 text-primary hover:bg-primary/5 text-xs py-1.5 px-3 shadow-none"><i class="fa fa-file-excel-o mr-1"></i>一键导出 Excel</button>
+                    </div>
+                    <div class="overflow-x-auto no-scrollbar border border-gray-200 rounded-lg flex-grow max-h-[400px]">
+                        <table class="w-full text-left text-sm border-collapse whitespace-nowrap">
+                            <thead class="bg-gray-100 sticky top-0 shadow-sm text-gray-600 border-b border-gray-200">
+                                <tr>
+                                    <th class="px-3 py-3 font-bold border-r border-gray-200">月份</th>
+                                    <th class="px-3 py-3 font-bold text-right">总流水</th>
+                                    <th class="px-3 py-3 font-bold text-right text-gray-500">开单</th>
+                                    <th class="px-3 py-3 font-bold text-right border-r border-gray-200 text-gray-500">开药</th>
+                                    <th class="px-3 py-3 font-bold text-right text-success bg-green-50">初诊客</th>
+                                    <th class="px-3 py-3 font-bold text-right text-primary bg-green-50 border-r border-green-100">复诊客</th>
+                                    <th class="px-3 py-3 font-bold text-right border-r border-gray-200">客单价</th>
+                                    <th class="px-3 py-3 font-bold text-right text-danger bg-red-50">月收入</th>
+                                </tr>
+                            </thead>
+                            <tbody id="insight-monthly-tbody" class="divide-y divide-gray-100"></tbody>
+                            <tfoot id="insight-monthly-tfoot" class="bg-gray-50 border-t-2 border-gray-200 sticky bottom-0"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 按天与按周报表 -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+                <div class="card p-6 flex flex-col">
+                    <h4 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fa fa-calendar-o text-primary mr-2"></i>区间按天统计明细</h4>
+                    <div class="overflow-x-auto no-scrollbar border border-gray-200 rounded-lg flex-grow max-h-[400px]">
+                        <table class="w-full text-left text-sm border-collapse whitespace-nowrap">
+                            <thead class="bg-gray-100 sticky top-0 shadow-sm text-gray-600">
+                                <tr>
+                                    <th class="px-4 py-3 font-bold">日期</th>
+                                    <th class="px-4 py-3 font-bold text-right">当日总收入(元)</th>
+                                    <th class="px-4 py-3 font-bold text-right text-primary">开单金额(元)</th>
+                                    <th class="px-4 py-3 font-bold text-right text-success">开单人次</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100" id="daily-stats-list"></tbody>
+                            <tfoot class="bg-gray-50 border-t-2 border-gray-200 sticky bottom-0" id="daily-stats-tfoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card p-6 flex flex-col">
+                    <h4 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fa fa-calendar text-primary mr-2"></i>区间按周业务统计</h4>
+                    <div class="flex flex-col md:flex-row h-full gap-4">
+                        <div class="flex-grow overflow-x-auto no-scrollbar border border-gray-200 rounded-lg max-h-[400px]">
+                            <table class="w-full text-left text-sm border-collapse whitespace-nowrap">
+                                <thead class="bg-gray-100 sticky top-0 shadow-sm text-gray-600">
+                                    <tr>
+                                        <th class="px-3 py-3 font-bold border-r border-gray-200">起始日期(周一)</th>
+                                        <th class="px-3 py-3 font-bold text-right text-success bg-green-50">新病人</th>
+                                        <th class="px-3 py-3 font-bold text-right text-primary bg-green-50 border-r border-green-100">老病人</th>
+                                        <th class="px-3 py-3 font-bold text-right">总人数</th>
+                                        <th class="px-3 py-3 font-bold text-right text-danger bg-red-50">总费用</th>
+                                        <th class="px-3 py-3 font-bold text-right text-gray-500">开单</th>
+                                        <th class="px-3 py-3 font-bold text-right text-gray-500">开药</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100" id="weekly-stats-list"></tbody>
+                            </table>
+                        </div>
+                        <div class="w-full md:w-48 shrink-0 bg-blue-50/30 p-5 rounded-lg border border-blue-100 flex flex-col">
+                            <h4 class="font-bold text-gray-700 mb-4 border-b border-gray-200 pb-2 text-sm text-center">区间周平均参考</h4>
+                            <ul class="space-y-4 text-sm" id="weekly-avg-list">
+                                <li class="flex justify-between items-center"><span class="text-gray-500">新病人</span><span class="font-bold text-success text-lg" id="weekly-avg-new">0</span></li>
+                                <li class="flex justify-between items-center"><span class="text-gray-500">老病人</span><span class="font-bold text-primary text-lg" id="weekly-avg-old">0</span></li>
+                                <li class="flex justify-between items-center pt-2 border-t border-gray-200"><span class="text-gray-500">总费用</span><span class="font-bold text-danger text-lg" id="weekly-avg-total">0</span></li>
+                                <li class="flex justify-between items-center"><span class="text-gray-500">开单</span><span class="font-bold text-gray-700 text-lg" id="weekly-avg-pur">0</span></li>
+                                <li class="flex justify-between items-center"><span class="text-gray-500">开药</span><span class="font-bold text-gray-700 text-lg" id="weekly-avg-pre">0</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 报表与系统维护页面 ================= -->
+        <section id="settings-page" class="page-section hidden animate-fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">数据治理与维护</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="space-y-6 lg:col-span-1">
+                    <div class="card p-6 bg-gradient-to-br from-gray-800 to-gray-900 text-white border-none shadow-lg">
+                        <h3 class="font-bold text-lg mb-2 flex items-center"><i class="fa fa-shield mr-2"></i>数据全量备份</h3>
+                        <p class="text-sm text-gray-300 mb-6">生成包含“财务图表数据源”的 Excel，便于财务深度制图与备份。</p>
+                        <button onclick="dataStore.exportFullBackup()" class="btn bg-white text-gray-900 w-full hover:bg-gray-100">
+                            立即导出全库数据 (.xlsx)
+                        </button>
+                    </div>
+
+                    <div class="card p-6 border-t-4 border-t-primary">
+                        <h3 class="font-bold text-lg mb-2 flex items-center">当月流水预览</h3>
+                        <p class="text-sm text-gray-500 mb-4">选择月份以在右侧查看该月的明细。</p>
+                        <select id="month-report-select" class="input-field mb-4 bg-gray-50 border-transparent"></select>
+                        <button onclick="dataStore.exportMonthly()" class="btn btn-secondary w-full border-primary/30 text-primary hover:bg-primary/5">
+                            <i class="fa fa-file-excel-o mr-2"></i>下载本月明细表
+                        </button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="card p-6 h-full flex flex-col">
+                        <h3 class="font-bold text-lg mb-2 text-gray-800 flex items-center">
+                            <i class="fa fa-list-alt text-primary mr-2"></i>
+                            <span id="monthly-preview-title">当月流水明细</span>
+                        </h3>
+                        <div class="flex-grow mt-2 border border-gray-200 rounded-lg overflow-hidden max-h-[340px] overflow-y-auto no-scrollbar relative">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-100 sticky top-0 shadow-sm z-10 text-gray-600">
+                                    <tr>
+                                        <th class="px-4 py-2 font-medium">日期</th>
+                                        <th class="px-4 py-2 font-medium">姓名</th>
+                                        <th class="px-4 py-2 font-medium">类型</th>
+                                        <th class="px-4 py-2 font-medium text-right">额度/收费</th>
+                                        <th class="px-4 py-2 font-medium text-right">本单收入</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthly-detail-tbody" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card p-6 border-l-4 border-l-secondary bg-blue-50/20">
+                    <h3 class="font-bold text-lg mb-2 text-gray-800 flex items-center"><i class="fa fa-compress text-primary mr-2"></i>数据治理：合并重复档案</h3>
+                    <p class="text-sm text-gray-500 mb-6">如果发现患者被重复建档，可使用此工具将冗余档案的记录转移并销毁。</p>
+                    <button onclick="ui.openMergeModal()" class="btn btn-secondary border-primary/30 text-primary w-max bg-white">
+                        <i class="fa fa-wrench mr-2"></i>打开合并工具
+                    </button>
+                </div>
+
+                <div class="card p-6 border-2 border-dashed border-primary/30">
+                    <h3 class="font-bold text-lg mb-2 text-gray-800 flex items-center"><i class="fa fa-history text-primary mr-2"></i>从备份恢复 (导入)</h3>
+                    <p class="text-sm text-gray-500 mb-6">选择由本系统导出的 Excel 备份文件，系统支持全自动智能期初补账功能。</p>
+                    <div class="flex gap-2">
+                        <label class="btn btn-primary shadow-blue-500/30 cursor-pointer self-start w-max">
+                            <i class="fa fa-upload mr-2"></i> 选择文件并恢复
+                            <input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls">
+                        </label>
+                        <button onclick="ui.confirmClearData()" class="btn btn-danger ml-auto" title="清空系统数据"><i class="fa fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 移动端底部悬浮新增按钮 -->
+    <button onclick="ui.openPatientModal()" class="md:hidden fixed bottom-20 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-blue-500/40 flex items-center justify-center text-2xl z-40 active:scale-90 transition-transform">
+        <i class="fa fa-plus"></i>
+    </button>
+
+    <!-- 移动端底部导航 -->
+    <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-gray-100 flex justify-around py-2 z-40 pb-safe">
+        <button class="mobile-nav-btn flex flex-col items-center w-1/3 py-1 text-primary" data-page="patients"><i class="fa fa-users text-xl mb-1"></i><span class="text-[10px] font-medium">患者</span></button>
+        <button class="mobile-nav-btn flex flex-col items-center w-1/3 py-1 text-gray-400" data-page="dashboard"><i class="fa fa-lightbulb-o text-xl mb-1"></i><span class="text-[10px] font-medium">洞察</span></button>
+        <button class="mobile-nav-btn flex flex-col items-center w-1/3 py-1 text-gray-400" data-page="settings"><i class="fa fa-pie-chart text-xl mb-1"></i><span class="text-[10px] font-medium">报表</span></button>
+    </footer>
+
+    <!-- ================= 核心弹窗组件 (Modals) ================= -->
+    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4"></div>
+
+    <div id="modal-confirm" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-[90] p-4 opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform duration-200" id="modal-confirm-content">
+            <div class="p-6">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4 mx-auto" id="confirm-icon"></div>
+                <h3 class="text-lg font-bold text-center text-gray-800 mb-2" id="confirm-title">操作确认</h3>
+                <p class="text-sm text-gray-500 text-center whitespace-pre-wrap" id="confirm-message">确认执行？</p>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 flex gap-3">
+                <button class="btn btn-secondary flex-1" onclick="ui.closeConfirm()">取消</button>
+                <button class="btn flex-1" id="btn-confirm-execute">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 0. 合并重复档案 -->
+    <div id="modal-merge" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform duration-200" id="modal-merge-content">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                <h3 class="font-bold text-lg text-gray-800"><i class="fa fa-compress text-primary mr-2"></i>合并重复档案</h3>
+                <button class="text-gray-400 hover:text-gray-700 transition-colors" onclick="ui.closeModal('modal-merge')"><i class="fa fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-500 mb-6 bg-yellow-50 text-yellow-700 p-3 rounded border border-yellow-100">提示：此操作会将“被合并方”的记录迁移到“保留方”，并<b>永久删除</b>被合并方档案。</p>
+                <datalist id="merge-patients-datalist"></datalist>
+                <div class="space-y-4 relative">
+                    <div class="bg-green-50 p-3 rounded-lg border border-green-100">
+                        <label class="block text-xs font-bold text-green-700 mb-1">主档案 (保留)</label>
+                        <input type="text" id="merge-p1-input" list="merge-patients-datalist" placeholder="搜索并选择主档案" class="input-field bg-white">
+                    </div>
+                    <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 shadow-sm"><i class="fa fa-arrow-up"></i></div>
+                    <div class="bg-red-50 p-3 rounded-lg border border-red-100">
+                        <label class="block text-xs font-bold text-red-700 mb-1">冗余档案 (被合并/删除)</label>
+                        <input type="text" id="merge-p2-input" list="merge-patients-datalist" placeholder="搜索并选择冗余档案" class="input-field bg-white">
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
+                <button class="btn btn-secondary" onclick="ui.closeModal('modal-merge')">取消</button>
+                <button class="btn btn-danger px-6" onclick="app.executeMerge()">确认合并</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. 患者建档/编辑弹窗 -->
+    <div id="modal-patient" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform duration-200" id="modal-patient-content">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                <h3 class="font-bold text-lg text-gray-800" id="modal-patient-title">录入患者资料</h3>
+                <button class="text-gray-400 hover:text-gray-700 transition-colors" onclick="ui.closeModal('modal-patient')"><i class="fa fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 max-h-[75vh] overflow-y-auto no-scrollbar">
+                <form id="form-patient" class="space-y-4">
+                    <input type="hidden" id="field-p-id">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">患者姓名 <span class="text-danger">*</span></label>
+                        <input type="text" id="field-p-name" placeholder="请输入真实姓名" class="input-field bg-gray-50" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">联系电话</label>
+                        <input type="tel" id="field-p-phone" placeholder="选填" class="input-field bg-gray-50">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">性别</label>
+                            <select id="field-p-gender" class="input-field bg-gray-50"><option>男</option><option>女</option></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">初诊来源 (渠道)</label>
+                            <select id="field-p-source" class="input-field bg-blue-50 border-blue-200 text-blue-800"><option>自来</option><option>推荐</option><option>借卡</option></select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">备注说明 (建议填写患者症状/主诉)</label>
+                        <textarea id="field-p-remark" placeholder="如：患者最近总是失眠多梦，颈椎僵硬..." class="input-field bg-gray-50" rows="2"></textarea>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold text-gray-500">私域病症标签 (空格或逗号隔开)</label>
+                        </div>
+                        <input type="text" id="field-p-tags" placeholder="如：失眠 颈椎病" class="input-field bg-gray-50">
+                    </div>
+                    <!-- 初始开单区 (仅新增时显示) -->
+                    <div id="init-purchase-box" class="mt-4 pt-4 border-t border-gray-100">
+                        <label class="flex items-center text-sm font-bold text-primary cursor-pointer select-none">
+                            <input type="checkbox" id="field-p-init-check" class="mr-2 w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary">
+                            建档同时完成首次开单充值
+                        </label>
+                        <div id="init-options" class="hidden mt-3 p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">充值次数</label>
+                                    <input type="number" id="field-p-init-count" class="input-field bg-white" value="10" min="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 mb-1">实收金额(¥)</label>
+                                    <input type="number" id="field-p-init-amount" placeholder="0.00" class="input-field bg-white">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
+                <button class="btn btn-secondary" onclick="ui.closeModal('modal-patient')">取消</button>
+                <button class="btn btn-primary px-6" onclick="app.savePatient()">确认保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 聚合业务录入大满贯弹窗 -->
+    <div id="modal-record" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform duration-200 flex flex-col h-[90vh]" id="modal-record-content">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 shrink-0">
+                <h3 class="font-bold text-lg text-gray-800">综合业务录入</h3>
+                <button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-record')"><i class="fa fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto no-scrollbar flex-grow">
+                <!-- 患者简报 -->
+                <div class="bg-gray-50 rounded-xl p-3 mb-5 border border-gray-200 flex justify-between items-center shadow-inner">
+                    <div>
+                        <p class="text-xs text-gray-500">当前就诊患者</p>
+                        <p id="record-patient-name" class="font-bold text-primary text-lg leading-tight"></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-500">现有治疗额度</p>
+                        <p id="record-patient-rem" class="font-black text-xl text-gray-800 leading-tight">0</p>
+                    </div>
+                </div>
+
+                <form id="form-record" class="space-y-4">
+                    <input type="hidden" id="record-p-id">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">发生日期</label>
+                        <input type="date" id="record-date" class="input-field bg-gray-50">
+                    </div>
+                    
+                    <!-- 复合录入区 -->
+                    <div class="space-y-3">
+                        <!-- 1. 治疗消耗 -->
+                        <div class="p-3 bg-green-50 border border-green-200 rounded-lg relative overflow-hidden group hover:shadow-md transition-shadow">
+                            <div class="absolute right-0 top-0 w-10 h-10 bg-green-100 rounded-bl-full z-0 flex justify-end items-start p-1.5 opacity-50"><i class="fa fa-heartbeat text-green-500 text-xs"></i></div>
+                            <label class="block text-sm font-bold text-green-700 mb-2 relative z-10">🌿 治疗核销 (扣次)</label>
+                            <div class="flex items-center gap-2 relative z-10">
+                                <span class="text-xs text-gray-600 whitespace-nowrap">本次消耗:</span>
+                                <div class="relative flex-grow">
+                                    <input type="number" id="rec-c-count" placeholder="不扣次请留空" class="input-field bg-white pr-8 border-green-300 focus:border-green-500 focus:ring-green-500/50" min="0">
+                                    <span class="absolute right-3 top-2.5 text-gray-400 text-sm">次</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. 开单充值 -->
+                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg relative overflow-hidden group hover:shadow-md transition-shadow">
+                            <div class="absolute right-0 top-0 w-10 h-10 bg-blue-100 rounded-bl-full z-0 flex justify-end items-start p-1.5 opacity-50"><i class="fa fa-shopping-cart text-blue-500 text-xs"></i></div>
+                            <label class="block text-sm font-bold text-blue-700 mb-2 relative z-10">💳 开单购买 (充次)</label>
+                            <div class="grid grid-cols-2 gap-3 relative z-10">
+                                <div>
+                                    <span class="text-[10px] text-gray-500 mb-1 block">增加次数</span>
+                                    <div class="relative">
+                                        <input type="number" id="rec-p-count" placeholder="0" class="input-field bg-white pr-6 border-blue-300 focus:border-blue-500 focus:ring-blue-500/50" min="0">
+                                        <span class="absolute right-2 top-2 text-gray-400 text-sm">次</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-gray-500 mb-1 block">实收金额 (元)</span>
+                                    <div class="relative">
+                                        <span class="absolute left-2 top-2 text-gray-400 text-sm">¥</span>
+                                        <input type="number" id="rec-p-amount" placeholder="0.00" class="input-field bg-white pl-6 border-blue-300 focus:border-blue-500 focus:ring-blue-500/50" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. 开药收费 -->
+                        <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg relative overflow-hidden group hover:shadow-md transition-shadow">
+                            <div class="absolute right-0 top-0 w-10 h-10 bg-purple-100 rounded-bl-full z-0 flex justify-end items-start p-1.5 opacity-50"><i class="fa fa-medkit text-purple-500 text-xs"></i></div>
+                            <label class="block text-sm font-bold text-purple-700 mb-2 relative z-10">💊 开药收费</label>
+                            <div class="flex items-center gap-2 relative z-10">
+                                <span class="text-xs text-gray-600 whitespace-nowrap">药品金额:</span>
+                                <div class="relative flex-grow">
+                                    <span class="absolute left-3 top-2.5 text-gray-400 text-sm">¥</span>
+                                    <input type="number" id="rec-m-amount" placeholder="不涉及开药请留空" class="input-field bg-white pl-8 border-purple-300 focus:border-purple-500 focus:ring-purple-500/50" min="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 动态收益面板 -->
+                    <div id="record-income-display" class="p-3 bg-gray-800 rounded-lg flex justify-between items-center shadow-inner">
+                        <span class="text-xs text-gray-300 font-medium">本次就诊预计总收入</span>
+                        <span class="text-lg font-black text-white">¥<span id="record-income-val">0.00</span></span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">综合附言备注</label>
+                        <input type="text" id="record-remark" placeholder="如：针灸+推拿、特定药方等" class="input-field bg-gray-50">
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl shrink-0">
+                <button class="btn btn-secondary" onclick="ui.closeModal('modal-record')">取消</button>
+                <button class="btn btn-primary px-8 shadow-blue-500/30" onclick="app.saveRecord()">一次性提交</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2.1 账目编辑修改弹窗 -->
+    <div id="modal-edit-record" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform duration-200" id="modal-edit-record-content">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-yellow-50 rounded-t-2xl">
+                <h3 class="font-bold text-lg text-yellow-800"><i class="fa fa-pencil-square-o mr-2"></i>修改历史账单</h3>
+                <button class="text-yellow-600 hover:text-yellow-800" onclick="ui.closeModal('modal-edit-record')"><i class="fa fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="form-edit-record" class="space-y-4">
+                    <input type="hidden" id="edit-t-id">
+                    <input type="hidden" id="edit-t-type">
+                    <div class="bg-gray-100 p-2 rounded text-center text-sm font-bold text-gray-600 mb-4" id="edit-t-type-display">业务类型</div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">修正日期</label>
+                        <input type="date" id="edit-t-date" class="input-field bg-gray-50">
+                    </div>
+                    
+                    <div id="edit-box-count">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">修正次数</label>
+                        <div class="relative">
+                            <input type="number" id="edit-t-count" class="input-field bg-white pr-8" min="0">
+                            <span class="absolute right-3 top-2.5 text-gray-400 text-sm">次</span>
+                        </div>
+                    </div>
+                    
+                    <div id="edit-box-amount">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">修正金额</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-gray-400 text-sm">¥</span>
+                            <input type="number" id="edit-t-amount" class="input-field bg-white pl-8" min="0" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">修正备注</label>
+                        <input type="text" id="edit-t-remark" class="input-field bg-gray-50">
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
+                <button class="btn btn-secondary" onclick="ui.closeModal('modal-edit-record')">放弃</button>
+                <button class="btn btn-warning px-8 shadow-yellow-500/30 text-white" onclick="app.saveEditTreatment()">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 历史详情查看弹窗 -->
+    <div id="modal-detail" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col transform scale-95 transition-transform duration-200 h-[85vh]" id="modal-detail-content">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg" id="det-avatar">名</div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800 leading-none flex items-center">
+                            <span id="det-p-name">姓名</span>
+                            <span class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600 border border-blue-100" id="det-p-source">来源</span>
+                        </h3>
+                        <span class="text-xs text-gray-400 mt-1 block" id="det-p-phone">手机号</span>
+                        <div id="det-p-tags" class="flex gap-1 mt-1"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors" onclick="ui.closeModal('modal-detail')"><i class="fa fa-times text-xl"></i></button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50/50 shrink-0">
+                <div class="p-3 text-center"><p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">总消费(元)</p><p class="text-xl font-bold text-danger" id="det-stat-money">0</p></div>
+                <div class="p-3 text-center"><p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">总计充次</p><p class="text-xl font-bold text-gray-700" id="det-stat-p">0</p></div>
+                <div class="p-3 text-center"><p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">累计消耗</p><p class="text-xl font-bold text-gray-700" id="det-stat-c">0</p></div>
+                <div class="p-3 text-center bg-blue-50/50"><p class="text-[10px] text-blue-400 uppercase font-bold tracking-wider">剩余可用</p><p class="text-xl font-black text-primary" id="det-stat-rem">0</p></div>
+            </div>
+
+            <div class="flex-grow overflow-y-auto bg-gray-50/30 p-4 no-scrollbar">
+                <div id="det-history-list" class="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== JavaScript 逻辑层 ========================================== -->
+    <script>
+        /** ================= 模块 1：UI 与 Feedback ================= **/
+        const ui = {
+            showToast: (msg, type = 'info') => {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                const styles = {
+                    success: { bg: 'bg-white border-l-4 border-success text-gray-700', icon: 'fa-check-circle text-success' },
+                    error: { bg: 'bg-red-50 border border-red-200 text-red-800', icon: 'fa-times-circle text-danger' },
+                    warning: { bg: 'bg-orange-50 border border-orange-200 text-orange-800', icon: 'fa-exclamation-circle text-warning' },
+                    info: { bg: 'bg-white border-l-4 border-primary text-gray-700', icon: 'fa-info-circle text-primary' }
+                };
+                const style = styles[type] || styles.info;
+
+                toast.className = `flex items-center p-4 rounded-lg shadow-lg shadow-black/5 animate-slide-down pointer-events-auto ${style.bg}`;
+                toast.innerHTML = `<i class="fa ${style.icon} text-lg mr-3"></i><span class="font-medium text-sm">${msg}</span>`;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.remove('animate-slide-down');
+                    toast.classList.add('opacity-0', '-translate-y-4', 'transition-all', 'duration-300');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            },
+            showConfirm: (title, message, isDanger, onConfirm) => {
+                const modal = document.getElementById('modal-confirm');
+                const content = document.getElementById('modal-confirm-content');
+                const iconBox = document.getElementById('confirm-icon');
+                const btnExec = document.getElementById('btn-confirm-execute');
+
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-message').innerText = message;
+
+                if (isDanger) {
+                    iconBox.className = 'w-12 h-12 rounded-full bg-red-100 text-danger flex items-center justify-center text-2xl mb-4 mx-auto';
+                    iconBox.innerHTML = '<i class="fa fa-exclamation-triangle"></i>';
+                    btnExec.className = 'btn btn-danger flex-1';
+                } else {
+                    iconBox.className = 'w-12 h-12 rounded-full bg-blue-100 text-primary flex items-center justify-center text-2xl mb-4 mx-auto';
+                    iconBox.innerHTML = '<i class="fa fa-question"></i>';
+                    btnExec.className = 'btn btn-primary flex-1';
+                }
+
+                btnExec.onclick = () => { ui.closeConfirm(); onConfirm(); };
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+            },
+            closeConfirm: () => {
+                const modal = document.getElementById('modal-confirm');
+                const content = document.getElementById('modal-confirm-content');
+                modal.classList.add('opacity-0'); content.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 200);
+            },
+            openModal: (id) => {
+                const modal = document.getElementById(id);
+                const content = document.getElementById(id + '-content');
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+                requestAnimationFrame(() => { modal.classList.remove('opacity-0'); if (content) content.classList.remove('scale-95'); });
+            },
+            closeModal: (id) => {
+                const modal = document.getElementById(id);
+                const content = document.getElementById(id + '-content');
+                modal.classList.add('opacity-0'); if (content) content.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 200);
+            },
+            openPatientModal: (pid = null, defaultName = '') => {
+                const form = document.getElementById('form-patient');
+                const initBox = document.getElementById('init-purchase-box');
+                form.reset();
+                document.getElementById('init-options').classList.add('hidden');
+                
+                if (pid) {
+                    const p = dataStore.getPatient(pid);
+                    document.getElementById('modal-patient-title').innerText = "修改患者资料";
+                    document.getElementById('field-p-id').value = p.id;
+                    document.getElementById('field-p-name').value = p.name;
+                    document.getElementById('field-p-phone').value = p.phone;
+                    document.getElementById('field-p-gender').value = p.gender;
+                    document.getElementById('field-p-source').value = p.source || '自来';
+                    document.getElementById('field-p-tags').value = p.tags ? p.tags.join(' ') : '';
+                    document.getElementById('field-p-remark').value = p.remark || '';
+                    initBox.classList.add('hidden'); 
+                } else {
+                    document.getElementById('modal-patient-title').innerText = "录入初诊患者";
+                    document.getElementById('field-p-id').value = '';
+                    document.getElementById('field-p-name').value = defaultName;
+                    document.getElementById('field-p-source').value = '自来';
+                    document.getElementById('field-p-tags').value = '';
+                    initBox.classList.remove('hidden');
+                }
+                ui.openModal('modal-patient');
+            },
+            openMergeModal: () => {
+                const list = document.getElementById('merge-patients-datalist');
+                list.innerHTML = '';
+                dataStore.patients.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = `${p.name} ${p.phone ? '('+p.phone+')' : ''} [ID:${p.id}]`;
+                    list.appendChild(opt);
+                });
+                document.getElementById('merge-p1-input').value = '';
+                document.getElementById('merge-p2-input').value = '';
+                ui.openModal('modal-merge');
+            },
+            confirmClearData: () => {
+                ui.showConfirm("彻底清空数据", "即将永久删除所有记录。操作后无法恢复，确定已备份数据？", true, () => {
+                    localStorage.removeItem(dataStore.keys.P);
+                    localStorage.removeItem(dataStore.keys.T);
+                    dataStore.patients = []; dataStore.treatments = [];
+                    dataStore.rebuildStatsCache();
+                    app.updateBadge(); app.renderList();
+                    if(app.state.currentPage === 'dashboard') app.renderCharts();
+                    ui.showToast("系统数据已全部清空", "success");
+                });
+            }
+        };
+
+        /** ================= 模块 2：数据与 Store ================= **/
+        const dataStore = {
+            keys: { P: 'clinic_patients', T: 'clinic_treatments' },
+            patients: [], treatments: [], charts: {}, statsCache: {},
+
+            init: () => {
+                dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
+                dataStore.treatments = JSON.parse(localStorage.getItem(dataStore.keys.T) || '[]');
+                dataStore.rebuildStatsCache();
+            },
+            save: () => {
+                try {
+                    localStorage.setItem(dataStore.keys.P, JSON.stringify(dataStore.patients));
+                    localStorage.setItem(dataStore.keys.T, JSON.stringify(dataStore.treatments));
+                    dataStore.rebuildStatsCache();
+                    return true;
+                } catch (e) {
+                    ui.showToast("保存失败，存储不足", "error"); return false;
+                }
+            },
+            getPatient: (id) => dataStore.patients.find(x => x.id === id),
+            
+            rebuildStatsCache: () => {
+                const cache = {};
+                dataStore.patients.forEach(p => {
+                    cache[p.id] = { purchased: 0, consumed: 0, remain: 0, mTotal: 0, history: [] };
+                });
+                dataStore.treatments.forEach(t => {
+                    if(!t.id) t.id = 't_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                    if (!cache[t.pid]) return;
+                    cache[t.pid].history.push(t);
+                    const count = Number(t.count) || 0;
+                    const amount = Number(t.amount) || 0;
+                    if (t.type === 'purchase') { cache[t.pid].purchased += count; cache[t.pid].mTotal += amount; }
+                    else if (t.type === 'consume') { cache[t.pid].consumed += count; }
+                    else if (t.type === 'medicine') { cache[t.pid].mTotal += amount; }
+                });
+                for (const pid in cache) {
+                    cache[pid].remain = cache[pid].purchased - cache[pid].consumed;
+                    cache[pid].history.sort((a,b) => new Date(b.date) - new Date(a.date));
+                }
+                dataStore.statsCache = cache;
+            },
+
+            calcStats: (pid) => { return dataStore.statsCache[pid] || { purchased: 0, consumed: 0, remain: 0, history: [], mTotal: 0 }; },
+
+            formatDate: (val) => {
+                if (!val) return '-';
+                if (typeof val === 'number') return new Date((val - 25569) * 86400 * 1000).toISOString().split('T')[0];
+                try {
+                    const d = new Date(val); return isNaN(d.getTime()) ? String(val).split(' ')[0] : d.toISOString().split('T')[0];
+                } catch(e) { return String(val).trim(); }
+            },
+            getPinyin: (str) => {
+                if (!str) return '';
+                if (typeof pinyinPro !== 'undefined') {
+                    try { return pinyinPro.pinyin(str, { toneType: 'none', type: 'array' }).join('').replace(/\s+/g, ''); } catch(e){}
+                }
+                return str.replace(/\s+/g, '');
+            },
+            exportFullBackup: () => {
+                try {
+                    if (dataStore.patients.length === 0) return ui.showToast("当前无数据可导出", "warning");
+                    ui.showToast("正在生成备份...", "info");
+                    const wb = XLSX.utils.book_new();
+                    
+                    const pOut = dataStore.patients.map(p => {
+                        const s = dataStore.calcStats(p.id);
+                        return { '姓名': p.name, '手机号': p.phone, '性别': p.gender, '渠道来源': p.source || '自来', '私域标签': p.tags ? p.tags.join(',') : '', '剩余可用次': s.remain, '累计充次': s.purchased, '累计消耗': s.consumed, '总消费金额': s.mTotal, '备注': p.remark };
+                    });
+                    const wsP = XLSX.utils.json_to_sheet(pOut);
+                    wsP['!cols'] = [{wch:10}, {wch:15}, {wch:6}, {wch:10}, {wch:15}, {wch:12}, {wch:10}, {wch:10}, {wch:12}, {wch:25}];
+                    XLSX.utils.book_append_sheet(wb, wsP, "患者主档");
+                    
+                    const tOut = dataStore.treatments.map(t => {
+                        const p = dataStore.getPatient(t.pid);
+                        let typeStr = '治疗(扣次)';
+                        if (t.type === 'purchase') typeStr = '开单(充次)';
+                        else if (t.type === 'medicine') typeStr = '开药';
+                        return { '日期': t.date, '患者姓名': p ? p.name : '未知', '业务类型': typeStr, '变动次数': t.count || 0, '产生金额': t.amount || 0, '本单预计收入': t.income || 0, '备注说明': t.remark };
+                    });
+                    const wsT = XLSX.utils.json_to_sheet(tOut);
+                    wsT['!cols'] = [{wch:12}, {wch:12}, {wch:12}, {wch:10}, {wch:10}, {wch:12}, {wch:30}];
+                    XLSX.utils.book_append_sheet(wb, wsT, "全部明细流水");
+
+                    const monthData = {};
+                    dataStore.treatments.forEach(t => {
+                        if (!t.date) return;
+                        const mKey = t.date.substring(0, 7);
+                        if (!monthData[mKey]) monthData[mKey] = { month: mKey, amount: 0, income: 0 };
+                        monthData[mKey].amount += (Number(t.amount) || 0);
+                        monthData[mKey].income += (Number(t.income) || 0);
+                    });
+                    
+                    const fOut = Object.values(monthData).sort((a,b) => a.month.localeCompare(b.month)).map(d => ({
+                        '财务月份': d.month, '总收费金额(元)': d.amount, '系统折算收入(元)': d.income
+                    }));
+                    const wsF = XLSX.utils.json_to_sheet(fOut);
+                    wsF['!cols'] = [{wch:15}, {wch:15}, {wch:15}];
+                    XLSX.utils.book_append_sheet(wb, wsF, "财务图表数据源");
+                    
+                    XLSX.writeFile(wb, `门诊全量备份_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    ui.showToast("导出成功", "success");
+                } catch(e) { ui.showToast("导出失败，检查浏览器权限", "error"); }
+            },
+            exportInsightTable: () => {
+                if (dataStore.treatments.length === 0) return ui.showToast('暂无数据', 'warning');
+                
+                const monthData = {}; const patientFirstMonth = {};
+                dataStore.patients.forEach(p => {
+                    const stats = dataStore.calcStats(p.id);
+                    if (stats.history && stats.history.length > 0) { patientFirstMonth[p.id] = stats.history[stats.history.length - 1].date.substring(0, 7); }
+                });
+
+                const visitSetPerMonth = {}; 
+                dataStore.treatments.forEach(t => {
+                    if (!t.date) return;
+                    const mKey = t.date.substring(0, 7);
+                    if (!monthData[mKey]) {
+                        monthData[mKey] = { month: mKey, totalAmount: 0, purchaseAmount: 0, medicineAmount: 0, income: 0, patientsSet: new Set() };
+                        visitSetPerMonth[mKey] = new Set();
+                    }
+                    const amt = Number(t.amount) || 0; const inc = Number(t.income) || 0;
+                    monthData[mKey].totalAmount += amt; monthData[mKey].income += inc;
+                    if (t.type === 'purchase') monthData[mKey].purchaseAmount += amt;
+                    if (t.type === 'medicine') monthData[mKey].medicineAmount += amt;
+                    monthData[mKey].patientsSet.add(t.pid); visitSetPerMonth[mKey].add(`${t.pid}_${t.date}`); 
+                });
+
+                const rows = [];
+                Object.keys(monthData).sort((a,b) => a.localeCompare(b)).forEach(mKey => {
+                    const data = monthData[mKey]; const vCount = visitSetPerMonth[mKey].size;
+                    let newP = 0, oldP = 0;
+                    data.patientsSet.forEach(pid => { if (patientFirstMonth[pid] === mKey) newP++; else oldP++; });
+                    
+                    rows.push({
+                        '月份': mKey.replace('-', '年') + '月', 
+                        '总营业额': data.totalAmount, 
+                        '开单收入': data.purchaseAmount, '开药收入': data.medicineAmount, 
+                        '接诊人次': vCount, '初诊(人)': newP, '复诊(人)': oldP, 
+                        '客单价(元)': vCount > 0 ? Math.round(data.totalAmount / vCount) : 0, 
+                        '月度净入(折算后)': data.income
+                    });
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws['!cols'] = [{wch:15}, {wch:12}, {wch:12}, {wch:12}, {wch:10}, {wch:10}, {wch:10}, {wch:12}, {wch:15}];
+                XLSX.utils.book_append_sheet(wb, ws, "月度交叉综合报表");
+                XLSX.writeFile(wb, `针推门诊_月度交叉报表_${new Date().toISOString().split('T')[0]}.xlsx`);
+                ui.showToast('报表导出成功', 'success');
+            },
+            exportMonthly: () => {
+                const m = document.getElementById('month-report-select').value;
+                if (!m) return ui.showToast("请先选择月份", "warning");
+                const filtered = dataStore.treatments.filter(t => t.date && t.date.startsWith(m));
+                if (filtered.length === 0) return ui.showToast("该月暂无流水记录", "warning");
+
+                const out = filtered.map(t => {
+                    const p = dataStore.getPatient(t.pid);
+                    let typeStr = '治疗';
+                    if (t.type === 'purchase') typeStr = '开单';
+                    else if (t.type === 'medicine') typeStr = '开药';
+                    return { '发生日期': t.date, '患者姓名': p ? p.name : '-', '业务类型': typeStr, '次数': t.count || 0, '实收金额': t.amount || 0, '本单收入': t.income || 0, '附言备注': t.remark };
+                });
+                
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(out);
+                ws['!cols'] = [{wch:15}, {wch:12}, {wch:12}, {wch:8}, {wch:12}, {wch:12}, {wch:30}];
+                XLSX.utils.book_append_sheet(wb, ws, `${m} 财务月报`);
+                XLSX.writeFile(wb, `针推门诊_${m}月明细.xlsx`);
+                ui.showToast("月度流水表已生成", "success");
+            }
+        };
+
+        /** ================= 模块 3：工具函数 ================= **/
+        const utils = {
+            debounce: (func, wait) => { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; },
+            cleanString: (str) => { if (str == null) return ''; return String(str).replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim(); }
+        };
+
+        /** ================= 模块 4：业务逻辑与视图 (App) ================= **/
+        const app = {
+            state: { page: 0, size: 10, search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
+
+            init: () => {
+                dataStore.init();
+                app.updateBadge();
+                app.renderList();
+                app.bindEvents();
+            },
+
+            updateBadge: () => {
+                const badge = document.getElementById('data-status-badge');
+                if (dataStore.patients.length > 0) {
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 数据保护中: ${dataStore.patients.length}人`;
+                    badge.className = "hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700";
+                } else {
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-400 mr-1.5"></span> 暂无数据`;
+                    badge.className = "hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600";
+                }
+            },
+
+            renderList: () => {
+                const tbody = document.getElementById('patient-list-body');
+                if (!tbody) return;
+
+                let result = dataStore.patients;
+                
+                if (app.state.search) {
+                    const searchTerms = app.state.search.toLowerCase().split(/\s+/).filter(t => t);
+                    result = result.filter(p => {
+                        return searchTerms.every(term => 
+                            (p.name && p.name.toLowerCase().includes(term)) || (p.phone && p.phone.includes(term)) || (p.tags && p.tags.some(t => t.toLowerCase().includes(term)))
+                        );
+                    });
+                }
+                
+                const minVal = parseInt(app.state.filterMin);
+                const maxVal = parseInt(app.state.filterMax);
+                if (!isNaN(minVal) || !isNaN(maxVal)) {
+                    result = result.filter(p => {
+                        const rem = dataStore.calcStats(p.id).remain;
+                        let pass = true;
+                        if (!isNaN(minVal)) pass = pass && (rem >= minVal);
+                        if (!isNaN(maxVal)) pass = pass && (rem <= maxVal);
+                        return pass;
+                    });
+                }
+
+                result.sort((a,b) => dataStore.calcStats(a.id).remain - dataStore.calcStats(b.id).remain);
+                document.getElementById('total-count').innerText = result.length;
+
+                const maxPage = Math.max(1, Math.ceil(result.length / app.state.size));
+                if (app.state.page >= maxPage) app.state.page = maxPage - 1; 
+                document.getElementById('page-indicator').innerText = `${app.state.page + 1} / ${maxPage}`;
+
+                const paged = result.slice(app.state.page * app.state.size, (app.state.page + 1) * app.state.size);
+
+                tbody.innerHTML = '';
+                if (paged.length === 0) {
+                    let emptyHtml = `<tr><td colspan="5" class="px-6 py-16 text-center text-gray-500"><div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-3"><i class="fa fa-inbox text-2xl text-gray-300"></i></div><p>未找到符合条件的患者</p>`;
+                    if (app.state.search) emptyHtml += `<div class="mt-4"><button onclick="ui.openPatientModal(null, '${app.state.search}')" class="btn btn-primary mx-auto shadow-blue-500/30"><i class="fa fa-user-plus mr-2"></i>立即为“${app.state.search}”建档</button></div>`;
+                    emptyHtml += `</td></tr>`; tbody.innerHTML = emptyHtml; return;
+                }
+
+                const df = document.createDocumentFragment();
+                paged.forEach(p => {
+                    const stats = dataStore.calcStats(p.id);
+                    const rem = stats.remain;
+                    const recent = stats.history.length > 0 ? stats.history[0].date : '暂无记录';
+                    
+                    let colorClass = 'text-success bg-green-50 border-green-100'; let statusText = '充沛';
+                    if (rem <= 0) { colorClass = 'text-danger bg-red-50 border-red-100'; statusText = '已耗尽'; }
+                    else if (rem === 1) { colorClass = 'text-warning bg-orange-50 border-orange-100'; statusText = '需复购'; }
+                    
+                    let tagsHtml = '';
+                    if (p.tags && p.tags.length > 0) {
+                        tagsHtml = p.tags.map(t => `<span class="inline-block px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded text-[10px] whitespace-nowrap">${t}</span>`).join('');
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-50/40 transition-colors group";
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button onclick="app.openRecordUI('${p.id}')" class="btn btn-primary px-3 py-1.5 rounded-full shadow-sm text-[13px] bg-primary/90 hover:bg-primary border-none"><i class="fa fa-pencil-square-o mr-1"></i>录入</button>
+                        </td>
+                        <td class="px-6 py-4 cursor-pointer" onclick="app.showDetail('${p.id}')">
+                            <div class="font-bold text-gray-800 text-base flex items-center">${p.name} ${p.gender === '女' ? '<i class="fa fa-venus ml-2 text-pink-400 text-xs"></i>' : '<i class="fa fa-mars ml-2 text-blue-400 text-xs"></i>'}</div>
+                            <div class="text-xs text-gray-400 mt-1 flex items-center"><i class="fa fa-phone mr-1"></i> ${p.phone || '无预留电话'}</div>
+                            <div class="flex flex-wrap gap-1 mt-1">${tagsHtml}</div>
+                        </td>
+                        <td class="px-6 py-4 cursor-pointer text-sm text-gray-500" onclick="app.showDetail('${p.id}')">
+                            <div class="flex items-center"><i class="fa fa-clock-o mr-1"></i> ${recent}</div>
+                        </td>
+                        <td class="px-6 py-4 cursor-pointer text-center" onclick="app.showDetail('${p.id}')">
+                            <div class="flex flex-col items-center justify-center">
+                                <span class="text-2xl font-black text-gray-800 leading-none flex items-center gap-2">
+                                    ${rem} ${rem === 1 ? `<i class="fa fa-bullhorn text-warning animate-pulse text-sm" title="触发复购提醒"></i>` : ''}
+                                </span>
+                                <span class="text-[10px] px-2 py-0.5 border rounded font-bold ${colorClass} mt-1.5">${statusText}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="ui.openPatientModal('${p.id}')" class="text-gray-400 hover:text-secondary p-2 transition-colors text-sm"><i class="fa fa-edit"></i> 编辑</button>
+                        </td>
+                    `;
+                    df.appendChild(tr);
+                });
+                tbody.appendChild(df);
+
+                document.getElementById('prev-page').disabled = app.state.page === 0;
+                document.getElementById('next-page').disabled = app.state.page >= maxPage - 1;
+            },
+
+            showPage: (id) => {
+                app.state.currentPage = id;
+                document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden'));
+                document.getElementById(`${id}-page`).classList.remove('hidden');
+                
+                document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(btn => {
+                    if (btn.dataset.page === id) {
+                        if (btn.classList.contains('nav-link')) { btn.classList.add('text-primary', 'bg-primary/5'); btn.classList.remove('text-gray-500', 'hover:bg-gray-50'); } 
+                        else { btn.classList.add('text-primary'); btn.classList.remove('text-gray-400'); }
+                    } else {
+                        if (btn.classList.contains('nav-link')) { btn.classList.remove('text-primary', 'bg-primary/5'); btn.classList.add('text-gray-500', 'hover:bg-gray-50'); } 
+                        else { btn.classList.remove('text-primary'); btn.classList.add('text-gray-400'); }
+                    }
+                });
+
+                if (id === 'dashboard') app.renderCharts();
+                if (id === 'settings') {
+                    const sel = document.getElementById('month-report-select');
+                    sel.innerHTML = '';
+                    const ms = [...new Set(dataStore.treatments.map(t => t.date.slice(0, 7)))].sort().reverse();
+                    if (ms.length === 0) ms.push(new Date().toISOString().slice(0, 7));
+                    ms.forEach(m => { const o = document.createElement('option'); o.value = m; o.innerText = m; sel.appendChild(o); });
+                    app.updateMonthlyPreview();
+                }
+            },
+
+            savePatient: (forceSave = false) => {
+                const name = utils.cleanString(document.getElementById('field-p-name').value);
+                const phone = utils.cleanString(document.getElementById('field-p-phone').value);
+                if (!name) return ui.showToast("患者姓名不能为空", "warning");
+
+                const tagStr = document.getElementById('field-p-tags').value;
+                const tags = tagStr ? tagStr.split(/[\s,，]+/).filter(t => t.trim() !== '') : [];
+
+                const id = document.getElementById('field-p-id').value;
+                const isEdit = !!id;
+                
+                if (!isEdit && !forceSave) {
+                    const inputPinyin = dataStore.getPinyin(name);
+                    const suspicious = dataStore.patients.filter(p => { return dataStore.getPinyin(p.name) === inputPinyin || (phone && p.phone === phone); });
+                    if (suspicious.length > 0) {
+                        const dupNames = suspicious.map(d => `${d.name}${d.phone ? '('+d.phone+')' : ''}`).join('、');
+                        ui.showConfirm("发现相似档案", `已存在相似患者：\n【${dupNames}】\n\n是否确认为新患者？`, true, () => { app.savePatient(true); });
+                        return; 
+                    }
+                }
+
+                const finalId = id || 'p_' + Date.now();
+                const pData = {
+                    id: finalId, name, phone, gender: document.getElementById('field-p-gender').value,
+                    source: document.getElementById('field-p-source').value, tags: tags, remark: document.getElementById('field-p-remark').value
+                };
+
+                if (isEdit) {
+                    const idx = dataStore.patients.findIndex(x => x.id === finalId);
+                    if (idx > -1) dataStore.patients[idx] = pData;
+                    ui.showToast("资料修改成功", "success");
+                } else {
+                    dataStore.patients.push(pData);
+                    if (document.getElementById('field-p-init-check').checked) {
+                        const count = Number(document.getElementById('field-p-init-count').value);
+                        if (count >= 0) {
+                            const amount = Number(document.getElementById('field-p-init-amount').value) || 0;
+                            const income = count === 0 ? amount * 0.4 : amount * 0.6;
+                            dataStore.treatments.push({
+                                id: 't_' + Date.now(), pid: finalId, type: 'purchase',
+                                date: new Date().toISOString().split('T')[0], count: count, amount: amount, income: income, remark: '建档充次'
+                            });
+                        }
+                    }
+                    ui.showToast(`已成功建档：${name}`, "success");
+                }
+
+                dataStore.save(); app.renderList(); app.updateBadge(); ui.closeModal('modal-patient');
+            },
+
+            openRecordUI: (pid) => {
+                const p = dataStore.getPatient(pid);
+                const stats = dataStore.calcStats(pid);
+                
+                document.getElementById('record-p-id').value = pid;
+                document.getElementById('record-patient-name').innerText = p.name;
+                document.getElementById('record-patient-rem').innerText = stats.remain;
+                document.getElementById('record-patient-rem').className = stats.remain <= 0 ? "font-black text-xl text-danger leading-tight" : "font-black text-xl text-success leading-tight";
+
+                document.getElementById('record-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('rec-c-count').value = '';
+                document.getElementById('rec-p-count').value = '';
+                document.getElementById('rec-p-amount').value = '';
+                document.getElementById('rec-m-amount').value = '';
+                document.getElementById('record-remark').value = '';
+                
+                app.calcCurrentIncome();
+                ui.openModal('modal-record');
+            },
+
+            calcCurrentIncome: () => {
+                const pAmt = Number(document.getElementById('rec-p-amount').value) || 0;
+                const pCntStr = document.getElementById('rec-p-count').value;
+                let pInc = 0;
+                if (pAmt > 0) {
+                    const pCnt = pCntStr === '' ? null : Number(pCntStr);
+                    pInc = (pCnt === 0) ? pAmt * 0.4 : pAmt * 0.6;
+                }
+                
+                const mAmt = Number(document.getElementById('rec-m-amount').value) || 0;
+                const mInc = mAmt * 0.2;
+                
+                document.getElementById('record-income-val').innerText = (pInc + mInc).toFixed(2);
+            },
+
+            saveRecord: () => {
+                const pid = document.getElementById('record-p-id').value;
+                const date = document.getElementById('record-date').value;
+                const remark = document.getElementById('record-remark').value;
+                
+                if (!date) return ui.showToast("请填写发生日期", "warning");
+
+                const cCount = Number(document.getElementById('rec-c-count').value) || 0;
+                const pCntStr = document.getElementById('rec-p-count').value;
+                const pCount = pCntStr === '' ? 0 : Number(pCntStr);
+                const pAmount = Number(document.getElementById('rec-p-amount').value) || 0;
+                const mAmount = Number(document.getElementById('rec-m-amount').value) || 0;
+
+                let hasEntry = false;
+                let futureRemain = dataStore.calcStats(pid).remain + pCount;
+                if (cCount > futureRemain) return ui.showToast("即使加上本次充次，额度依然不足以扣减", "error");
+                if (pCount < 0 || cCount < 0) return ui.showToast("次数不能为负数", "error");
+
+                if (cCount > 0) {
+                    dataStore.treatments.push({ id: 't_'+Date.now()+'_c', pid, type: 'consume', date, count: cCount, amount: 0, income: 0, remark });
+                    hasEntry = true;
+                }
+                
+                if (pCntStr !== '' || pAmount > 0) {
+                    let inc = (pCount === 0) ? pAmount * 0.4 : pAmount * 0.6;
+                    dataStore.treatments.push({ id: 't_'+Date.now()+'_p', pid, type: 'purchase', date, count: pCount, amount: pAmount, income: inc, remark });
+                    hasEntry = true;
+                }
+                
+                if (mAmount > 0) {
+                    let inc = mAmount * 0.2;
+                    dataStore.treatments.push({ id: 't_'+Date.now()+'_m', pid, type: 'medicine', date, count: 0, amount: mAmount, income: inc, remark });
+                    hasEntry = true;
+                }
+
+                if (!hasEntry) return ui.showToast("请至少填写一项业务数据再提交", "warning");
+
+                if (dataStore.save()) {
+                    ui.showToast("业务记录已合并保存成功", "success");
+                    app.renderList(); ui.closeModal('modal-record');
+                    if (app.state.currentPage === 'dashboard') app.renderCharts();
+                    if (app.state.currentDetailPid === pid && !document.getElementById('modal-detail').classList.contains('hidden')) {
+                        app.showDetail(pid);
+                    }
+                }
+            },
+
+            editTreatment: (tid) => {
+                const t = dataStore.treatments.find(x => x.id === tid);
+                if (!t) return;
+                
+                document.getElementById('edit-t-id').value = t.id;
+                document.getElementById('edit-t-type').value = t.type;
+                
+                let typeStr = '治疗 (扣次)'; let colorClass = 'bg-green-100 text-green-800';
+                if(t.type === 'purchase') { typeStr = '开单 (充次)'; colorClass = 'bg-blue-100 text-blue-800'; }
+                else if(t.type === 'medicine') { typeStr = '开药 (收费)'; colorClass = 'bg-purple-100 text-purple-800'; }
+                
+                const typeDisplay = document.getElementById('edit-t-type-display');
+                typeDisplay.innerText = typeStr;
+                typeDisplay.className = `p-2 rounded text-center text-sm font-bold mb-4 ${colorClass}`;
+                
+                document.getElementById('edit-t-date').value = t.date;
+                document.getElementById('edit-t-count').value = t.count || 0;
+                document.getElementById('edit-t-amount').value = t.amount || 0;
+                document.getElementById('edit-t-remark').value = t.remark || '';
+                
+                const boxCount = document.getElementById('edit-box-count');
+                const boxAmount = document.getElementById('edit-box-amount');
+                
+                if (t.type === 'consume') { boxCount.classList.remove('hidden'); boxAmount.classList.add('hidden'); }
+                else if (t.type === 'medicine') { boxCount.classList.add('hidden'); boxAmount.classList.remove('hidden'); }
+                else { boxCount.classList.remove('hidden'); boxAmount.classList.remove('hidden'); }
+
+                ui.openModal('modal-edit-record');
+            },
+
+            saveEditTreatment: () => {
+                const tid = document.getElementById('edit-t-id').value;
+                const idx = dataStore.treatments.findIndex(x => x.id === tid);
+                if(idx === -1) return;
+                
+                const t = dataStore.treatments[idx];
+                const newDate = document.getElementById('edit-t-date').value;
+                const newCount = Number(document.getElementById('edit-t-count').value) || 0;
+                const newAmount = Number(document.getElementById('edit-t-amount').value) || 0;
+                const newRemark = document.getElementById('edit-t-remark').value;
+                
+                if (!newDate) return ui.showToast("日期不能为空", "warning");
+
+                let newIncome = 0;
+                if (t.type === 'purchase') { newIncome = newCount === 0 ? newAmount * 0.4 : newAmount * 0.6; }
+                else if (t.type === 'medicine') { newIncome = newAmount * 0.2; }
+
+                dataStore.treatments[idx] = { ...t, date: newDate, count: newCount, amount: newAmount, income: newIncome, remark: newRemark };
+                
+                if(dataStore.save()){
+                    ui.showToast("账单记录已修正", "success");
+                    ui.closeModal('modal-edit-record');
+                    app.renderList();
+                    if(app.state.currentDetailPid) app.showDetail(app.state.currentDetailPid);
+                }
+            },
+
+            deleteTreatment: (tid, pid) => {
+                ui.showConfirm("删除流水", "删除后相关余额、收入将重新计算。确认删除此条流水记录？", true, () => {
+                    dataStore.treatments = dataStore.treatments.filter(t => t.id !== tid);
+                    if(dataStore.save()){
+                        ui.showToast("流水已删除", "success");
+                        app.renderList();
+                        if(pid) app.showDetail(pid);
+                    }
+                });
+            },
+
+            showDetail: (pid) => {
+                app.state.currentDetailPid = pid; 
+                document.getElementById('ai-insight-box').classList.add('hidden'); 
+                
+                const p = dataStore.getPatient(pid);
+                const stats = dataStore.calcStats(pid);
+                
+                document.getElementById('det-avatar').innerText = p.name.charAt(0);
+                document.getElementById('det-p-name').innerText = p.name;
+                document.getElementById('det-p-source').innerText = p.source || '未知来源';
+                document.getElementById('det-p-phone').innerText = p.phone || '无预留电话';
+                
+                const tagsBox = document.getElementById('det-p-tags');
+                if (p.tags && p.tags.length > 0) {
+                    tagsBox.innerHTML = p.tags.map(t => `<span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">${t}</span>`).join('');
+                } else { tagsBox.innerHTML = ''; }
+                
+                document.getElementById('det-stat-money').innerText = '¥' + (stats.mTotal || 0).toLocaleString();
+                document.getElementById('det-stat-p').innerText = stats.purchased;
+                document.getElementById('det-stat-c').innerText = stats.consumed;
+                document.getElementById('det-stat-rem').innerText = stats.remain;
+
+                const listObj = document.getElementById('det-history-list');
+                listObj.innerHTML = '';
+                
+                if (stats.history.length === 0) {
+                    listObj.innerHTML = `<div class="py-10 text-center text-gray-400"><i class="fa fa-inbox text-3xl mb-2 opacity-50"></i><p>无流水记录</p></div>`;
+                } else {
+                    const df = document.createDocumentFragment();
+                    stats.history.forEach(h => {
+                        let typeLabel = '治疗'; let dotColor = 'bg-success'; let bgClass = 'bg-green-50 border-green-100 text-success';
+                        let countText = h.count > 0 ? `-${h.count}` : '';
+                        
+                        if (h.type === 'purchase') {
+                            typeLabel = '开单'; dotColor = 'bg-primary'; bgClass = 'bg-blue-50 border-blue-100 text-primary'; countText = h.count > 0 ? `+${h.count}` : '';
+                        } else if (h.type === 'medicine') {
+                            typeLabel = '开药'; dotColor = 'bg-purple-500'; bgClass = 'bg-purple-50 border-purple-100 text-purple-600'; countText = ``; 
+                        }
+
+                        const div = document.createElement('div');
+                        div.className = `relative pl-8 py-2 before:absolute before:left-2 before:top-4 before:w-2 before:h-2 before:rounded-full before:${dotColor}`;
+                        div.innerHTML = `
+                            <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center group relative">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-gray-800 text-sm">${h.date}</span>
+                                        <span class="text-[10px] px-1.5 py-0.5 rounded ${bgClass}">${typeLabel}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-400 mt-1">${h.remark || '无备注'}</div>
+                                </div>
+                                <div class="text-right flex flex-col items-end">
+                                    ${countText ? `<div class="font-black text-lg ${bgClass.split(' ')[2]} leading-none">${countText}</div>` : ''}
+                                    ${h.amount ? `<div class="text-[10px] text-gray-500 font-medium bg-gray-100 px-1.5 py-0.5 rounded mt-1" title="预计收入: ¥${h.income||0}">额:¥${h.amount}</div>` : ''}
+                                </div>
+                                <div class="absolute -right-2 -top-3 hidden group-hover:flex gap-1 bg-white shadow-md border border-gray-100 rounded-full px-2 py-1">
+                                    <button class="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-blue-50 transition-colors" onclick="app.editTreatment('${h.id}')" title="修改记录"><i class="fa fa-pencil"></i></button>
+                                    <button class="w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-danger hover:bg-red-50 transition-colors" onclick="app.deleteTreatment('${h.id}', '${pid}')" title="删除记录"><i class="fa fa-trash"></i></button>
+                                </div>
+                            </div>
+                        `;
+                        df.appendChild(div);
+                    });
+                    listObj.appendChild(df);
+                }
+                ui.openModal('modal-detail');
+            },
+
+            executeMerge: () => {
+                const p1Val = document.getElementById('merge-p1-input').value;
+                const p2Val = document.getElementById('merge-p2-input').value;
+                const p1Match = p1Val.match(/\[ID:(.*?)\]$/);
+                const p2Match = p2Val.match(/\[ID:(.*?)\]$/);
+
+                if (!p1Match || !p2Match) return ui.showToast("请从下拉列表中选取匹配的患者", "warning");
+                const pid1 = p1Match[1]; const pid2 = p2Match[1];
+                if (pid1 === pid2) return ui.showToast("主档案和冗余档案不能是同一个人", "error");
+
+                const p1 = dataStore.getPatient(pid1); const p2 = dataStore.getPatient(pid2);
+                if(!p1 || !p2) return ui.showToast("未找到对应患者", "error");
+
+                ui.showConfirm("不可逆：确认合并档案？", `将把【${p2.name}】的所有流水转移到【${p1.name}】名下，并销毁【${p2.name}】！`, true, () => {
+                    dataStore.treatments.forEach(t => { if(t.pid === pid2) t.pid = pid1; });
+                    if (!p1.phone && p2.phone) p1.phone = p2.phone;
+                    if (p2.tags) { p1.tags = [...new Set([...(p1.tags||[]), ...p2.tags])]; }
+                    if (!p1.remark && p2.remark) p1.remark = p2.remark;
+                    else if (p1.remark && p2.remark && !p1.remark.includes(p2.remark)) p1.remark += ' | [旧档]' + p2.remark;
+
+                    dataStore.patients = dataStore.patients.filter(p => p.id !== pid2);
+                    dataStore.save();
+                    ui.showToast("档案已合并", "success"); ui.closeModal('modal-merge'); app.renderList(); app.updateBadge();
+                });
+            },
+
+            handleImport: (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                ui.showToast("解析中，请稍候...", "info");
+
+                setTimeout(() => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
+                            const pName = workbook.SheetNames.find(s => s.includes("患者") || s.includes("名单") || s.includes("主档"));
+                            const tName = workbook.SheetNames.find(s => s.includes("明细") || s.includes("流水") || s.includes("记录"));
+                            
+                            if (!pName) throw new Error("无法识别标准模板，需至少包含【患者】表");
+
+                            const pRaw = XLSX.utils.sheet_to_json(workbook.Sheets[pName]);
+                            const tRaw = tName ? XLSX.utils.sheet_to_json(workbook.Sheets[tName]) : [];
+
+                            const idMap = new Map();
+                            
+                            const newPatients = pRaw.map((p, i) => {
+                                const nameKey = Object.keys(p).find(k => k.includes('名') || k.includes('患者'));
+                                if (!nameKey) return null;
+                                const rawName = utils.cleanString(p[nameKey]);
+                                if (!rawName) return null;
+                                const uid = 'p_' + Date.now().toString(36) + i;
+                                idMap.set(rawName, uid);
+                                
+                                const tagStr = p['私域标签'] || p['标签'] || '';
+                                const tags = tagStr ? String(tagStr).split(/[\s,，]+/).filter(t=>t) : [];
+
+                                return { id: uid, name: rawName, phone: utils.cleanString(p['手机号']||''), gender: p['性别'] || '男', age: p['年龄'] || '', source: p['渠道来源'] || '自来', tags: tags, remark: p['备注'] || '' };
+                            }).filter(Boolean);
+
+                            const newTreatments = tRaw.map((t, i) => {
+                                const rowNameKey = Object.keys(t).find(k => k.includes('名') || k.includes('患者'));
+                                if (!rowNameKey) return null;
+                                const pid = idMap.get(utils.cleanString(t[rowNameKey]));
+                                if (!pid) return null; 
+
+                                let typeStr = String(t['业务类型'] || t['类型'] || '');
+                                let tType = 'consume';
+                                if (typeStr.includes('开单') || typeStr.includes('充次')) tType = 'purchase';
+                                else if (typeStr.includes('药')) tType = 'medicine';
+
+                                return { 
+                                    id: 't_' + Date.now().toString(36) + 'x' + i, 
+                                    pid: pid, type: tType, 
+                                    date: dataStore.formatDate(t['日期'] || t['发生日期']), 
+                                    count: Number(t['变动次数'] || t['次数'] || 0), 
+                                    amount: Number(t['产生金额'] || t['实收金额'] || t['收费金额'] || 0), 
+                                    income: Number(t['本单收入'] || t['预计收入'] || 0), 
+                                    remark: t['备注说明'] || t['附言备注'] || '' 
+                                };
+                            }).filter(Boolean);
+
+                            pRaw.forEach(p => {
+                                const nameKey = Object.keys(p).find(k => k.includes('名') || k.includes('患者'));
+                                if (!nameKey) return;
+                                const rawName = utils.cleanString(p[nameKey]);
+                                const pid = idMap.get(rawName);
+                                if (!pid) return;
+
+                                const targetPur = Number(p['累计充次'] || p['总计充次'] || p['总购'] || p['充值次数'] || p['总购买'] || 0);
+                                const targetCon = Number(p['累计消耗'] || p['总计消耗'] || p['已用'] || p['已消耗'] || p['消耗次数'] || 0);
+                                const targetRem = Number(p['剩余可用次'] || p['剩余可用'] || p['剩余'] || p['余次'] || 0);
+
+                                let parsedPur = 0, parsedCon = 0;
+                                newTreatments.filter(t => t.pid === pid).forEach(t => {
+                                    if (t.type === 'purchase') parsedPur += t.count;
+                                    if (t.type === 'consume') parsedCon += t.count;
+                                });
+
+                                let diffPur = targetPur - parsedPur;
+                                let diffCon = targetCon - parsedCon;
+
+                                if(targetPur === 0 && targetCon === 0 && targetRem > 0 && parsedPur === 0 && parsedCon === 0) {
+                                    diffPur = targetRem;
+                                }
+
+                                if (diffPur > 0) {
+                                    newTreatments.push({
+                                        id: 't_sync_p_' + Date.now().toString(36) + Math.floor(Math.random()*10000),
+                                        pid: pid, type: 'purchase', date: dataStore.formatDate(new Date()),
+                                        count: diffPur, amount: 0, income: 0, remark: '系统数据同步(期初建账)'
+                                    });
+                                }
+                                if (diffCon > 0) {
+                                    newTreatments.push({
+                                        id: 't_sync_c_' + Date.now().toString(36) + Math.floor(Math.random()*10000),
+                                        pid: pid, type: 'consume', date: dataStore.formatDate(new Date()),
+                                        count: diffCon, amount: 0, income: 0, remark: '系统数据同步(历史消耗)'
+                                    });
+                                }
+                            });
+
+                            ui.showConfirm("确认覆盖", `解析并补齐计算出 ${newPatients.length} 位患者和 ${newTreatments.length} 条记录。\n点击确定将覆盖当前数据。`, true, () => {
+                                dataStore.patients = newPatients; dataStore.treatments = newTreatments;
+                                dataStore.save(); ui.showToast("导入成功", "success"); app.updateBadge(); app.renderList(); app.showPage('patients');
+                            });
+                        } catch (err) { ui.showToast(err.message, "error"); }
+                        e.target.value = ''; 
+                    };
+                    reader.readAsArrayBuffer(file);
+                }, 50);
+            },
+
+            renderDailyTable: (periodTreats) => {
+                const tbody = document.getElementById('daily-stats-list');
+                const tfoot = document.getElementById('daily-stats-tfoot');
+                if(!tbody || !tfoot) return;
+
+                const dailyData = {};
+                periodTreats.forEach(t => {
+                    const dStr = t.date;
+                    if (!dailyData[dStr]) dailyData[dStr] = { date: dStr, totalIncome: 0, purAmount: 0, purCount: 0 };
+                    const amt = Number(t.amount) || 0;
+                    dailyData[dStr].totalIncome += amt;
+                    if (t.type === 'purchase') {
+                        dailyData[dStr].purAmount += amt;
+                        dailyData[dStr].purCount++;
+                    }
+                });
+
+                const sorted = Object.values(dailyData).sort((a,b) => b.date.localeCompare(a.date));
+                tbody.innerHTML = '';
+                
+                if (sorted.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">暂无数据</td></tr>`;
+                    tfoot.innerHTML = '';
+                    return;
+                }
+
+                let sInc = 0, sPurAmt = 0, sPurCnt = 0;
+                const df = document.createDocumentFragment();
+                sorted.forEach(r => {
+                    sInc += r.totalIncome; sPurAmt += r.purAmount; sPurCnt += r.purCount;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-50/50";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-gray-700 font-medium">${r.date}</td>
+                        <td class="px-4 py-3 text-right text-gray-900 font-bold">${r.totalIncome.toFixed(2).replace(/\.00$/, '')}</td>
+                        <td class="px-4 py-3 text-right text-primary font-bold">${r.purAmount.toFixed(2).replace(/\.00$/, '')}</td>
+                        <td class="px-4 py-3 text-right text-success font-bold">${r.purCount}</td>
+                    `;
+                    df.appendChild(tr);
+                });
+                tbody.appendChild(df);
+
+                const days = sorted.length;
+                tfoot.innerHTML = `
+                    <tr>
+                        <td class="px-4 py-3 text-gray-800 font-bold">平均值</td>
+                        <td class="px-4 py-3 text-right text-danger font-black">${(sInc/days).toFixed(2).replace(/\.00$/, '')}</td>
+                        <td class="px-4 py-3 text-right text-primary font-bold">${(sPurAmt/days).toFixed(2).replace(/\.00$/, '')}</td>
+                        <td class="px-4 py-3 text-right text-success font-bold">${(sPurCnt/days).toFixed(1).replace(/\.0$/, '')}</td>
+                    </tr>
+                `;
+            },
+
+            renderWeeklyTable: (periodTreats) => {
+                const tbody = document.getElementById('weekly-stats-list');
+                if(!tbody) return;
+
+                const getMonday = (dStr) => {
+                    const d = new Date(dStr);
+                    const day = d.getDay() || 7; 
+                    d.setDate(d.getDate() - (day - 1));
+                    return dataStore.formatDate(d);
+                };
+
+                const patientFirstMonth = {};
+                dataStore.patients.forEach(p => {
+                    const stats = dataStore.calcStats(p.id);
+                    if (stats.history && stats.history.length > 0) patientFirstMonth[p.id] = getMonday(stats.history[stats.history.length - 1].date);
+                });
+
+                const weeklyData = {};
+                periodTreats.forEach(t => {
+                    const wKey = getMonday(t.date);
+                    if (!weeklyData[wKey]) {
+                        weeklyData[wKey] = { week: wKey, newP: 0, oldP: 0, totalAmt: 0, purAmt: 0, medAmt: 0, pSet: new Set() };
+                    }
+                    const amt = Number(t.amount) || 0;
+                    weeklyData[wKey].totalAmt += amt;
+                    if (t.type === 'purchase') weeklyData[wKey].purAmt += amt;
+                    if (t.type === 'medicine') weeklyData[wKey].medAmt += amt;
+                    weeklyData[wKey].pSet.add(t.pid);
+                });
+
+                const sorted = Object.values(weeklyData).sort((a,b) => b.week.localeCompare(a.week));
+                tbody.innerHTML = '';
+                
+                if (sorted.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">暂无数据</td></tr>`;
+                    document.getElementById('weekly-avg-new').innerText = '0';
+                    document.getElementById('weekly-avg-old').innerText = '0';
+                    document.getElementById('weekly-avg-total').innerText = '0';
+                    document.getElementById('weekly-avg-pur').innerText = '0';
+                    document.getElementById('weekly-avg-pre').innerText = '0';
+                    return;
+                }
+
+                let sNew = 0, sOld = 0, sAmt = 0, sPur = 0, sMed = 0;
+                const df = document.createDocumentFragment();
+                
+                sorted.forEach(w => {
+                    let newC = 0, oldC = 0;
+                    w.pSet.forEach(pid => { if (patientFirstMonth[pid] === w.week) newC++; else oldC++; });
+                    
+                    sNew += newC; sOld += oldC; sAmt += w.totalAmt; sPur += w.purAmt; sMed += w.medAmt;
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-50/50";
+                    tr.innerHTML = `
+                        <td class="px-3 py-2 text-gray-700 font-medium border-r border-gray-100">${w.week}</td>
+                        <td class="px-3 py-2 text-right text-success font-bold bg-green-50/30">${newC}</td>
+                        <td class="px-3 py-2 text-right text-primary font-bold bg-green-50/30 border-r border-green-100/30">${oldC}</td>
+                        <td class="px-3 py-2 text-right font-bold">${w.pSet.size}</td>
+                        <td class="px-3 py-2 text-right text-danger font-bold bg-red-50/30">${w.totalAmt.toFixed(0)}</td>
+                        <td class="px-3 py-2 text-right text-gray-600">${w.purAmt.toFixed(0)}</td>
+                        <td class="px-3 py-2 text-right text-gray-600">${w.medAmt.toFixed(0)}</td>
+                    `;
+                    df.appendChild(tr);
+                });
+                tbody.appendChild(df);
+
+                const weeks = sorted.length;
+                document.getElementById('weekly-avg-new').innerText = Math.round(sNew/weeks);
+                document.getElementById('weekly-avg-old').innerText = Math.round(sOld/weeks);
+                document.getElementById('weekly-avg-total').innerText = Math.round(sAmt/weeks);
+                document.getElementById('weekly-avg-pur').innerText = Math.round(sPur/weeks);
+                document.getElementById('weekly-avg-pre').innerText = Math.round(sMed/weeks);
+            },
+
+            renderCharts: () => {
+                const elTotalRev = document.getElementById('card-total-revenue');
+                if(!elTotalRev) return; 
+                if (dataStore.patients.length === 0) return;
+                
+                let statStart = document.getElementById('stat-start-date').value;
+                let statEnd = document.getElementById('stat-end-date').value;
+                if (!statStart) {
+                    const today = new Date();
+                    statStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+                    statEnd = today.toISOString().split('T')[0];
+                    document.getElementById('stat-start-date').value = statStart;
+                    document.getElementById('stat-end-date').value = statEnd;
+                }
+                const startD = new Date(statStart); const endD = new Date(statEnd); endD.setHours(23,59,59);
+                
+                let retainedCount = 0;
+                dataStore.patients.forEach(p => {
+                    const dates = new Set(dataStore.treatments.filter(t => t.pid === p.id).map(t => t.date));
+                    if (dates.size >= 2) retainedCount++;
+                });
+                document.getElementById('card-retention-rate').innerText = (dataStore.patients.length > 0 ? Math.round((retainedCount / dataStore.patients.length) * 100) : 0) + '%';
+
+                const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const activePids = new Set(dataStore.treatments.filter(t => new Date(t.date) >= thirtyDaysAgo).map(t => t.pid));
+                document.getElementById('card-total-patients').innerText = dataStore.patients.length;
+                document.getElementById('card-active-patients').innerText = activePids.size;
+                document.getElementById('card-active-rate').innerText = (dataStore.patients.length > 0 ? Math.round((activePids.size / dataStore.patients.length) * 100) : 0) + '%';
+
+                let newPats = 0;
+                dataStore.patients.forEach(p => {
+                    const stats = dataStore.calcStats(p.id);
+                    if (stats.history.length > 0) {
+                        const firstDate = new Date(stats.history[stats.history.length - 1].date);
+                        if (firstDate >= startD && firstDate <= endD) newPats++;
+                    }
+                });
+                const cardNewPatients = document.getElementById('card-new-patients');
+                if(cardNewPatients) cardNewPatients.innerText = newPats;
+
+                const periodTreats = dataStore.treatments.filter(t => { const d = new Date(t.date); return d >= startD && d <= endD; });
+                let revPur = 0, revMed = 0, incTotal = 0;
+                periodTreats.forEach(t => {
+                    if (t.type === 'purchase') revPur += (Number(t.amount) || 0); 
+                    else if (t.type === 'medicine') revMed += (Number(t.amount) || 0);
+                    incTotal += (Number(t.income) || 0);
+                });
+                const totalRev = revPur + revMed;
+
+                document.getElementById('card-total-revenue').innerText = '¥' + totalRev.toLocaleString();
+                document.getElementById('card-rev-pur').innerText = '¥' + revPur.toLocaleString();
+                document.getElementById('card-rev-med').innerText = '¥' + revMed.toLocaleString();
+                document.getElementById('card-total-income').innerText = '¥' + incTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+                app.renderTop10();
+                app.renderInsightTable();
+                app.renderDailyTable(periodTreats);
+                app.renderWeeklyTable(periodTreats);
+                
+                const dayLabels = []; const purData = []; const conData = [];
+                for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+                    const dayStr = d.toISOString().split('T')[0];
+                    dayLabels.push(dayStr.slice(5));
+                    const list = periodTreats.filter(t => t.date === dayStr);
+                    purData.push(list.filter(t => t.type === 'purchase').reduce((s,t) => s + t.count, 0));
+                    conData.push(list.filter(t => t.type === 'consume').reduce((s,t) => s + t.count, 0));
+                }
+                if (dataStore.charts.trend) dataStore.charts.trend.destroy();
+                dataStore.charts.trend = new Chart(document.getElementById('trend-chart'), {
+                    type: 'line', data: { labels: dayLabels, datasets: [
+                        { label: '开单充次', data: purData, borderColor: '#1e88e5', backgroundColor: 'rgba(30, 136, 229, 0.1)', fill: true, tension: 0.3 },
+                        { label: '治疗消耗', data: conData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 }
+                    ]}, options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                const sources = { '自来': 0, '推荐': 0, '借卡': 0, '其他': 0 };
+                dataStore.patients.forEach(p => { const s = p.source || '自来'; if (sources[s] !== undefined) sources[s]++; else sources['其他']++; });
+                if (dataStore.charts.source) dataStore.charts.source.destroy();
+                dataStore.charts.source = new Chart(document.getElementById('source-chart'), {
+                    type: 'doughnut', data: { labels: Object.keys(sources), datasets: [{ data: Object.values(sources), backgroundColor: ['#64b5f6', '#10b981', '#f59e0b', '#d1d5db'] }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            },
+
+            renderTop10: () => {
+                const listBody = document.getElementById('top10-list-body');
+                if (!listBody) return;
+                const patientValue = dataStore.patients.map(p => {
+                    const stats = dataStore.calcStats(p.id);
+                    return { id: p.id, name: p.name, phone: p.phone, totalRev: stats.mTotal };
+                }).filter(p => p.totalRev > 0).sort((a,b) => b.totalRev - a.totalRev).slice(0, 10);
+
+                listBody.innerHTML = '';
+                if (patientValue.length === 0) { listBody.innerHTML = `<tr><td colspan="3" class="text-center py-8 text-gray-400">暂无开单数据</td></tr>`; return; }
+
+                const df = document.createDocumentFragment();
+                patientValue.forEach((p, i) => {
+                    const tr = document.createElement('tr'); tr.className = "hover:bg-gray-50 border-b border-gray-50";
+                    let rankTpl = `<span class="font-bold text-gray-400">${i+1}</span>`;
+                    if(i === 0) rankTpl = `<i class="fa fa-trophy text-yellow-500 text-lg"></i>`;
+                    if(i === 1) rankTpl = `<i class="fa fa-trophy text-gray-400 text-lg"></i>`;
+                    if(i === 2) rankTpl = `<i class="fa fa-trophy text-orange-400 text-lg"></i>`;
+                    
+                    tr.innerHTML = `<td class="py-2.5 text-center w-10">${rankTpl}</td>
+                        <td class="py-2.5"><div class="font-bold text-gray-800 cursor-pointer hover:text-primary transition-colors" onclick="app.showDetail('${p.id}')">${p.name}</div><div class="text-[10px] text-gray-400">${p.phone || '无电话'}</div></td>
+                        <td class="py-2.5 text-right font-bold text-danger">¥${p.totalRev.toLocaleString()}</td>`;
+                    df.appendChild(tr);
+                });
+                listBody.appendChild(df);
+            },
+
+            renderInsightTable: () => {
+                const tbody = document.getElementById('insight-monthly-tbody'); const tfoot = document.getElementById('insight-monthly-tfoot');
+                if (!tbody || !tfoot) return;
+
+                const monthData = {}; const patientFirstMonth = {};
+                dataStore.patients.forEach(p => {
+                    const stats = dataStore.calcStats(p.id);
+                    if (stats.history && stats.history.length > 0) { patientFirstMonth[p.id] = stats.history[stats.history.length - 1].date.substring(0, 7); }
+                });
+
+                const visitSetPerMonth = {}; 
+                dataStore.treatments.forEach(t => {
+                    if (!t.date) return;
+                    const mKey = t.date.substring(0, 7);
+                    if (!monthData[mKey]) {
+                        monthData[mKey] = { month: mKey, totalAmount: 0, purchaseAmount: 0, medicineAmount: 0, income: 0, patientsSet: new Set() };
+                        visitSetPerMonth[mKey] = new Set();
+                    }
+                    const amt = Number(t.amount) || 0; const inc = Number(t.income) || 0;
+                    monthData[mKey].totalAmount += amt; monthData[mKey].income += inc;
+                    if (t.type === 'purchase') monthData[mKey].purchaseAmount += amt;
+                    if (t.type === 'medicine') monthData[mKey].medicineAmount += amt;
+                    monthData[mKey].patientsSet.add(t.pid); visitSetPerMonth[mKey].add(`${t.pid}_${t.date}`); 
+                });
+
+                const rows = [];
+                let sumTotal = 0, sumPur = 0, sumMed = 0, sumVisit = 0, sumNew = 0, sumOld = 0, sumIncome = 0;
+
+                Object.keys(monthData).sort((a,b) => a.localeCompare(b)).forEach(mKey => {
+                    const data = monthData[mKey]; const vCount = visitSetPerMonth[mKey].size;
+                    let newP = 0, oldP = 0;
+                    data.patientsSet.forEach(pid => { if (patientFirstMonth[pid] === mKey) newP++; else oldP++; });
+                    const avgCost = vCount > 0 ? Math.round(data.totalAmount / vCount) : 0;
+                    
+                    rows.push({
+                        month: mKey.replace('-', '年') + '月', 
+                        totalAmount: data.totalAmount, purchaseAmount: data.purchaseAmount, medicineAmount: data.medicineAmount, visitCount: vCount, newPatients: newP, oldPatients: oldP, avgCost: avgCost, income: data.income
+                    });
+                    
+                    sumTotal += data.totalAmount; sumPur += data.purchaseAmount; sumMed += data.medicineAmount;
+                    sumVisit += vCount; sumNew += newP; sumOld += oldP; sumIncome += data.income;
+                });
+
+                tbody.innerHTML = '';
+                if (rows.length === 0) { tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">暂无月度统计数据</td></tr>`; tfoot.innerHTML = ''; return; }
+
+                const df = document.createDocumentFragment();
+                rows.forEach(r => {
+                    const tr = document.createElement('tr'); tr.className = "hover:bg-blue-50/50 transition-colors cursor-default";
+                    tr.innerHTML = `
+                        <td class="px-3 py-2 text-gray-700 border-r border-gray-100">${r.month}</td>
+                        <td class="px-3 py-2 text-right font-bold text-gray-800">${r.totalAmount.toFixed(0)}</td>
+                        <td class="px-3 py-2 text-right text-gray-500">${r.purchaseAmount.toFixed(0)}</td>
+                        <td class="px-3 py-2 text-right text-gray-500 border-r border-gray-100">${r.medicineAmount.toFixed(0)}</td>
+                        <td class="px-3 py-2 text-right font-bold text-gray-800">${r.visitCount}</td>
+                        <td class="px-3 py-2 text-right text-success bg-green-50/50">${r.newPatients}</td>
+                        <td class="px-3 py-2 text-right text-primary bg-green-50/50 border-r border-green-100/50">${r.oldPatients}</td>
+                        <td class="px-3 py-2 text-right text-gray-600 border-r border-gray-100">${r.avgCost}</td>
+                        <td class="px-3 py-2 text-right font-bold text-danger bg-red-50/50">${r.income.toFixed(0)}</td>
+                    `;
+                    df.appendChild(tr);
+                });
+                tbody.appendChild(df);
+
+                const avgIncome = rows.length > 0 ? (sumIncome / rows.length).toFixed(0) : 0;
+                tfoot.innerHTML = `
+                    <tr>
+                        <td class="px-3 py-3 text-gray-700 font-bold border-r border-gray-200">总计</td>
+                        <td class="px-3 py-3 text-right text-gray-900 font-bold">${sumTotal.toFixed(0)}</td>
+                        <td class="px-3 py-3 text-right text-gray-900 font-bold">${sumPur.toFixed(0)}</td>
+                        <td class="px-3 py-3 text-right text-gray-900 font-bold border-r border-gray-200">${sumMed.toFixed(0)}</td>
+                        <td class="px-3 py-3 text-right text-gray-900 font-bold">${sumVisit}</td>
+                        <td class="px-3 py-3 text-right text-success font-bold bg-green-100/50">${sumNew}</td>
+                        <td class="px-3 py-3 text-right text-primary font-bold bg-green-100/50 border-r border-green-200">${sumOld}</td>
+                        <td class="px-3 py-3 text-right text-gray-900 font-bold border-r border-gray-200"></td>
+                        <td class="px-3 py-3 text-right text-danger font-bold bg-red-100/50">${sumIncome.toFixed(0)}</td>
+                    </tr>
+                    <tr class="bg-gray-100">
+                        <td colspan="8" class="px-3 py-3 text-right text-gray-700 font-bold border-r border-gray-200">月均净入 (折算后)</td>
+                        <td class="px-3 py-3 text-right font-black text-danger text-lg bg-red-100/80">${avgIncome}</td>
+                    </tr>
+                `;
+            },
+
+            updateMonthlyPreview: () => {
+                const m = document.getElementById('month-report-select').value;
+                const tbody = document.getElementById('monthly-detail-tbody');
+                const title = document.getElementById('monthly-preview-title');
+                if (!m || !tbody) return;
+                
+                title.innerText = `${m} 月流水明细`;
+                const filtered = dataStore.treatments.filter(t => t.date && t.date.startsWith(m)).sort((a,b) => new Date(b.date) - new Date(a.date));
+                
+                tbody.innerHTML = '';
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">本月暂无记录</td></tr>`;
+                    return;
+                }
+
+                const df = document.createDocumentFragment();
+                filtered.forEach(t => {
+                    const p = dataStore.getPatient(t.pid);
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-50/50";
+                    
+                    let typeBadge = ''; let valDisplay = '';
+                    if (t.type === 'purchase') {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px]">开单</span>`;
+                        valDisplay = `<div class="font-bold text-primary">+${t.count}次</div>${t.amount ? `<div class="text-xs text-gray-500">¥${t.amount}</div>` : ''}`;
+                    } else if (t.type === 'consume') {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px]">治疗</span>`;
+                        valDisplay = `<div class="font-bold text-success">-${t.count}次</div>`;
+                    } else {
+                        typeBadge = `<span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px]">开药</span>`;
+                        valDisplay = `<div class="font-bold text-purple-600">¥${t.amount || 0}</div>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-gray-500">${t.date.slice(5)}</td>
+                        <td class="px-4 py-3 font-medium text-gray-800">${p ? p.name : '未知'}</td>
+                        <td class="px-4 py-3">${typeBadge}</td>
+                        <td class="px-4 py-3 text-right">${valDisplay}</td>
+                        <td class="px-4 py-3 text-right font-bold text-success">${t.income ? '¥' + Number(t.income).toFixed(2) : '-'}</td>
+                    `;
+                    df.appendChild(tr);
+                });
+                tbody.appendChild(df);
+            },
+
+            bindEvents: () => {
+                document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(b => {
+                    b.onclick = (e) => { e.preventDefault(); app.showPage(b.dataset.page); };
+                });
+
+                const searchInput = document.getElementById('search-input');
+                const clearBtn = document.getElementById('clear-search');
+                searchInput.oninput = utils.debounce((e) => {
+                    app.state.search = e.target.value.trim(); app.state.page = 0;
+                    clearBtn.classList.toggle('hidden', app.state.search === '');
+                    app.renderList();
+                }, 300);
+
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const query = e.target.value.trim();
+                        if (query) {
+                            const matchCount = dataStore.patients.filter(p => 
+                                (p.name && p.name.toLowerCase().includes(query.toLowerCase())) || (p.phone && p.phone.includes(query)) || (p.tags && p.tags.some(t => t.toLowerCase().includes(query.toLowerCase())))
+                            ).length;
+                            if (matchCount === 0) ui.openPatientModal(null, query);
+                        }
+                    }
+                });
+
+                clearBtn.onclick = () => { searchInput.value = ''; app.state.search = ''; app.state.page = 0; clearBtn.classList.add('hidden'); app.renderList(); };
+                
+                const applyRangeFilter = () => {
+                    app.state.filterMin = document.getElementById('filter-min').value;
+                    app.state.filterMax = document.getElementById('filter-max').value;
+                    app.state.page = 0; app.renderList();
+                };
+                document.getElementById('filter-min').addEventListener('input', utils.debounce(applyRangeFilter, 300));
+                document.getElementById('filter-max').addEventListener('input', utils.debounce(applyRangeFilter, 300));
+                
+                document.getElementById('prev-page').onclick = () => { if(app.state.page > 0) { app.state.page--; app.renderList(); }};
+                document.getElementById('next-page').onclick = () => { app.state.page++; app.renderList(); };
+
+                const calcHandler = () => app.calcCurrentIncome();
+                document.getElementById('rec-p-count').addEventListener('input', calcHandler);
+                document.getElementById('rec-p-amount').addEventListener('input', calcHandler);
+                document.getElementById('rec-m-amount').addEventListener('input', calcHandler);
+
+                document.getElementById('field-p-init-check').onchange = (e) => { document.getElementById('init-options').classList.toggle('hidden', !e.target.checked); };
+                document.getElementById('import-excel').addEventListener('change', app.handleImport);
+                
+                document.getElementById('stat-start-date').onchange = app.renderCharts;
+                document.getElementById('stat-end-date').onchange = app.renderCharts;
+                document.getElementById('month-report-select').onchange = app.updateMonthlyPreview;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', app.init);
+    </script>
+</body>
+</html>
