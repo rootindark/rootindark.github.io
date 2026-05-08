@@ -1,6 +1,10 @@
----
-layout: null
----
+{
+  "rules": {
+    ".read": "auth == null", 
+    ".write": "auth == null" 
+  }
+}
+
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -12,9 +16,8 @@ layout: null
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.16.4/dist/index.js"></script>
-   
+    
     <script>
-         const DB_URL = "https://clinic-data-913bd-default-rtdb.firebaseio.com/clinic_pro.json";
         tailwind.config = {
             theme: {
                 extend: {
@@ -458,8 +461,11 @@ layout: null
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <label class="block text-xs font-bold text-gray-500">私域病症标签 (空格或逗号隔开)</label>
+                            <button type="button" onclick="app.extractTagsWithAI()" class="text-[10px] text-purple-600 hover:text-purple-800 bg-purple-50 px-2 py-0.5 rounded flex items-center transition-colors">
+                                <i class="fa fa-magic mr-1"></i> ✨ AI 智能提取标签
+                            </button>
                         </div>
-                        <input type="text" id="field-p-tags" placeholder="如：失眠 颈椎病" class="input-field bg-gray-50">
+                        <input type="text" id="field-p-tags" placeholder="如：失眠 颈椎病 (可基于上方备注点击AI提取)" class="input-field bg-gray-50">
                     </div>
                     <!-- 初始开单区 (仅新增时显示) -->
                     <div id="init-purchase-box" class="mt-4 pt-4 border-t border-gray-100">
@@ -650,6 +656,9 @@ layout: null
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button class="btn btn-secondary border-purple-200 text-purple-600 hover:bg-purple-50 text-xs py-1.5 px-3 shadow-none flex items-center" onclick="app.generateFollowUpWithAI()">
+                        <i class="fa fa-magic mr-1"></i> ✨ AI 智能随访
+                    </button>
                     <button class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors" onclick="ui.closeModal('modal-detail')"><i class="fa fa-times text-xl"></i></button>
                 </div>
             </div>
@@ -660,6 +669,18 @@ layout: null
                 <div class="p-3 text-center"><p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">累计消耗</p><p class="text-xl font-bold text-gray-700" id="det-stat-c">0</p></div>
                 <div class="p-3 text-center bg-blue-50/50"><p class="text-[10px] text-blue-400 uppercase font-bold tracking-wider">剩余可用</p><p class="text-xl font-black text-primary" id="det-stat-rem">0</p></div>
             </div>
+            
+            <!-- AI 智能分析随访展示区 -->
+            <div id="ai-insight-box" class="hidden m-4 p-4 bg-purple-50 border border-purple-100 rounded-xl text-sm text-gray-700 shrink-0 relative">
+                <div class="flex justify-between items-center mb-2 pb-2 border-b border-purple-100">
+                    <span class="font-bold text-purple-700 flex items-center"><i class="fa fa-magic mr-1"></i> AI 智能随访建议</span>
+                    <div class="flex items-center gap-3">
+                        <button onclick="app.copyAIContent()" class="text-purple-600 hover:text-purple-800 text-xs font-bold" title="复制文案"><i class="fa fa-copy"></i> 复制</button>
+                        <button onclick="document.getElementById('ai-insight-box').classList.add('hidden')" class="text-purple-400 hover:text-purple-600"><i class="fa fa-times"></i></button>
+                    </div>
+                </div>
+                <div id="ai-insight-content" class="whitespace-pre-wrap leading-relaxed"></div>
+            </div>
 
             <div class="flex-grow overflow-y-auto bg-gray-50/30 p-4 no-scrollbar">
                 <div id="det-history-list" class="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent"></div>
@@ -669,6 +690,35 @@ layout: null
 
     <!-- ========================================== JavaScript 逻辑层 ========================================== -->
     <script>
+        /** ================= 模块：Gemini API (AI 能力) ================= **/
+        const geminiApi = {
+            call: async (prompt) => {
+                const apiKey = ""; 
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    systemInstruction: { parts: [{ text: "你是一个专业的中医针灸推拿门诊助理。请基于医生的需求提供专业、简明、有温度的文案或建议。" }] }
+                };
+
+                const delays = [1000, 2000, 4000, 8000, 16000];
+                for (let i = 0; i < delays.length; i++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const result = await response.json();
+                        return result.candidates?.[0]?.content?.parts?.[0]?.text || "暂无建议";
+                    } catch (error) {
+                        if (i === delays.length - 1) throw error;
+                        await new Promise(r => setTimeout(r, delays[i]));
+                    }
+                }
+            }
+        };
+
         /** ================= 模块 1：UI 与 Feedback ================= **/
         const ui = {
             showToast: (msg, type = 'info') => {
@@ -785,95 +835,185 @@ layout: null
         };
 
         /** ================= 模块 2：数据与 Store ================= **/
-// 【第一步】定义你的云端数据库地址
-const DB_URL = "https://clinic-data-913bd-default-rtdb.firebaseio.com/clinic_pro.json";
+        const dataStore = {
+            keys: { P: 'clinic_patients', T: 'clinic_treatments' },
+            patients: [], treatments: [], charts: {}, statsCache: {},
 
-// 【第二步】修改 dataStore 逻辑，实现云端存取
-const dataStore = {
-    patients: [],
-    treatments: [],
-
-    // 初始化：从云端拉取数据
-    init: async () => {
-        // UI 提示（可选）
-        if (typeof ui !== 'undefined' && ui.showToast) ui.showToast("正在同步云端数据...", "info");
-        
-        try {
-            // 发起网络请求读取数据
-            const response = await fetch(DB_URL);
-            const cloudData = await response.json();
+            init: () => {
+                dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
+                dataStore.treatments = JSON.parse(localStorage.getItem(dataStore.keys.T) || '[]');
+                dataStore.rebuildStatsCache();
+            },
+            save: () => {
+                try {
+                    localStorage.setItem(dataStore.keys.P, JSON.stringify(dataStore.patients));
+                    localStorage.setItem(dataStore.keys.T, JSON.stringify(dataStore.treatments));
+                    dataStore.rebuildStatsCache();
+                    return true;
+                } catch (e) {
+                    ui.showToast("保存失败，存储不足", "error"); return false;
+                }
+            },
+            getPatient: (id) => dataStore.patients.find(x => x.id === id),
             
-            if (cloudData) {
-                // 如果云端有数据，覆盖本地变量
-                dataStore.patients = cloudData.patients || [];
-                dataStore.treatments = cloudData.treatments || [];
-                console.log("云端同步成功:", new Date().toLocaleString());
-            } else {
-                // 云端为空时，回退读取本地缓存
-                dataStore.patients = JSON.parse(localStorage.getItem('clinic_patients') || '[]');
-                dataStore.treatments = JSON.parse(localStorage.getItem('clinic_treatments') || '[]');
+            rebuildStatsCache: () => {
+                const cache = {};
+                dataStore.patients.forEach(p => {
+                    cache[p.id] = { purchased: 0, consumed: 0, remain: 0, mTotal: 0, history: [] };
+                });
+                dataStore.treatments.forEach(t => {
+                    if(!t.id) t.id = 't_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                    if (!cache[t.pid]) return;
+                    cache[t.pid].history.push(t);
+                    const count = Number(t.count) || 0;
+                    const amount = Number(t.amount) || 0;
+                    if (t.type === 'purchase') { cache[t.pid].purchased += count; cache[t.pid].mTotal += amount; }
+                    else if (t.type === 'consume') { cache[t.pid].consumed += count; }
+                    else if (t.type === 'medicine') { cache[t.pid].mTotal += amount; }
+                });
+                for (const pid in cache) {
+                    cache[pid].remain = cache[pid].purchased - cache[pid].consumed;
+                    cache[pid].history.sort((a,b) => new Date(b.date) - new Date(a.date));
+                }
+                dataStore.statsCache = cache;
+            },
+
+            calcStats: (pid) => { return dataStore.statsCache[pid] || { purchased: 0, consumed: 0, remain: 0, history: [], mTotal: 0 }; },
+
+            formatDate: (val) => {
+                if (!val) return '-';
+                if (typeof val === 'number') return new Date((val - 25569) * 86400 * 1000).toISOString().split('T')[0];
+                try {
+                    const d = new Date(val); return isNaN(d.getTime()) ? String(val).split(' ')[0] : d.toISOString().split('T')[0];
+                } catch(e) { return String(val).trim(); }
+            },
+            getPinyin: (str) => {
+                if (!str) return '';
+                if (typeof pinyinPro !== 'undefined') {
+                    try { return pinyinPro.pinyin(str, { toneType: 'none', type: 'array' }).join('').replace(/\s+/g, ''); } catch(e){}
+                }
+                return str.replace(/\s+/g, '');
+            },
+            exportFullBackup: () => {
+                try {
+                    if (dataStore.patients.length === 0) return ui.showToast("当前无数据可导出", "warning");
+                    ui.showToast("正在生成备份...", "info");
+                    const wb = XLSX.utils.book_new();
+                    
+                    const pOut = dataStore.patients.map(p => {
+                        const s = dataStore.calcStats(p.id);
+                        return { '姓名': p.name, '手机号': p.phone, '性别': p.gender, '渠道来源': p.source || '自来', '私域标签': p.tags ? p.tags.join(',') : '', '剩余可用次': s.remain, '累计充次': s.purchased, '累计消耗': s.consumed, '总消费金额': s.mTotal, '备注': p.remark };
+                    });
+                    const wsP = XLSX.utils.json_to_sheet(pOut);
+                    wsP['!cols'] = [{wch:10}, {wch:15}, {wch:6}, {wch:10}, {wch:15}, {wch:12}, {wch:10}, {wch:10}, {wch:12}, {wch:25}];
+                    XLSX.utils.book_append_sheet(wb, wsP, "患者主档");
+                    
+                    const tOut = dataStore.treatments.map(t => {
+                        const p = dataStore.getPatient(t.pid);
+                        let typeStr = '治疗(扣次)';
+                        if (t.type === 'purchase') typeStr = '开单(充次)';
+                        else if (t.type === 'medicine') typeStr = '开药';
+                        return { '日期': t.date, '患者姓名': p ? p.name : '未知', '业务类型': typeStr, '变动次数': t.count || 0, '产生金额': t.amount || 0, '本单预计收入': t.income || 0, '备注说明': t.remark };
+                    });
+                    const wsT = XLSX.utils.json_to_sheet(tOut);
+                    wsT['!cols'] = [{wch:12}, {wch:12}, {wch:12}, {wch:10}, {wch:10}, {wch:12}, {wch:30}];
+                    XLSX.utils.book_append_sheet(wb, wsT, "全部明细流水");
+
+                    const monthData = {};
+                    dataStore.treatments.forEach(t => {
+                        if (!t.date) return;
+                        const mKey = t.date.substring(0, 7);
+                        if (!monthData[mKey]) monthData[mKey] = { month: mKey, amount: 0, income: 0 };
+                        monthData[mKey].amount += (Number(t.amount) || 0);
+                        monthData[mKey].income += (Number(t.income) || 0);
+                    });
+                    
+                    const fOut = Object.values(monthData).sort((a,b) => a.month.localeCompare(b.month)).map(d => ({
+                        '财务月份': d.month, '总收费金额(元)': d.amount, '系统折算收入(元)': d.income
+                    }));
+                    const wsF = XLSX.utils.json_to_sheet(fOut);
+                    wsF['!cols'] = [{wch:15}, {wch:15}, {wch:15}];
+                    XLSX.utils.book_append_sheet(wb, wsF, "财务图表数据源");
+                    
+                    XLSX.writeFile(wb, `门诊全量备份_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    ui.showToast("导出成功", "success");
+                } catch(e) { ui.showToast("导出失败，检查浏览器权限", "error"); }
+            },
+            exportInsightTable: () => {
+                if (dataStore.treatments.length === 0) return ui.showToast('暂无数据', 'warning');
+                
+                const monthData = {}; const patientFirstMonth = {};
+                dataStore.patients.forEach(p => {
+                    const stats = dataStore.calcStats(p.id);
+                    if (stats.history && stats.history.length > 0) { patientFirstMonth[p.id] = stats.history[stats.history.length - 1].date.substring(0, 7); }
+                });
+
+                const visitSetPerMonth = {}; 
+                dataStore.treatments.forEach(t => {
+                    if (!t.date) return;
+                    const mKey = t.date.substring(0, 7);
+                    if (!monthData[mKey]) {
+                        monthData[mKey] = { month: mKey, totalAmount: 0, purchaseAmount: 0, medicineAmount: 0, income: 0, patientsSet: new Set() };
+                        visitSetPerMonth[mKey] = new Set();
+                    }
+                    const amt = Number(t.amount) || 0; const inc = Number(t.income) || 0;
+                    monthData[mKey].totalAmount += amt; monthData[mKey].income += inc;
+                    if (t.type === 'purchase') monthData[mKey].purchaseAmount += amt;
+                    if (t.type === 'medicine') monthData[mKey].medicineAmount += amt;
+                    monthData[mKey].patientsSet.add(t.pid); visitSetPerMonth[mKey].add(`${t.pid}_${t.date}`); 
+                });
+
+                const rows = [];
+                Object.keys(monthData).sort((a,b) => a.localeCompare(b)).forEach(mKey => {
+                    const data = monthData[mKey]; const vCount = visitSetPerMonth[mKey].size;
+                    let newP = 0, oldP = 0;
+                    data.patientsSet.forEach(pid => { if (patientFirstMonth[pid] === mKey) newP++; else oldP++; });
+                    
+                    rows.push({
+                        '月份': mKey.replace('-', '年') + '月', 
+                        '总营业额': data.totalAmount, 
+                        '开单收入': data.purchaseAmount, '开药收入': data.medicineAmount, 
+                        '接诊人次': vCount, '初诊(人)': newP, '复诊(人)': oldP, 
+                        '客单价(元)': vCount > 0 ? Math.round(data.totalAmount / vCount) : 0, 
+                        '月度净入(折算后)': data.income
+                    });
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws['!cols'] = [{wch:15}, {wch:12}, {wch:12}, {wch:12}, {wch:10}, {wch:10}, {wch:10}, {wch:12}, {wch:15}];
+                XLSX.utils.book_append_sheet(wb, ws, "月度交叉综合报表");
+                XLSX.writeFile(wb, `针推门诊_月度交叉报表_${new Date().toISOString().split('T')[0]}.xlsx`);
+                ui.showToast('报表导出成功', 'success');
+            },
+            exportMonthly: () => {
+                const m = document.getElementById('month-report-select').value;
+                if (!m) return ui.showToast("请先选择月份", "warning");
+                const filtered = dataStore.treatments.filter(t => t.date && t.date.startsWith(m));
+                if (filtered.length === 0) return ui.showToast("该月暂无流水记录", "warning");
+
+                const out = filtered.map(t => {
+                    const p = dataStore.getPatient(t.pid);
+                    let typeStr = '治疗';
+                    if (t.type === 'purchase') typeStr = '开单';
+                    else if (t.type === 'medicine') typeStr = '开药';
+                    return { '发生日期': t.date, '患者姓名': p ? p.name : '-', '业务类型': typeStr, '次数': t.count || 0, '实收金额': t.amount || 0, '本单收入': t.income || 0, '附言备注': t.remark };
+                });
+                
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(out);
+                ws['!cols'] = [{wch:15}, {wch:12}, {wch:12}, {wch:8}, {wch:12}, {wch:12}, {wch:30}];
+                XLSX.utils.book_append_sheet(wb, ws, `${m} 财务月报`);
+                XLSX.writeFile(wb, `针推门诊_${m}月明细.xlsx`);
+                ui.showToast("月度流水表已生成", "success");
             }
-        } catch (e) {
-            console.error("云端连接失败，切换至离线模式", e);
-            dataStore.patients = JSON.parse(localStorage.getItem('clinic_patients') || '[]');
-            dataStore.treatments = JSON.parse(localStorage.getItem('clinic_treatments') || '[]');
-        }
-        
-        // 渲染界面
-        if (typeof app !== 'undefined' && app.renderList) {
-            app.renderList();
-            app.updateBadge();
-        }
-    },
+        };
 
-    // 保存逻辑：同步推送到云端
-    localSave: async () => {
-        // 1. 本地备份（保命用）
-        localStorage.setItem('clinic_patients', JSON.stringify(dataStore.patients));
-        localStorage.setItem('clinic_treatments', JSON.stringify(dataStore.treatments));
-
-        // 2. 推送到 Firebase
-        try {
-            const syncPayload = {
-                patients: dataStore.patients,
-                treatments: dataStore.treatments,
-                lastUpdate: new Date().toISOString() // 记录最后一次同步时间
-            };
-
-            const response = await fetch(DB_URL, {
-                method: 'PUT', // 使用 PUT 覆盖整个数据集
-                body: JSON.stringify(syncPayload)
-            });
-
-            if (response.ok && typeof ui !== 'undefined') {
-                ui.showToast("云端备份已更新", "success");
-            }
-        } catch (e) {
-            console.error("同步失败:", e);
-            if (typeof ui !== 'undefined') ui.showToast("同步失败，已存于本地", "error");
-        }
-    },
-
-    // 以下是辅助方法，保持逻辑一致
-    getPatient: (id) => dataStore.patients.find(p => p.id === id),
-    getTreatments: (pid) => dataStore.treatments.filter(t => t.patientId === pid),
-    
-    addPatient: (p) => { 
-        dataStore.patients.unshift(p); 
-        dataStore.localSave(); 
-    },
-    
-    addTreatment: (t) => { 
-        dataStore.treatments.unshift(t); 
-        dataStore.localSave(); 
-    },
-    
-    deletePatient: (id) => {
-        dataStore.patients = dataStore.patients.filter(p => p.id !== id);
-        dataStore.treatments = dataStore.treatments.filter(t => t.patientId !== id);
-        dataStore.localSave();
-    }
-};
+        /** ================= 模块 3：工具函数 ================= **/
+        const utils = {
+            debounce: (func, wait) => { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; },
+            cleanString: (str) => { if (str == null) return ''; return String(str).replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim(); }
+        };
 
         /** ================= 模块 4：业务逻辑与视图 (App) ================= **/
         const app = {
@@ -895,6 +1035,53 @@ const dataStore = {
                     badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-400 mr-1.5"></span> 暂无数据`;
                     badge.className = "hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600";
                 }
+            },
+
+            extractTagsWithAI: async () => {
+                const remark = document.getElementById('field-p-remark').value.trim();
+                if (!remark) { ui.showToast("请先在上方【备注说明】中描述患者的病症", "warning"); return; }
+                const btn = document.querySelector('button[onclick="app.extractTagsWithAI()"]');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = `<i class="fa fa-spinner fa-spin mr-1"></i> 提取中...`; btn.disabled = true;
+
+                try {
+                    const prompt = `你是一个中医门诊助手。请根据以下患者的备注信息，提取最多3个核心病症或体质特征标签。直接返回标签文本，多个标签之间用一个空格隔开，不要包含任何多余解释。\n备注信息：${remark}`;
+                    const tagsText = await geminiApi.call(prompt);
+                    const tagInput = document.getElementById('field-p-tags');
+                    const existingTags = tagInput.value.trim();
+                    tagInput.value = existingTags ? `${existingTags} ${tagsText}`.replace(/\s+/g, ' ').trim() : tagsText.replace(/\s+/g, ' ').trim();
+                    ui.showToast("✨ AI 标签提取成功", "success");
+                } catch (e) {
+                    ui.showToast("AI 提取失败，请重试", "error");
+                } finally { btn.innerHTML = originalHtml; btn.disabled = false; }
+            },
+
+            generateFollowUpWithAI: async () => {
+                const pid = app.state.currentDetailPid; if (!pid) return;
+                const p = dataStore.getPatient(pid); const stats = dataStore.calcStats(pid);
+                const recentDate = stats.history.length > 0 ? stats.history[0].date : "未曾就诊";
+
+                const aiBox = document.getElementById('ai-insight-box');
+                const contentBox = document.getElementById('ai-insight-content');
+                aiBox.classList.remove('hidden');
+                contentBox.innerHTML = `<span class="text-purple-400 animate-pulse-fast"><i class="fa fa-spinner fa-spin mr-2"></i>AI 正在思考并生成关怀文案...</span>`;
+
+                try {
+                    const patientInfo = { "姓名": p.name, "性别": p.gender, "年龄": p.age || "未知", "病症标签": p.tags ? p.tags.join('、') : "无", "剩余治疗次数": stats.remain + "次", "最近就诊日期": recentDate };
+                    const prompt = `你是一个专业且有温度的中医门诊助手。根据以下档案写一段发给患者的微信随访文案。\n要求：\n1. 亲切自然。\n2. 根据病症标签，包含1-2条针对性的日常简短保养建议。\n3. 若剩余治疗次数<=3次，委婉提醒复购疗程。\n4. 字数150字左右。\n\n患者信息：\n${JSON.stringify(patientInfo)}`;
+                    const generatedText = await geminiApi.call(prompt);
+                    contentBox.innerHTML = generatedText;
+                } catch (e) { contentBox.innerHTML = `<span class="text-danger"><i class="fa fa-exclamation-triangle mr-1"></i> AI 生成失败，请重试。</span>`; }
+            },
+
+            copyAIContent: () => {
+                const text = document.getElementById('ai-insight-content').innerText;
+                if(!text || text.includes('正在思考')) return;
+                try {
+                    const textArea = document.createElement("textarea"); textArea.value = text;
+                    document.body.appendChild(textArea); textArea.select(); document.execCommand("Copy"); textArea.remove();
+                    ui.showToast("已复制到剪贴板，可直接粘贴到微信", "success");
+                } catch(e) { ui.showToast("复制失败，请手动选取", "error"); }
             },
 
             renderList: () => {
