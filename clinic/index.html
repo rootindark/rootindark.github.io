@@ -1,8 +1,6 @@
 ---
 layout: null
 ---
-
-
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -833,90 +831,186 @@ layout: null
         };
 
         /** ================= 模块 2：数据与 Store ================= **/
-      const DB_URL = "https://clinic-data-913bd-default-rtdb.firebaseio.com/clinic_pro.json";
+        const dataStore = {
+            keys: { P: 'clinic_patients', T: 'clinic_treatments' },
+            patients: [], treatments: [], charts: {}, statsCache: {},
 
-    // Tailwind 配置 (控制网页的主题颜色和样式)
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#1e88e5',      // 主蓝色
-                    secondary: '#64b5f6',    // 浅蓝色
-                    success: '#10b981',      // 成功绿
-                    warning: '#f59e0b',      // 警告黄
-                    danger: '#ef4444',       // 危险红
-                    purple: '#8b5cf6',       // 维护紫
-                    dark: '#1f2937',         // 深灰色
-                    light: '#f3f4f6'         // 背景浅灰
+            init: () => {
+                dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
+                dataStore.treatments = JSON.parse(localStorage.getItem(dataStore.keys.T) || '[]');
+                dataStore.rebuildStatsCache();
+            },
+            save: () => {
+                try {
+                    localStorage.setItem(dataStore.keys.P, JSON.stringify(dataStore.patients));
+                    localStorage.setItem(dataStore.keys.T, JSON.stringify(dataStore.treatments));
+                    dataStore.rebuildStatsCache();
+                    return true;
+                } catch (e) {
+                    ui.showToast("保存失败，存储不足", "error"); return false;
                 }
-            }
-        }
-    };
-
-    /** ================= 2. 数据中枢 (Firebase 云端版) ================= **/
-    const dataStore = {
-        patients: [], treatments: [],
-        
-        // 初始化：打开网页时从 Firebase 下载最新的档案
-        init: async () => {
-            try {
-                console.log("正在从云端大脑同步数据...");
-                const res = await fetch(DB_URL);
-                const cloudData = await res.json();
-                if (cloudData) {
-                    dataStore.patients = cloudData.patients || [];
-                    dataStore.treatments = cloudData.treatments || [];
-                    console.log("同步成功！");
-                }
-            } catch (e) {
-                console.warn("云端连接失败，切换至本地离线模式:", e);
-                dataStore.patients = JSON.parse(localStorage.getItem('clinic_patients') || '[]');
-                dataStore.treatments = JSON.parse(localStorage.getItem('clinic_treatments') || '[]');
-            }
-        },
-
-        // 保存：每次操作后，将本地数据上传覆盖云端
-        localSave: async () => {
-            // 1. 本地备份（防止断网）
-            localStorage.setItem('clinic_patients', JSON.stringify(dataStore.patients));
-            localStorage.setItem('clinic_treatments', JSON.stringify(dataStore.treatments));
+            },
+            getPatient: (id) => dataStore.patients.find(x => x.id === id),
             
-            // 2. 云端同步
-            try {
-                const syncData = {
-                    patients: dataStore.patients,
-                    treatments: dataStore.treatments,
-                    lastUpdate: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
-                };
+            rebuildStatsCache: () => {
+                const cache = {};
+                dataStore.patients.forEach(p => {
+                    cache[p.id] = { purchased: 0, consumed: 0, remain: 0, mTotal: 0, history: [] };
+                });
+                dataStore.treatments.forEach(t => {
+                    if(!t.id) t.id = 't_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                    if (!cache[t.pid]) return;
+                    cache[t.pid].history.push(t);
+                    const count = Number(t.count) || 0;
+                    const amount = Number(t.amount) || 0;
+                    if (t.type === 'purchase') { cache[t.pid].purchased += count; cache[t.pid].mTotal += amount; }
+                    else if (t.type === 'consume') { cache[t.pid].consumed += count; }
+                    else if (t.type === 'medicine') { cache[t.pid].mTotal += amount; }
+                });
+                for (const pid in cache) {
+                    cache[pid].remain = cache[pid].purchased - cache[pid].consumed;
+                    cache[pid].history.sort((a,b) => new Date(b.date) - new Date(a.date));
+                }
+                dataStore.statsCache = cache;
+            },
+
+            calcStats: (pid) => { return dataStore.statsCache[pid] || { purchased: 0, consumed: 0, remain: 0, history: [], mTotal: 0 }; },
+
+            formatDate: (val) => {
+                if (!val) return '-';
+                if (typeof val === 'number') return new Date((val - 25569) * 86400 * 1000).toISOString().split('T')[0];
+                try {
+                    const d = new Date(val); return isNaN(d.getTime()) ? String(val).split(' ')[0] : d.toISOString().split('T')[0];
+                } catch(e) { return String(val).trim(); }
+            },
+            getPinyin: (str) => {
+                if (!str) return '';
+                if (typeof pinyinPro !== 'undefined') {
+                    try { return pinyinPro.pinyin(str, { toneType: 'none', type: 'array' }).join('').replace(/\s+/g, ''); } catch(e){}
+                }
+                return str.replace(/\s+/g, '');
+            },
+            exportFullBackup: () => {
+                try {
+                    if (dataStore.patients.length === 0) return ui.showToast("当前无数据可导出", "warning");
+                    ui.showToast("正在生成备份...", "info");
+                    const wb = XLSX.utils.book_new();
+                    
+                    const pOut = dataStore.patients.map(p => {
+                        const s = dataStore.calcStats(p.id);
+                        return { '姓名': p.name, '手机号': p.phone, '性别': p.gender, '渠道来源': p.source || '自来', '私域标签': p.tags ? p.tags.join(',') : '', '剩余可用次': s.remain, '累计充次': s.purchased, '累计消耗': s.consumed, '总消费金额': s.mTotal, '备注': p.remark };
+                    });
+                    const wsP = XLSX.utils.json_to_sheet(pOut);
+                    wsP['!cols'] = [{wch:10}, {wch:15}, {wch:6}, {wch:10}, {wch:15}, {wch:12}, {wch:10}, {wch:10}, {wch:12}, {wch:25}];
+                    XLSX.utils.book_append_sheet(wb, wsP, "患者主档");
+                    
+                    const tOut = dataStore.treatments.map(t => {
+                        const p = dataStore.getPatient(t.pid);
+                        let typeStr = '治疗(扣次)';
+                        if (t.type === 'purchase') typeStr = '开单(充次)';
+                        else if (t.type === 'medicine') typeStr = '开药';
+                        return { '日期': t.date, '患者姓名': p ? p.name : '未知', '业务类型': typeStr, '变动次数': t.count || 0, '产生金额': t.amount || 0, '本单预计收入': t.income || 0, '备注说明': t.remark };
+                    });
+                    const wsT = XLSX.utils.json_to_sheet(tOut);
+                    wsT['!cols'] = [{wch:12}, {wch:12}, {wch:12}, {wch:10}, {wch:10}, {wch:12}, {wch:30}];
+                    XLSX.utils.book_append_sheet(wb, wsT, "全部明细流水");
+
+                    const monthData = {};
+                    dataStore.treatments.forEach(t => {
+                        if (!t.date) return;
+                        const mKey = t.date.substring(0, 7);
+                        if (!monthData[mKey]) monthData[mKey] = { month: mKey, amount: 0, income: 0 };
+                        monthData[mKey].amount += (Number(t.amount) || 0);
+                        monthData[mKey].income += (Number(t.income) || 0);
+                    });
+                    
+                    const fOut = Object.values(monthData).sort((a,b) => a.month.localeCompare(b.month)).map(d => ({
+                        '财务月份': d.month, '总收费金额(元)': d.amount, '系统折算收入(元)': d.income
+                    }));
+                    const wsF = XLSX.utils.json_to_sheet(fOut);
+                    wsF['!cols'] = [{wch:15}, {wch:15}, {wch:15}];
+                    XLSX.utils.book_append_sheet(wb, wsF, "财务图表数据源");
+                    
+                    XLSX.writeFile(wb, `门诊全量备份_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    ui.showToast("导出成功", "success");
+                } catch(e) { ui.showToast("导出失败，检查浏览器权限", "error"); }
+            },
+            exportInsightTable: () => {
+                if (dataStore.treatments.length === 0) return ui.showToast('暂无数据', 'warning');
                 
-                await fetch(DB_URL, {
-                    method: 'PUT',
-                    body: JSON.stringify(syncData)
+                const monthData = {}; const patientFirstMonth = {};
+                dataStore.patients.forEach(p => {
+                    const stats = dataStore.calcStats(p.id);
+                    if (stats.history && stats.history.length > 0) { patientFirstMonth[p.id] = stats.history[stats.history.length - 1].date.substring(0, 7); }
+                });
+
+                const visitSetPerMonth = {}; 
+                dataStore.treatments.forEach(t => {
+                    if (!t.date) return;
+                    const mKey = t.date.substring(0, 7);
+                    if (!monthData[mKey]) {
+                        monthData[mKey] = { month: mKey, totalAmount: 0, purchaseAmount: 0, medicineAmount: 0, income: 0, patientsSet: new Set() };
+                        visitSetPerMonth[mKey] = new Set();
+                    }
+                    const amt = Number(t.amount) || 0; const inc = Number(t.income) || 0;
+                    monthData[mKey].totalAmount += amt; monthData[mKey].income += inc;
+                    if (t.type === 'purchase') monthData[mKey].purchaseAmount += amt;
+                    if (t.type === 'medicine') monthData[mKey].medicineAmount += amt;
+                    monthData[mKey].patientsSet.add(t.pid); visitSetPerMonth[mKey].add(`${t.pid}_${t.date}`); 
+                });
+
+                const rows = [];
+                Object.keys(monthData).sort((a,b) => a.localeCompare(b)).forEach(mKey => {
+                    const data = monthData[mKey]; const vCount = visitSetPerMonth[mKey].size;
+                    let newP = 0, oldP = 0;
+                    data.patientsSet.forEach(pid => { if (patientFirstMonth[pid] === mKey) newP++; else oldP++; });
+                    
+                    rows.push({
+                        '月份': mKey.replace('-', '年') + '月', 
+                        '总营业额': data.totalAmount, 
+                        '开单收入': data.purchaseAmount, '开药收入': data.medicineAmount, 
+                        '接诊人次': vCount, '初诊(人)': newP, '复诊(人)': oldP, 
+                        '客单价(元)': vCount > 0 ? Math.round(data.totalAmount / vCount) : 0, 
+                        '月度净入(折算后)': data.income
+                    });
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws['!cols'] = [{wch:15}, {wch:12}, {wch:12}, {wch:12}, {wch:10}, {wch:10}, {wch:10}, {wch:12}, {wch:15}];
+                XLSX.utils.book_append_sheet(wb, ws, "月度交叉综合报表");
+                XLSX.writeFile(wb, `针推门诊_月度交叉报表_${new Date().toISOString().split('T')[0]}.xlsx`);
+                ui.showToast('报表导出成功', 'success');
+            },
+            exportMonthly: () => {
+                const m = document.getElementById('month-report-select').value;
+                if (!m) return ui.showToast("请先选择月份", "warning");
+                const filtered = dataStore.treatments.filter(t => t.date && t.date.startsWith(m));
+                if (filtered.length === 0) return ui.showToast("该月暂无流水记录", "warning");
+
+                const out = filtered.map(t => {
+                    const p = dataStore.getPatient(t.pid);
+                    let typeStr = '治疗';
+                    if (t.type === 'purchase') typeStr = '开单';
+                    else if (t.type === 'medicine') typeStr = '开药';
+                    return { '发生日期': t.date, '患者姓名': p ? p.name : '-', '业务类型': typeStr, '次数': t.count || 0, '实收金额': t.amount || 0, '本单收入': t.income || 0, '附言备注': t.remark };
                 });
                 
-                if (typeof ui !== 'undefined') ui.showToast("已安全同步至云端", "success");
-            } catch (e) {
-                if (typeof ui !== 'undefined') ui.showToast("云端同步失败，已存于本地", "error");
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(out);
+                ws['!cols'] = [{wch:15}, {wch:12}, {wch:12}, {wch:8}, {wch:12}, {wch:12}, {wch:30}];
+                XLSX.utils.book_append_sheet(wb, ws, `${m} 财务月报`);
+                XLSX.writeFile(wb, `针推门诊_${m}月明细.xlsx`);
+                ui.showToast("月度流水表已生成", "success");
             }
-        },
+        };
 
-        // 查找患者
-        getPatient: (id) => dataStore.patients.find(p => p.id === id),
+        /** ================= 模块 3：工具函数 ================= **/
+        const utils = {
+            debounce: (func, wait) => { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; },
+            cleanString: (str) => { if (str == null) return ''; return String(str).replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim(); }
+        };
 
-        // 计算统计信息（剩余次数、历史记录）
-        calcStats: (pid) => {
-            const ts = dataStore.treatments.filter(t => t.pid === pid);
-            let purchased = 0, consumed = 0;
-            ts.forEach(t => {
-                if (t.type === 'purchase') purchased += (Number(t.count) || 0);
-                if (t.type === 'consume') consumed += (Number(t.count) || 0);
-            });
-            return { 
-                remain: purchased - consumed, 
-                history: ts.sort((a,b) => new Date(b.date) - new Date(a.date)) 
-            };
-        }
-    };
         /** ================= 模块 4：业务逻辑与视图 (App) ================= **/
         const app = {
             state: { page: 0, size: 10, search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
