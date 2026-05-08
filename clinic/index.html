@@ -1,12 +1,19 @@
 ---
 layout: null
 ---
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>针推门诊管理系统 Pro</title>
-    <!-- 外部依赖 -->
+    
+    <!-- PWA App 模式优化 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="针推管理">
+
+    <!-- 外部核心依赖 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
@@ -61,6 +68,9 @@ layout: null
                 <h1 class="text-xl font-bold tracking-tight text-gray-800">针推管理 Pro</h1>
             </div>
             <nav class="hidden md:flex space-x-1">
+                <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="appointments">
+                    <i class="fa fa-calendar-check-o mr-1.5"></i>线上预约
+                </button>
                 <button class="nav-link px-4 py-2 rounded-lg font-medium text-primary bg-primary/5 transition-colors" data-page="patients">
                     <i class="fa fa-users mr-1.5"></i>患者管理
                 </button>
@@ -78,7 +88,26 @@ layout: null
     </header>
 
     <main class="container mx-auto px-4 py-6 mb-24 md:mb-10">
-        <!-- ================= 患者管理页面 ================= -->
+        <!-- ================= 1. 线上预约页面 ================= -->
+        <section id="appointments-page" class="page-section hidden animate-fade-in">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">预约核销台</h2>
+                    <p class="text-sm text-gray-500 mt-1">同步群报数数据，支持腾讯云代理专线</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="date" id="api-date-picker" class="input-field py-1.5 text-sm w-36 bg-white shadow-sm">
+                    <button onclick="app.loadAppointments()" class="btn btn-primary text-sm py-1.5 px-4 shadow-blue-500/20">
+                        <i class="fa fa-refresh mr-1.5"></i>同步数据
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="appointment-list-body">
+                <div class="col-span-full py-10 text-center text-gray-400">请点击同步获取当日预约信息</div>
+            </div>
+        </section>
+
+        <!-- ================= 2. 患者管理页面 ================= -->
         <section id="patients-page" class="page-section animate-fade-in">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
@@ -135,7 +164,7 @@ layout: null
             </div>
         </section>
 
-        <!-- ================= 经营洞察 (统计) 页面 ================= -->
+        <!-- ================= 3. 经营洞察 (统计) 页面 ================= -->
         <section id="dashboard-page" class="page-section hidden animate-fade-in">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
@@ -292,7 +321,7 @@ layout: null
             </div>
         </section>
 
-        <!-- ================= 报表与系统维护页面 ================= -->
+        <!-- ================= 4. 报表与系统维护页面 ================= -->
         <section id="settings-page" class="page-section hidden animate-fade-in">
             <h2 class="text-2xl font-bold mb-6 text-gray-800">数据治理与维护</h2>
             
@@ -340,24 +369,53 @@ layout: null
                 </div>
             </div>
 
+            <!-- API 配置与治理工具 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="card p-6 border-l-4 border-l-secondary bg-blue-50/20">
-                    <h3 class="font-bold text-lg mb-2 text-gray-800 flex items-center"><i class="fa fa-compress text-primary mr-2"></i>数据治理：合并重复档案</h3>
-                    <p class="text-sm text-gray-500 mb-6">如果发现患者被重复建档，可使用此工具将冗余档案的记录转移并销毁。</p>
-                    <button onclick="ui.openMergeModal()" class="btn btn-secondary border-primary/30 text-primary w-max bg-white">
-                        <i class="fa fa-wrench mr-2"></i>打开合并工具
-                    </button>
+                <!-- 群报数 API 配置面板 -->
+                <div class="card p-6 border-l-4 border-l-purple-500 bg-purple-50/20">
+                    <h3 class="font-bold text-lg mb-4 text-purple-800 flex items-center"><i class="fa fa-plug mr-2"></i>群报数云函数对接配置</h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">AppID</label>
+                                <input type="text" id="api-config-appid" value="s4AKVAI1" class="input-field bg-white shadow-sm font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Secret</label>
+                                <input type="password" id="api-config-secret" value="vEE8xWDSwWnczED2ApjciWKw7E7Lo4v7" class="input-field bg-white shadow-sm text-xs font-mono">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">群报数表单 ID (fid)</label>
+                            <input type="text" id="api-config-formid" placeholder="例如: 1424969277327962123" class="input-field bg-white shadow-sm font-mono text-sm">
+                        </div>
+                        <div class="pt-2">
+                            <label class="block text-[10px] font-bold text-purple-600 mb-1 uppercase tracking-wider"><i class="fa fa-rocket"></i> 腾讯云代理 URL</label>
+                            <input type="text" id="api-config-proxy" placeholder="在此粘贴您的 service-xxxx.tencentcs.com 链接" class="input-field bg-white shadow-sm font-mono text-[10px]">
+                        </div>
+                        <button onclick="app.saveApiConfig()" class="btn btn-primary bg-purple-600 w-full mt-2 shadow-purple-500/20"><i class="fa fa-save mr-2"></i>保存 API 配置</button>
+                    </div>
                 </div>
 
-                <div class="card p-6 border-2 border-dashed border-primary/30">
-                    <h3 class="font-bold text-lg mb-2 text-gray-800 flex items-center"><i class="fa fa-history text-primary mr-2"></i>从备份恢复 (导入)</h3>
-                    <p class="text-sm text-gray-500 mb-6">选择由本系统导出的 Excel 备份文件，系统支持全自动智能期初补账功能。</p>
-                    <div class="flex gap-2">
-                        <label class="btn btn-primary shadow-blue-500/30 cursor-pointer self-start w-max">
-                            <i class="fa fa-upload mr-2"></i> 选择文件并恢复
-                            <input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls">
-                        </label>
-                        <button onclick="ui.confirmClearData()" class="btn btn-danger ml-auto" title="清空系统数据"><i class="fa fa-trash"></i></button>
+                <div class="space-y-6">
+                    <div class="card p-6 border-l-4 border-l-secondary bg-blue-50/20">
+                        <h3 class="font-bold text-lg mb-2 text-gray-800 flex items-center"><i class="fa fa-compress text-primary mr-2"></i>数据治理：合并重复档案</h3>
+                        <p class="text-sm text-gray-500 mb-6">如果发现患者被重复建档，可使用此工具将冗余档案的记录转移并销毁。</p>
+                        <button onclick="ui.openMergeModal()" class="btn btn-secondary border-primary/30 text-primary w-max bg-white">
+                            <i class="fa fa-wrench mr-2"></i>打开合并工具
+                        </button>
+                    </div>
+
+                    <div class="card p-6 border-2 border-dashed border-primary/30">
+                        <h3 class="font-bold text-lg mb-2 text-gray-800 flex items-center"><i class="fa fa-history text-primary mr-2"></i>从备份恢复 (导入)</h3>
+                        <p class="text-sm text-gray-500 mb-6">选择由本系统导出的 Excel 备份文件，系统支持全自动智能期初补账功能。</p>
+                        <div class="flex gap-2">
+                            <label class="btn btn-primary shadow-blue-500/30 cursor-pointer self-start w-max">
+                                <i class="fa fa-upload mr-2"></i> 选择文件并恢复
+                                <input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls">
+                            </label>
+                            <button onclick="ui.confirmClearData()" class="btn btn-danger ml-auto" title="清空系统数据"><i class="fa fa-trash"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -457,11 +515,8 @@ layout: null
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <label class="block text-xs font-bold text-gray-500">私域病症标签 (空格或逗号隔开)</label>
-                            <button type="button" onclick="app.extractTagsWithAI()" class="text-[10px] text-purple-600 hover:text-purple-800 bg-purple-50 px-2 py-0.5 rounded flex items-center transition-colors">
-                                <i class="fa fa-magic mr-1"></i> ✨ AI 智能提取标签
-                            </button>
                         </div>
-                        <input type="text" id="field-p-tags" placeholder="如：失眠 颈椎病 (可基于上方备注点击AI提取)" class="input-field bg-gray-50">
+                        <input type="text" id="field-p-tags" placeholder="如：失眠 颈椎病" class="input-field bg-gray-50">
                     </div>
                     <!-- 初始开单区 (仅新增时显示) -->
                     <div id="init-purchase-box" class="mt-4 pt-4 border-t border-gray-100">
@@ -652,9 +707,6 @@ layout: null
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button class="btn btn-secondary border-purple-200 text-purple-600 hover:bg-purple-50 text-xs py-1.5 px-3 shadow-none flex items-center" onclick="app.generateFollowUpWithAI()">
-                        <i class="fa fa-magic mr-1"></i> ✨ AI 智能随访
-                    </button>
                     <button class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors" onclick="ui.closeModal('modal-detail')"><i class="fa fa-times text-xl"></i></button>
                 </div>
             </div>
@@ -665,18 +717,6 @@ layout: null
                 <div class="p-3 text-center"><p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">累计消耗</p><p class="text-xl font-bold text-gray-700" id="det-stat-c">0</p></div>
                 <div class="p-3 text-center bg-blue-50/50"><p class="text-[10px] text-blue-400 uppercase font-bold tracking-wider">剩余可用</p><p class="text-xl font-black text-primary" id="det-stat-rem">0</p></div>
             </div>
-            
-            <!-- AI 智能分析随访展示区 -->
-            <div id="ai-insight-box" class="hidden m-4 p-4 bg-purple-50 border border-purple-100 rounded-xl text-sm text-gray-700 shrink-0 relative">
-                <div class="flex justify-between items-center mb-2 pb-2 border-b border-purple-100">
-                    <span class="font-bold text-purple-700 flex items-center"><i class="fa fa-magic mr-1"></i> AI 智能随访建议</span>
-                    <div class="flex items-center gap-3">
-                        <button onclick="app.copyAIContent()" class="text-purple-600 hover:text-purple-800 text-xs font-bold" title="复制文案"><i class="fa fa-copy"></i> 复制</button>
-                        <button onclick="document.getElementById('ai-insight-box').classList.add('hidden')" class="text-purple-400 hover:text-purple-600"><i class="fa fa-times"></i></button>
-                    </div>
-                </div>
-                <div id="ai-insight-content" class="whitespace-pre-wrap leading-relaxed"></div>
-            </div>
 
             <div class="flex-grow overflow-y-auto bg-gray-50/30 p-4 no-scrollbar">
                 <div id="det-history-list" class="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent"></div>
@@ -686,36 +726,80 @@ layout: null
 
     <!-- ========================================== JavaScript 逻辑层 ========================================== -->
     <script>
-        /** ================= 模块：Gemini API (AI 能力) ================= **/
-        const geminiApi = {
-            call: async (prompt) => {
-                const apiKey = ""; 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    systemInstruction: { parts: [{ text: "你是一个专业的中医针灸推拿门诊助理。请基于医生的需求提供专业、简明、有温度的文案或建议。" }] }
-                };
+        /** ================= 0. 配置与 API 层 ================= **/
+        const DB_URL = "https://clinic-data-913bd-default-rtdb.firebaseio.com/clinic_pro.json";
 
-                const delays = [1000, 2000, 4000, 8000, 16000];
-                for (let i = 0; i < delays.length; i++) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
+        const thirdPartyApi = {
+            request: async (url, options = {}) => {
+                const config = JSON.parse(localStorage.getItem('clinic_api_config') || '{}');
+                if (!config.proxyUrl) throw new Error("缺失代理 URL。请在【报表维护】中配置腾讯云代理。");
+
+                const targetUrl = url.trim();
+                const proxyUrl = config.proxyUrl.trim();
+                
+                const res = await fetch(proxyUrl, {
+                    method: options.method || 'GET',
+                    headers: { 'x-target-url': targetUrl, 'Content-Type': 'application/json' },
+                    body: options.body
+                });
+
+                const text = await res.text();
+                if (!res.ok) {
+                    let msg = text;
+                    try { msg = JSON.parse(text).msg || text; } catch(e){}
+                    throw new Error(msg);
+                }
+                return JSON.parse(text);
+            },
+            
+            fetchAppointments: async (dateStr) => {
+                const config = JSON.parse(localStorage.getItem('clinic_api_config') || '{}');
+                if (!config.formId || !config.appId || !config.secret) {
+                    return [{ name: '请先在系统维护页配置群报数API', time: '--:--', isMock: true }];
+                }
+
+                try {
+                    const tokenUrl = `https://form.gun100.com/openapi/v1/refreshAccessToken?appId=${config.appId}&secret=${config.secret}&_t=${Date.now()}`;
+                    const tokenData = await thirdPartyApi.request(tokenUrl);
+                    if (tokenData.code !== 0) throw new Error(tokenData.msg);
+                    
+                    const formConfigUrl = `https://form.gun100.com/openapi/v1/form?accessToken=${tokenData.data.accessToken}&formId=${config.formId}&_t=${Date.now()}`;
+                    const formConfigRes = await thirdPartyApi.request(formConfigUrl);
+                    const cidToTitle = {};
+                    (formConfigRes.data.catalogs || []).forEach(c => cidToTitle[c.cid] = c.title);
+
+                    const dataUrl = `https://form.gun100.com/openapi/v1/form/data?accessToken=${tokenData.data.accessToken}`;
+                    const resData = await thirdPartyApi.request(dataUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            formId: config.formId,
+                            startTime: dateStr + " 00:00:00",
+                            endTime: dateStr + " 23:59:59",
+                            pageNo: 1, pageSize: 100
+                        })
+                    });
+                    
+                    if (resData.code !== 0) throw new Error(resData.msg);
+                    
+                    return (resData.data.list || []).map(item => {
+                        let name = '未知患者', phone = '', time = '00:00', project = '门诊预约';
+                        (item.catalogs || []).forEach(c => {
+                            const title = cidToTitle[c.cid] || '';
+                            const val = Array.isArray(c.value) ? c.value[0]?.timeStr || c.value[0]?.dateStr || c.value.join(',') : String(c.value || '');
+                            if (title.includes('姓名') || title.includes('称呼')) name = val;
+                            else if (title.includes('手机') || title.includes('电话')) phone = val;
+                            else if (title.includes('时间') || title.includes('预约')) time = val.substring(11, 16) || val;
+                            else if (title.includes('项目')) project = val;
                         });
-                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                        const result = await response.json();
-                        return result.candidates?.[0]?.content?.parts?.[0]?.text || "暂无建议";
-                    } catch (error) {
-                        if (i === delays.length - 1) throw error;
-                        await new Promise(r => setTimeout(r, delays[i]));
-                    }
+                        return { id: item.fid, name: name || item.nickname, phone, time, project, raw: item };
+                    });
+                } catch (e) {
+                    throw new Error("云端代理同步失败: " + e.message);
                 }
             }
         };
 
-        /** ================= 模块 1：UI 与 Feedback ================= **/
+        /** ================= 1. UI 与 Feedback ================= **/
         const ui = {
             showToast: (msg, type = 'info') => {
                 const container = document.getElementById('toast-container');
@@ -818,38 +902,77 @@ layout: null
                 ui.openModal('modal-merge');
             },
             confirmClearData: () => {
-                ui.showConfirm("彻底清空数据", "即将永久删除所有记录。操作后无法恢复，确定已备份数据？", true, () => {
+                ui.showConfirm("彻底清空本地缓存", "即将清除本浏览器的所有患者记录，不影响云端资产。是否继续？", true, () => {
                     localStorage.removeItem(dataStore.keys.P);
                     localStorage.removeItem(dataStore.keys.T);
                     dataStore.patients = []; dataStore.treatments = [];
                     dataStore.rebuildStatsCache();
                     app.updateBadge(); app.renderList();
                     if(app.state.currentPage === 'dashboard') app.renderCharts();
-                    ui.showToast("系统数据已全部清空", "success");
+                    ui.showToast("本地缓存已全部清空", "success");
                 });
             }
         };
 
-        /** ================= 模块 2：数据与 Store ================= **/
+        /** ================= 2. 数据处理与云端管线 (DataStore) ================= **/
         const dataStore = {
             keys: { P: 'clinic_patients', T: 'clinic_treatments' },
             patients: [], treatments: [], charts: {}, statsCache: {},
 
-            init: () => {
-                dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
-                dataStore.treatments = JSON.parse(localStorage.getItem(dataStore.keys.T) || '[]');
+            init: async () => {
+                if (typeof ui !== 'undefined') ui.showToast("正在建立云端数据连接...", "info");
+                try {
+                    const res = await fetch(DB_URL);
+                    if (!res.ok) throw new Error("云端服务器响应异常");
+                    const cloudData = await res.json();
+                    
+                    if (cloudData) {
+                        dataStore.patients = cloudData.patients || [];
+                        dataStore.treatments = cloudData.treatments || [];
+                        console.log("云端数据同步成功，快照时间:", cloudData.lastUpdate);
+                        ui.showToast("云端数据同步完成", "success");
+                    } else {
+                        // 云端为空，从本地接管
+                        dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
+                        dataStore.treatments = JSON.parse(localStorage.getItem(dataStore.keys.T) || '[]');
+                    }
+                } catch (e) {
+                    console.warn("云端连接断开，回退至本地离线模式:", e);
+                    ui.showToast("处于离线模式，使用本地缓存", "warning");
+                    dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
+                    dataStore.treatments = JSON.parse(localStorage.getItem(dataStore.keys.T) || '[]');
+                }
                 dataStore.rebuildStatsCache();
             },
+
             save: () => {
+                // 1. 本地硬备份（防断网灾备）
                 try {
                     localStorage.setItem(dataStore.keys.P, JSON.stringify(dataStore.patients));
                     localStorage.setItem(dataStore.keys.T, JSON.stringify(dataStore.treatments));
                     dataStore.rebuildStatsCache();
-                    return true;
                 } catch (e) {
-                    ui.showToast("保存失败，存储不足", "error"); return false;
+                    ui.showToast("本地保存失败，浏览器存储空间不足", "error");
+                    return false;
                 }
+
+                // 2. 云端静默异步同步 (Fire-and-forget)
+                fetch(DB_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        patients: dataStore.patients,
+                        treatments: dataStore.treatments,
+                        lastUpdate: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+                    })
+                }).catch(err => {
+                    console.error("后台云同步发生网络错误:", err);
+                    ui.showToast("后台云同步延迟，数据已存于本地", "warning");
+                });
+
+                return true;
             },
+
             getPatient: (id) => dataStore.patients.find(x => x.id === id),
             
             rebuildStatsCache: () => {
@@ -893,7 +1016,7 @@ layout: null
             exportFullBackup: () => {
                 try {
                     if (dataStore.patients.length === 0) return ui.showToast("当前无数据可导出", "warning");
-                    ui.showToast("正在生成备份...", "info");
+                    ui.showToast("正在生成加密 Excel 备份...", "info");
                     const wb = XLSX.utils.book_new();
                     
                     const pOut = dataStore.patients.map(p => {
@@ -931,9 +1054,9 @@ layout: null
                     wsF['!cols'] = [{wch:15}, {wch:15}, {wch:15}];
                     XLSX.utils.book_append_sheet(wb, wsF, "财务图表数据源");
                     
-                    XLSX.writeFile(wb, `门诊全量备份_${new Date().toISOString().split('T')[0]}.xlsx`);
-                    ui.showToast("导出成功", "success");
-                } catch(e) { ui.showToast("导出失败，检查浏览器权限", "error"); }
+                    XLSX.writeFile(wb, `门诊全量资产备份_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    ui.showToast("全量备份导出成功", "success");
+                } catch(e) { ui.showToast("导出失败，请检查浏览器权限", "error"); }
             },
             exportInsightTable: () => {
                 if (dataStore.treatments.length === 0) return ui.showToast('暂无数据', 'warning');
@@ -1001,22 +1124,34 @@ layout: null
                 ws['!cols'] = [{wch:15}, {wch:12}, {wch:12}, {wch:8}, {wch:12}, {wch:12}, {wch:30}];
                 XLSX.utils.book_append_sheet(wb, ws, `${m} 财务月报`);
                 XLSX.writeFile(wb, `针推门诊_${m}月明细.xlsx`);
-                ui.showToast("月度流水表已生成", "success");
+                ui.showToast("月度明细表已生成", "success");
             }
         };
 
-        /** ================= 模块 3：工具函数 ================= **/
+        /** ================= 3. 辅助工具函数 ================= **/
         const utils = {
             debounce: (func, wait) => { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; },
             cleanString: (str) => { if (str == null) return ''; return String(str).replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim(); }
         };
 
-        /** ================= 模块 4：业务逻辑与视图 (App) ================= **/
+        /** ================= 4. 业务逻辑与视图控制层 ================= **/
         const app = {
             state: { page: 0, size: 10, search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
 
-            init: () => {
-                dataStore.init();
+            init: async () => {
+                // 等待云端数据拉取完成
+                await dataStore.init();
+                
+                // 预填 API 界面和日期
+                const apiDatePicker = document.getElementById('api-date-picker');
+                if (apiDatePicker) apiDatePicker.value = new Date().toISOString().split('T')[0];
+                
+                const config = JSON.parse(localStorage.getItem('clinic_api_config') || '{}');
+                if (document.getElementById('api-config-formid')) document.getElementById('api-config-formid').value = config.formId || '';
+                if (document.getElementById('api-config-appid')) document.getElementById('api-config-appid').value = config.appId || 's4AKVAI1';
+                if (document.getElementById('api-config-secret')) document.getElementById('api-config-secret').value = config.secret || 'vEE8xWDSwWnczED2ApjciWKw7E7Lo4v7';
+                if (document.getElementById('api-config-proxy')) document.getElementById('api-config-proxy').value = config.proxyUrl || '';
+
                 app.updateBadge();
                 app.renderList();
                 app.bindEvents();
@@ -1025,59 +1160,12 @@ layout: null
             updateBadge: () => {
                 const badge = document.getElementById('data-status-badge');
                 if (dataStore.patients.length > 0) {
-                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 数据保护中: ${dataStore.patients.length}人`;
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 云端在线: ${dataStore.patients.length}人`;
                     badge.className = "hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700";
                 } else {
                     badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-400 mr-1.5"></span> 暂无数据`;
                     badge.className = "hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600";
                 }
-            },
-
-            extractTagsWithAI: async () => {
-                const remark = document.getElementById('field-p-remark').value.trim();
-                if (!remark) { ui.showToast("请先在上方【备注说明】中描述患者的病症", "warning"); return; }
-                const btn = document.querySelector('button[onclick="app.extractTagsWithAI()"]');
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = `<i class="fa fa-spinner fa-spin mr-1"></i> 提取中...`; btn.disabled = true;
-
-                try {
-                    const prompt = `你是一个中医门诊助手。请根据以下患者的备注信息，提取最多3个核心病症或体质特征标签。直接返回标签文本，多个标签之间用一个空格隔开，不要包含任何多余解释。\n备注信息：${remark}`;
-                    const tagsText = await geminiApi.call(prompt);
-                    const tagInput = document.getElementById('field-p-tags');
-                    const existingTags = tagInput.value.trim();
-                    tagInput.value = existingTags ? `${existingTags} ${tagsText}`.replace(/\s+/g, ' ').trim() : tagsText.replace(/\s+/g, ' ').trim();
-                    ui.showToast("✨ AI 标签提取成功", "success");
-                } catch (e) {
-                    ui.showToast("AI 提取失败，请重试", "error");
-                } finally { btn.innerHTML = originalHtml; btn.disabled = false; }
-            },
-
-            generateFollowUpWithAI: async () => {
-                const pid = app.state.currentDetailPid; if (!pid) return;
-                const p = dataStore.getPatient(pid); const stats = dataStore.calcStats(pid);
-                const recentDate = stats.history.length > 0 ? stats.history[0].date : "未曾就诊";
-
-                const aiBox = document.getElementById('ai-insight-box');
-                const contentBox = document.getElementById('ai-insight-content');
-                aiBox.classList.remove('hidden');
-                contentBox.innerHTML = `<span class="text-purple-400 animate-pulse-fast"><i class="fa fa-spinner fa-spin mr-2"></i>AI 正在思考并生成关怀文案...</span>`;
-
-                try {
-                    const patientInfo = { "姓名": p.name, "性别": p.gender, "年龄": p.age || "未知", "病症标签": p.tags ? p.tags.join('、') : "无", "剩余治疗次数": stats.remain + "次", "最近就诊日期": recentDate };
-                    const prompt = `你是一个专业且有温度的中医门诊助手。根据以下档案写一段发给患者的微信随访文案。\n要求：\n1. 亲切自然。\n2. 根据病症标签，包含1-2条针对性的日常简短保养建议。\n3. 若剩余治疗次数<=3次，委婉提醒复购疗程。\n4. 字数150字左右。\n\n患者信息：\n${JSON.stringify(patientInfo)}`;
-                    const generatedText = await geminiApi.call(prompt);
-                    contentBox.innerHTML = generatedText;
-                } catch (e) { contentBox.innerHTML = `<span class="text-danger"><i class="fa fa-exclamation-triangle mr-1"></i> AI 生成失败，请重试。</span>`; }
-            },
-
-            copyAIContent: () => {
-                const text = document.getElementById('ai-insight-content').innerText;
-                if(!text || text.includes('正在思考')) return;
-                try {
-                    const textArea = document.createElement("textarea"); textArea.value = text;
-                    document.body.appendChild(textArea); textArea.select(); document.execCommand("Copy"); textArea.remove();
-                    ui.showToast("已复制到剪贴板，可直接粘贴到微信", "success");
-                } catch(e) { ui.showToast("复制失败，请手动选取", "error"); }
             },
 
             renderList: () => {
@@ -1198,6 +1286,99 @@ layout: null
                 }
             },
 
+            // ================= 新增：主动拉取 API ================= 
+            loadAppointments: async () => {
+                const body = document.getElementById('appointment-list-body');
+                const date = document.getElementById('api-date-picker').value;
+                body.innerHTML = `<div class="col-span-full py-12 text-center text-primary"><i class="fa fa-circle-o-notch fa-spin text-3xl mb-3"></i><p class="font-medium">正在通过私有云专线同步线上数据...</p></div>`;
+                
+                try {
+                    const list = await thirdPartyApi.fetchAppointments(date);
+                    app.renderAppointments(list);
+                } catch (e) {
+                    body.innerHTML = `
+                        <div class="col-span-full p-6 bg-red-50 rounded-2xl border border-red-100 text-center">
+                            <i class="fa fa-shield text-danger text-3xl mb-3"></i>
+                            <h3 class="font-bold text-danger text-sm">云端专线连接异常</h3>
+                            <p class="text-[10px] text-red-400 mt-2 font-mono break-all line-clamp-2">${e.message}</p>
+                            <div class="mt-4 text-left bg-white p-3 rounded-lg text-[10px] text-gray-500 leading-relaxed shadow-sm border border-red-50">
+                                <b>排错指引：</b><br>
+                                请确保腾讯云【函数配置】中公网访问已开启，并在系统设置页填入正确的代理 URL。
+                            </div>
+                        </div>`;
+                }
+            },
+
+            renderAppointments: (list) => {
+                const body = document.getElementById('appointment-list-body');
+                if (list.length === 0) {
+                    body.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400"><i class="fa fa-coffee text-2xl mb-2"></i><p>当日无预约记录或 API 凭证未配置</p></div>`;
+                    return;
+                }
+
+                const df = document.createDocumentFragment();
+                list.forEach(apt => {
+                    const matchedPatient = dataStore.patients.find(p => p.phone && p.phone === apt.phone) || dataStore.patients.find(p => p.name === apt.name);
+                    
+                    const card = document.createElement('div');
+                    card.className = "bg-white rounded-xl border border-gray-200 p-4 shadow-sm relative overflow-hidden group hover:border-primary/50 transition-all";
+                    
+                    let actionHtml = '';
+                    let matchedBadge = '';
+
+                    if (apt.isMock) {
+                         matchedBadge = `<span class="absolute top-0 right-0 bg-yellow-50 text-yellow-600 text-[10px] px-2 py-1 rounded-bl-lg font-bold"><i class="fa fa-info-circle mr-1"></i>系统提示</span>`;
+                         actionHtml = `<div class="mt-4 text-xs text-gray-400">请前往报表维护页配置相关参数。</div>`;
+                    } else if (matchedPatient) {
+                        const stats = dataStore.calcStats(matchedPatient.id);
+                        matchedBadge = `<span class="absolute top-0 right-0 bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded-bl-lg font-bold"><i class="fa fa-link mr-1"></i>已关联档案</span>`;
+                        actionHtml = `
+                            <div class="mt-4 flex gap-2">
+                                <div class="bg-gray-50 flex-1 rounded-lg p-2 text-center text-xs">
+                                    <p class="text-gray-400">剩余额度</p>
+                                    <p class="font-black text-lg ${stats.remain > 0 ? 'text-primary' : 'text-danger'}">${stats.remain}次</p>
+                                </div>
+                                <button onclick="app.showPage('patients'); app.openRecordUI('${matchedPatient.id}');" class="flex-1 btn btn-primary bg-primary/90 hover:bg-primary shadow-blue-500/20 px-2 py-1 text-sm h-auto"><i class="fa fa-check-circle-o mr-1"></i>去核销</button>
+                            </div>`;
+                    } else {
+                        matchedBadge = `<span class="absolute top-0 right-0 bg-red-50 text-red-500 text-[10px] px-2 py-1 rounded-bl-lg font-bold"><i class="fa fa-exclamation-circle mr-1"></i>未匹配 (新客)</span>`;
+                        actionHtml = `
+                            <div class="mt-4">
+                                <button onclick="app.showPage('patients'); ui.openPatientModal(null, '${apt.name}'); document.getElementById('field-p-phone').value='${apt.phone}';" class="w-full btn border border-primary/30 text-primary bg-blue-50/50 hover:bg-blue-50 text-sm py-2"><i class="fa fa-user-plus mr-1"></i> 一键建档</button>
+                            </div>`;
+                    }
+
+                    card.innerHTML = `
+                        ${matchedBadge}
+                        <div class="flex items-start gap-3 mt-2">
+                            <div class="bg-gray-100 text-gray-700 font-bold text-lg w-12 h-12 rounded-xl flex items-center justify-center shrink-0">
+                                ${apt.name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-base">${apt.name} <span class="text-xs font-mono text-primary ml-2 bg-blue-50 px-1 rounded">${apt.time}</span></h4>
+                                ${apt.phone ? `<p class="text-xs text-gray-500 mt-0.5"><i class="fa fa-phone mr-1"></i>${apt.phone}</p>` : ''}
+                                ${apt.project ? `<p class="text-xs text-gray-500 mt-1 line-clamp-1"><i class="fa fa-tag mr-1"></i>项目: <span class="font-medium text-gray-700">${apt.project}</span></p>` : ''}
+                            </div>
+                        </div>
+                        ${actionHtml}
+                    `;
+                    df.appendChild(card);
+                });
+                body.innerHTML = '';
+                body.appendChild(df);
+            },
+
+            saveApiConfig: () => {
+                const config = {
+                    appId: document.getElementById('api-config-appid').value,
+                    secret: document.getElementById('api-config-secret').value,
+                    formId: document.getElementById('api-config-formid').value,
+                    proxyUrl: document.getElementById('api-config-proxy').value
+                };
+                localStorage.setItem('clinic_api_config', JSON.stringify(config));
+                ui.showToast("API 凭证已成功保存至本地", "success");
+            },
+
             savePatient: (forceSave = false) => {
                 const name = utils.cleanString(document.getElementById('field-p-name').value);
                 const phone = utils.cleanString(document.getElementById('field-p-phone').value);
@@ -1245,7 +1426,9 @@ layout: null
                     ui.showToast(`已成功建档：${name}`, "success");
                 }
 
-                dataStore.save(); app.renderList(); app.updateBadge(); ui.closeModal('modal-patient');
+                if (dataStore.save()) {
+                    app.renderList(); app.updateBadge(); ui.closeModal('modal-patient');
+                }
             },
 
             openRecordUI: (pid) => {
@@ -1321,7 +1504,7 @@ layout: null
                 if (!hasEntry) return ui.showToast("请至少填写一项业务数据再提交", "warning");
 
                 if (dataStore.save()) {
-                    ui.showToast("业务记录已合并保存成功", "success");
+                    ui.showToast("业务记录已同步并保存成功", "success");
                     app.renderList(); ui.closeModal('modal-record');
                     if (app.state.currentPage === 'dashboard') app.renderCharts();
                     if (app.state.currentDetailPid === pid && !document.getElementById('modal-detail').classList.contains('hidden')) {
@@ -1400,8 +1583,6 @@ layout: null
 
             showDetail: (pid) => {
                 app.state.currentDetailPid = pid; 
-                document.getElementById('ai-insight-box').classList.add('hidden'); 
-                
                 const p = dataStore.getPatient(pid);
                 const stats = dataStore.calcStats(pid);
                 
@@ -1589,7 +1770,7 @@ layout: null
 
                             ui.showConfirm("确认覆盖", `解析并补齐计算出 ${newPatients.length} 位患者和 ${newTreatments.length} 条记录。\n点击确定将覆盖当前数据。`, true, () => {
                                 dataStore.patients = newPatients; dataStore.treatments = newTreatments;
-                                dataStore.save(); ui.showToast("导入成功", "success"); app.updateBadge(); app.renderList(); app.showPage('patients');
+                                dataStore.save(); ui.showToast("云端导入并同步成功", "success"); app.updateBadge(); app.renderList(); app.showPage('patients');
                             });
                         } catch (err) { ui.showToast(err.message, "error"); }
                         e.target.value = ''; 
