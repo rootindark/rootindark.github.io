@@ -168,8 +168,8 @@ layout: null
                             <button onclick="dataStore.exportFullBackup()" class="btn bg-white text-gray-900 w-full text-sm font-bold">导出全库数据 (.xlsx)</button>
                         </div>
                         <div class="card p-6 border-l-4 border-l-purple-500 bg-purple-50/20">
-                            <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-history text-primary mr-2"></i>从备份中恢复 (数据覆写)</h3>
-                            <p class="text-sm text-gray-600 leading-relaxed mb-4">上传此前导出的 Excel 备份，直接复原患者档案与业务流水。此操作将覆盖现有数据！</p>
+                            <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-history text-primary mr-2"></i>从备份中恢复 (智能引擎)</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed mb-4">上传你此前导出的 Excel，或者你自己按模板创建的 Excel。引擎会自动补全缺失的 ID 字段，并根据患者姓名智能关联流水！</p>
                             <label class="btn btn-primary cursor-pointer text-sm justify-center"><i class="fa fa-upload mr-2"></i> 载入 Excel 备份数据<input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls"></label>
                         </div>
                     </div>
@@ -681,7 +681,6 @@ layout: null
                     if(t.type === 'medicine') medSum += amt;
                 });
 
-                // 安全地赋值以避免 TypeError
                 const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
                 
                 safeSet('card-today-rev', todayRev.toFixed(0));
@@ -1053,32 +1052,42 @@ layout: null
                                     const pRows = XLSX.utils.sheet_to_json(wsP);
                                     const tRows = XLSX.utils.sheet_to_json(wsT);
                                     
-                                    const newPatients = pRows.map(row => ({
-                                        id: row['ID(系统勿动)'],
-                                        name: row['姓名'] || '未知',
-                                        phone: row['手机号'] || '',
+                                    // 智能解析患者：如果没有 ID(系统勿动)，就自动生成一个
+                                    const newPatients = pRows.map((row, index) => ({
+                                        id: row['ID(系统勿动)'] || `p_${Date.now()}_${index}`,
+                                        name: row['姓名'] ? String(row['姓名']).trim() : '未知',
+                                        phone: row['手机号'] ? String(row['手机号']).trim() : '',
                                         gender: row['性别'] || '男',
                                         age: row['年龄'] || '',
                                         source: row['渠道'] || '自来',
                                         lenderId: row['出借人ID'] || null,
-                                        tags: row['标签'] ? row['标签'].toString().split(',') : [],
+                                        tags: row['标签'] ? String(row['标签']).split(',') : [],
                                         remark: row['备注'] || ''
                                     }));
                                     
-                                    const newTreatments = tRows.map(row => ({
-                                        id: row['记录ID(勿动)'],
-                                        pid: row['患者ID(勿动)'],
-                                        date: row['日期'],
-                                        type: row['类型']==='充次'?'purchase':row['类型']==='开药'?'medicine':'consume',
-                                        count: Number(row['变动次']) || 0,
-                                        amount: Number(row['金额']) || 0,
-                                        income: Number(row['预计收入']) || 0,
-                                        remark: row['备注'] || ''
-                                    }));
-                                    
-                                    if(newPatients.some(p => !p.id) || newTreatments.some(t => !t.id || !t.pid)) {
-                                        throw new Error("备份文件缺失关键 ID 字段，无法恢复");
-                                    }
+                                    // 智能解析流水：如果没有 患者ID，就用 姓名 去新患者列表里找
+                                    const newTreatments = tRows.map((row, index) => {
+                                        let pid = row['患者ID(勿动)'];
+                                        const pName = row['患者'] ? String(row['患者']).trim() : '';
+
+                                        if (!pid && pName) {
+                                            const matchedP = newPatients.find(p => p.name === pName);
+                                            if (matchedP) pid = matchedP.id;
+                                        }
+
+                                        if (!pid) throw new Error(`流水记录中【${pName||'未知'}】无法匹配到患者主档，请核对姓名！`);
+
+                                        return {
+                                            id: row['记录ID(勿动)'] || `t_${Date.now()}_${index}`,
+                                            pid: pid,
+                                            date: row['日期'],
+                                            type: row['类型']==='充次'?'purchase':row['类型']==='开药'?'medicine':'consume',
+                                            count: Number(row['变动次']) || 0,
+                                            amount: Number(row['金额']) || 0,
+                                            income: Number(row['预计收入']) || 0,
+                                            remark: row['备注'] || ''
+                                        };
+                                    });
                                     
                                     dataStore.patients = newPatients;
                                     dataStore.treatments = newTreatments;
