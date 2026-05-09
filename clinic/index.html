@@ -16,6 +16,8 @@ layout: null
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- 引入强大的拼音库 -->
     <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.16.4/dist/index.js"></script>
     
     <script>
@@ -54,19 +56,19 @@ layout: null
         </div>
     </div>
 
-    <!-- 主系统结构 (初始隐藏) -->
+    <!-- 主系统结构 -->
     <div id="main-app" class="hidden opacity-0 transition-opacity duration-500">
         <header class="bg-white shadow-sm sticky top-0 z-40 backdrop-blur-md bg-white/90 border-b border-gray-100">
             <div class="container mx-auto px-4 h-14 md:h-16 flex justify-between items-center">
-                <div class="flex items-center space-x-2 md:space-x-3 cursor-pointer" onclick="app.showPage('patients')">
+                <div class="flex items-center space-x-2 md:space-x-3 cursor-pointer" onclick="app.showPage('appointments')">
                     <div class="bg-primary/10 p-1.5 md:p-2 rounded-lg text-primary"><i class="fa fa-stethoscope text-lg md:text-xl"></i></div>
                     <h1 class="text-lg md:text-xl font-bold tracking-tight text-gray-800">针推管理 Pro</h1>
                 </div>
                 <nav class="hidden md:flex space-x-1">
-                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="appointments"><i class="fa fa-calendar-check-o mr-1.5"></i>线上预约</button>
-                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-primary bg-primary/5 transition-colors" data-page="patients"><i class="fa fa-users mr-1.5"></i>患者管理</button>
+                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="appointments"><i class="fa fa-calendar-check-o mr-1.5"></i>极速待办</button>
+                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="patients"><i class="fa fa-users mr-1.5"></i>患者档案</button>
                     <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="dashboard"><i class="fa fa-lightbulb-o mr-1.5"></i>经营洞察</button>
-                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="settings"><i class="fa fa-pie-chart mr-1.5"></i>报表维护</button>
+                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="settings"><i class="fa fa-pie-chart mr-1.5"></i>系统维护</button>
                 </nav>
                 <div class="flex items-center gap-3">
                     <button onclick="ui.openPatientModal()" class="md:hidden btn btn-primary px-3 py-1.5 text-xs shadow-sm bg-primary/90 hover:bg-primary"><i class="fa fa-plus mr-1"></i>建档</button>
@@ -76,30 +78,30 @@ layout: null
         </header>
 
         <main class="container mx-auto px-4 py-4 md:py-6 mb-20 md:mb-10">
-            <!-- 1. 线上预约页面 -->
+            <!-- ================= 1. 极速收件箱(预约流)页面 ================= -->
             <section id="appointments-page" class="page-section hidden animate-fade-in">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div class="flex justify-between items-center mb-4">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800">预约核销台</h2>
-                        <p class="text-sm text-gray-500 mt-1">云端 Webhook 自动接收群报数数据</p>
+                        <h2 class="text-2xl font-bold text-gray-800">推送接收台</h2>
+                        <p class="text-xs text-gray-500 mt-1 flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-success mr-1.5 animate-pulse"></span>已展现最新 50 条动态</p>
                     </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <input type="date" id="api-date-picker" class="input-field py-1.5 text-sm flex-grow sm:w-36 bg-white shadow-sm" onchange="app.loadAppointments()">
-                        <button onclick="app.loadAppointments(true)" class="btn btn-secondary text-sm py-1.5 px-4 shadow-sm shrink-0"><i class="fa fa-refresh mr-1.5"></i>刷新</button>
-                    </div>
+                    <button onclick="app.loadAppointments(true)" class="btn btn-secondary text-sm py-1.5 px-4 shadow-sm h-auto"><i class="fa fa-refresh mr-1.5"></i>刷新</button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="appointment-list-body"></div>
+                
+                <div id="appointment-list-body" class="space-y-3 w-full max-w-2xl mx-auto pb-4">
+                    <!-- 极简卡片将在这里渲染 -->
+                </div>
             </section>
 
-            <!-- 2. 患者管理页面 -->
-            <section id="patients-page" class="page-section animate-fade-in">
+            <!-- ================= 2. 患者档案页面 ================= -->
+            <section id="patients-page" class="page-section hidden animate-fade-in">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-4">
-                    <div><h2 class="text-xl md:text-2xl font-bold text-gray-800">患者档案</h2><p class="text-xs md:text-sm text-gray-500 mt-1">管理门诊所有患者信息及私域标签</p></div>
+                    <div><h2 class="text-xl md:text-2xl font-bold text-gray-800">患者档案</h2><p class="text-xs md:text-sm text-gray-500 mt-1">支持姓名、手机号以及首字母拼音(如 zs)秒搜</p></div>
                     <button onclick="ui.openPatientModal()" class="hidden md:flex btn btn-primary shadow-blue-500/30"><i class="fa fa-user-plus mr-2"></i>初诊建档</button>
                 </div>
                 <div class="card p-3 md:p-4 mb-4 md:mb-6 flex flex-col md:flex-row gap-3">
                     <div class="relative flex-grow group">
-                        <input type="text" id="search-input" placeholder="输入姓名、手机号或标签..." class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/50 outline-none transition-colors">
+                        <input type="text" id="search-input" placeholder="输入姓名、拼音首字母(如zs)或手机号..." class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/50 outline-none transition-colors">
                         <button id="clear-search" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 hidden"><i class="fa fa-times-circle"></i></button>
                     </div>
                     <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30 transition-all shrink-0">
@@ -115,8 +117,8 @@ layout: null
                             <thead class="bg-gray-50 border-b border-gray-100 text-xs md:text-sm text-gray-500">
                                 <tr>
                                     <th class="px-4 md:px-6 py-3 md:py-4 font-semibold whitespace-nowrap w-20 md:w-24 text-center">剩余额度</th>
-                                    <th class="px-4 md:px-6 py-3 md:py-4 font-semibold whitespace-nowrap w-24">快速录入</th>
                                     <th class="px-4 md:px-6 py-3 md:py-4 font-semibold whitespace-nowrap">患者信息 & 标签</th>
+                                    <th class="px-4 md:px-6 py-3 md:py-4 font-semibold whitespace-nowrap w-24">快速录入</th>
                                     <th class="px-4 md:px-6 py-3 md:py-4 font-semibold whitespace-nowrap">近期动态</th>
                                     <th class="px-4 md:px-6 py-3 md:py-4 text-right font-semibold whitespace-nowrap">操作</th>
                                 </tr>
@@ -131,7 +133,7 @@ layout: null
                 </div>
             </section>
 
-            <!-- 3. 经营洞察页面 (保留核心骨架，完整渲染在JS) -->
+            <!-- 3. 经营洞察页面 -->
             <section id="dashboard-page" class="page-section hidden animate-fade-in">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div><h2 class="text-2xl font-bold text-gray-800">经营洞察看板</h2><p class="text-sm text-gray-500 mt-1">诊所核心指标与多维数据报表</p></div>
@@ -164,8 +166,8 @@ layout: null
                             <button onclick="dataStore.exportFullBackup()" class="btn bg-white text-gray-900 w-full text-sm font-bold">导出全库数据 (.xlsx)</button>
                         </div>
                         <div class="card p-6 border-l-4 border-l-purple-500 bg-purple-50/20">
-                            <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-cloud-upload mr-2"></i>Webhook 推送模式已开启</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">系统已从“主动拉取”升级为“被动接收”。</p>
+                            <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-bolt mr-2"></i>拼音速搜引擎已激活</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">全系统已接入智能拼音匹配。关联新客、合并档案、搜索主档时，直接输入姓名拼音首字母(如输入 zs 搜张三)，无需切换输入法，效率翻倍。</p>
                         </div>
                     </div>
                     <div class="space-y-6">
@@ -188,80 +190,210 @@ layout: null
         </main>
 
         <!-- 移动端底部导航 -->
-        <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-100 flex justify-around items-center h-[60px] pb-safe z-40">
-            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-primary" data-page="patients"><i class="fa fa-users text-lg mb-0.5"></i><span class="text-[10px] font-medium">档案</span></button>
-            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="appointments"><i class="fa fa-calendar-check-o text-lg mb-0.5"></i><span class="text-[10px] font-medium">预约</span></button>
+        <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-100 flex justify-around items-center h-[60px] pb-safe z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-primary" data-page="appointments"><i class="fa fa-calendar-check-o text-lg mb-0.5"></i><span class="text-[10px] font-medium">待办</span></button>
+            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="patients"><i class="fa fa-users text-lg mb-0.5"></i><span class="text-[10px] font-medium">档案</span></button>
             <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="dashboard"><i class="fa fa-line-chart text-lg mb-0.5"></i><span class="text-[10px] font-medium">洞察</span></button>
-            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="settings"><i class="fa fa-cog text-lg mb-0.5"></i><span class="text-[10px] font-medium">设置</span></button>
+            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="settings"><i class="fa fa-cog text-lg mb-0.5"></i><span class="text-[10px] font-medium">维护</span></button>
         </footer>
 
-        <!-- 各类弹窗容器 (Toast, Confirm, Merge, Patient, Record, Detail) -->
+        <!-- ================= 弹窗容器区 ================= -->
         <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4"></div>
         <div id="modal-confirm" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-[90] p-4 opacity-0 transition-opacity"><div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden" id="modal-confirm-content"><div class="p-6"><div id="confirm-icon"></div><h3 class="text-lg font-bold text-center mb-2" id="confirm-title">提示</h3><p class="text-sm text-gray-500 text-center" id="confirm-message">确认？</p></div><div class="bg-gray-50 px-6 py-4 flex gap-3"><button class="btn btn-secondary flex-1" onclick="ui.closeConfirm()">取消</button><button class="btn flex-1" id="btn-confirm-execute">确定</button></div></div></div>
         
-        <!-- 病人录入弹窗 (复用之前优化过的UI，包含首诊展开) -->
-        <div id="modal-patient" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform flex flex-col max-h-[90vh]" id="modal-patient-content">
-                <div class="flex justify-between items-center px-5 py-4 border-b border-gray-100 shrink-0"><h3 class="font-bold text-lg text-gray-800" id="modal-patient-title">录入患者</h3><button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-patient')"><i class="fa fa-times text-xl"></i></button></div>
-                <div class="p-5 overflow-y-auto no-scrollbar flex-grow">
-                    <form id="form-patient" class="space-y-4">
+        <!-- 核心重构：支持智能拼音首字母搜索的关联老客弹窗 -->
+        <div id="modal-link-apt" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-link-apt')">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm transform scale-95 transition-transform flex flex-col" id="modal-link-apt-content" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center px-4 py-3 border-b border-gray-100 shrink-0">
+                    <h3 class="font-bold text-sm text-gray-800">关联至现有档案</h3>
+                    <button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-link-apt')"><i class="fa fa-times text-lg"></i></button>
+                </div>
+                <div class="p-4 space-y-3">
+                    <input type="hidden" id="link-apt-id">
+                    <input type="hidden" id="link-patient-selected-id">
+                    <p class="text-xs text-gray-500">此人似乎是老客？输入姓名、拼音首字母或电话以光速找回他：</p>
+                    <div class="relative">
+                        <input type="text" id="link-patient-search" placeholder="如搜张三，输入: zs 或 张三" class="input-field !py-2 text-sm bg-white border-blue-200 focus:ring-blue-500 shadow-inner" autocomplete="off">
+                        <!-- 智能悬浮下拉列表 -->
+                        <div id="link-patient-dropdown" class="absolute z-10 w-full bg-white border border-gray-200 rounded-b-lg mt-0.5 max-h-48 overflow-y-auto hidden shadow-2xl left-0 divide-y divide-gray-50"></div>
+                    </div>
+                </div>
+                <div class="px-4 py-3 border-t border-gray-100 flex justify-end gap-2 bg-gray-50 rounded-b-xl">
+                    <button class="btn btn-secondary !py-1.5 text-sm" onclick="ui.closeModal('modal-link-apt')">取消</button>
+                    <button class="btn btn-primary px-6 !py-1.5 text-sm shadow-blue-500/30" onclick="app.confirmLinkApt()">确认认领</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 录入初诊患者弹窗 -->
+        <div id="modal-patient" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-patient')">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform flex flex-col max-h-[90vh]" id="modal-patient-content" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center px-4 py-3 border-b border-gray-100 shrink-0"><h3 class="font-bold text-lg text-gray-800" id="modal-patient-title">录入患者</h3><button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-patient')"><i class="fa fa-times text-xl"></i></button></div>
+                <div class="p-4 overflow-y-auto no-scrollbar flex-grow">
+                    <form id="form-patient" class="space-y-3">
                         <input type="hidden" id="field-p-id">
-                        <div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-gray-500 mb-1">姓名 <span class="text-danger">*</span></label><input type="text" id="field-p-name" class="input-field bg-gray-50" required></div><div><label class="block text-xs font-bold text-gray-500 mb-1">电话</label><input type="tel" id="field-p-phone" class="input-field bg-gray-50"></div></div>
-                        <div class="grid grid-cols-3 gap-3"><div><label class="block text-xs font-bold text-gray-500 mb-1">性别</label><select id="field-p-gender" class="input-field bg-gray-50"><option>男</option><option>女</option></select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">年龄</label><input type="number" id="field-p-age" class="input-field bg-gray-50" min="0"></div><div><label class="block text-xs font-bold text-gray-500 mb-1">渠道</label><select id="field-p-source" class="input-field bg-blue-50 text-blue-800"><option>自来</option><option>推荐</option><option>借卡</option></select></div></div>
-                        <div><label class="block text-xs font-bold text-gray-500 mb-1">病症标签</label><input type="text" id="field-p-tags" class="input-field bg-gray-50 text-sm"></div>
-                        <div><label class="block text-xs font-bold text-gray-500 mb-1">综合备注</label><textarea id="field-p-remark" class="input-field bg-gray-50 text-sm" rows="2"></textarea></div>
-                        <div id="init-options" class="mt-4 pt-4 border-t border-gray-100">
-                            <label class="block text-sm font-bold text-gray-800 mb-3"><i class="fa fa-stethoscope text-primary mr-2"></i>首诊业务 <span class="text-xs text-gray-400 font-normal">(无发生可留空)</span></label>
-                            <div class="space-y-3 bg-gray-50/80 p-4 rounded-xl border border-gray-200">
-                                <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-bold text-green-700 mb-1">治疗(扣次)</label><input type="number" id="field-p-init-consume" class="input-field bg-white border-green-200"></div><div><label class="block text-[11px] font-bold text-purple-700 mb-1">开药(金额)</label><input type="number" id="field-p-init-med" class="input-field bg-white border-purple-200"></div></div>
-                                <div class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200/60"><div><label class="block text-[11px] font-bold text-blue-700 mb-1">开单(充次)</label><input type="number" id="field-p-init-count" class="input-field bg-white border-blue-200"></div><div><label class="block text-[11px] font-bold text-blue-700 mb-1">实收(金额)</label><input type="number" id="field-p-init-amount" class="input-field bg-white border-blue-200"></div></div>
+                        <input type="hidden" id="field-apt-id">
+                        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-bold text-gray-500 mb-1">姓名 <span class="text-danger">*</span></label><input type="text" id="field-p-name" class="input-field !py-1.5 text-sm bg-gray-50" required></div><div><label class="block text-[11px] font-bold text-gray-500 mb-1">电话</label><input type="tel" id="field-p-phone" class="input-field !py-1.5 text-sm bg-gray-50"></div></div>
+                        <div class="grid grid-cols-3 gap-2"><div><label class="block text-[11px] font-bold text-gray-500 mb-1">性别</label><select id="field-p-gender" class="input-field !py-1.5 text-sm bg-gray-50"><option>男</option><option>女</option></select></div><div><label class="block text-[11px] font-bold text-gray-500 mb-1">年龄</label><input type="number" id="field-p-age" class="input-field !py-1.5 text-sm bg-gray-50" min="0"></div><div><label class="block text-[11px] font-bold text-gray-500 mb-1">渠道</label><select id="field-p-source" class="input-field !py-1.5 text-sm bg-blue-50 text-blue-800"><option>自来</option><option>推荐</option><option>借卡</option></select></div></div>
+                        <div><label class="block text-[11px] font-bold text-gray-500 mb-1">病症标签</label><input type="text" id="field-p-tags" class="input-field !py-1.5 text-sm bg-gray-50"></div>
+                        <div><label class="block text-[11px] font-bold text-gray-500 mb-1">综合备注</label><textarea id="field-p-remark" class="input-field !py-1.5 text-sm bg-gray-50" rows="1"></textarea></div>
+                        <div id="init-options" class="mt-2 pt-3 border-t border-gray-100">
+                            <label class="block text-xs font-bold text-gray-800 mb-2"><i class="fa fa-stethoscope text-primary mr-1"></i>首诊业务 <span class="text-[10px] text-gray-400 font-normal">(无发生可留空)</span></label>
+                            <div class="space-y-2 bg-gray-50/80 p-3 rounded-xl border border-gray-200">
+                                <div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] font-bold text-green-700 mb-1">治疗(扣次)</label><input type="number" id="field-p-init-consume" class="input-field !py-1 text-sm bg-white border-green-200"></div><div><label class="block text-[10px] font-bold text-purple-700 mb-1">开药(金额)</label><input type="number" id="field-p-init-med" class="input-field !py-1 text-sm bg-white border-purple-200"></div></div>
+                                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200/60"><div><label class="block text-[10px] font-bold text-blue-700 mb-1">开单(充次)</label><input type="number" id="field-p-init-count" class="input-field !py-1 text-sm bg-white border-blue-200"></div><div><label class="block text-[10px] font-bold text-blue-700 mb-1">实收(金额)</label><input type="number" id="field-p-init-amount" class="input-field !py-1 text-sm bg-white border-blue-200"></div></div>
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="px-5 py-3 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl shrink-0"><button class="btn btn-secondary text-sm" onclick="ui.closeModal('modal-patient')">取消</button><button class="btn btn-primary px-6 text-sm" onclick="app.savePatient()">确认建档</button></div>
+                <div class="px-4 py-3 border-t border-gray-100 flex justify-end gap-2 bg-gray-50 rounded-b-2xl shrink-0"><button class="btn btn-secondary !py-1.5 text-sm" onclick="ui.closeModal('modal-patient')">取消</button><button class="btn btn-primary px-6 !py-1.5 text-sm" onclick="app.savePatient()">确认建档</button></div>
             </div>
         </div>
 
-        <!-- 聚合业务录入 -->
-        <div id="modal-record" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform flex flex-col max-h-[90vh]" id="modal-record-content">
-                <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 shrink-0"><h3 class="font-bold text-lg text-gray-800">业务录入</h3><button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-record')"><i class="fa fa-times text-xl"></i></button></div>
-                <div class="p-6 overflow-y-auto no-scrollbar flex-grow">
-                    <div class="bg-gray-50 rounded-xl p-3 mb-5 border flex justify-between items-center"><div><p class="text-xs text-gray-500">当前患者</p><p id="record-patient-name" class="font-bold text-primary text-lg leading-tight"></p></div><div class="text-right"><p class="text-xs text-gray-500">剩余额度</p><p id="record-patient-rem" class="font-black text-xl text-gray-800 leading-tight">0</p></div></div>
-                    <form id="form-record" class="space-y-4">
+        <!-- 录单弹窗 -->
+        <div id="modal-record" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-2 sm:p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-record')">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform flex flex-col max-h-screen" id="modal-record-content" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center px-3 py-2 border-b border-gray-100 shrink-0">
+                    <h3 class="font-bold text-sm text-gray-800">业务录入</h3>
+                    <button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-record')"><i class="fa fa-times text-lg"></i></button>
+                </div>
+                
+                <div class="p-3 overflow-y-auto no-scrollbar flex-grow">
+                    <div class="bg-blue-50/40 rounded p-2 mb-3 border border-blue-100 flex flex-wrap justify-between items-center text-xs gap-y-1.5">
+                        <div class="w-1/2 truncate"><span class="text-gray-400 font-normal mr-1">患者:</span><span id="record-patient-name" class="font-bold text-primary"></span></div>
+                        <div class="w-1/2 text-right"><span class="text-gray-400 font-normal mr-1">余次:</span><span id="record-patient-rem" class="font-black text-base text-gray-800 leading-none"></span></div>
+                        <div class="w-1/2"><span class="text-gray-400 font-normal mr-1">已耗:</span><span id="record-patient-consumed" class="font-bold text-gray-700"></span><span class="text-gray-400 scale-90 ml-0.5 text-[10px]">次</span></div>
+                        <div class="w-1/2 text-right"><span class="text-gray-400 font-normal mr-1">上次:</span><span id="record-patient-last" class="font-bold text-gray-700"></span></div>
+                    </div>
+
+                    <form id="form-record" class="space-y-2.5">
                         <input type="hidden" id="record-p-id">
-                        <div><label class="block text-xs font-bold text-gray-500 mb-1">发生日期</label><input type="date" id="record-date" class="input-field bg-gray-50"></div>
-                        <div class="space-y-3">
-                            <div class="p-3 bg-green-50 border border-green-200 rounded-lg"><label class="block text-sm font-bold text-green-700 mb-2">🌿 治疗核销 (扣次)</label><div class="flex items-center gap-2"><span class="text-xs text-gray-600">本次消耗:</span><div class="relative flex-grow"><input type="number" id="rec-c-count" class="input-field bg-white pr-8 border-green-300"><span class="absolute right-3 top-2 text-gray-400 text-sm">次</span></div></div></div>
-                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg"><label class="block text-sm font-bold text-blue-700 mb-2">💳 开单购买 (充次)</label><div class="grid grid-cols-2 gap-3"><div><span class="text-[10px] text-gray-500 mb-1 block">增加次数</span><input type="number" id="rec-p-count" class="input-field bg-white border-blue-300 text-sm"></div><div><span class="text-[10px] text-gray-500 mb-1 block">实收金额</span><input type="number" id="rec-p-amount" class="input-field bg-white border-blue-300 text-sm"></div></div></div>
-                            <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg"><label class="block text-sm font-bold text-purple-700 mb-2">💊 开药收费</label><div class="flex items-center gap-2"><span class="text-xs text-gray-600">药品金额:</span><div class="relative flex-grow"><input type="number" id="rec-m-amount" class="input-field bg-white border-purple-300 pl-6"><span class="absolute left-2 top-2 text-gray-400 text-sm">¥</span></div></div></div>
+                        <input type="hidden" id="record-apt-id">
+                        
+                        <div class="flex gap-2">
+                            <div class="w-[55%]">
+                                <label class="block text-[10px] font-bold text-gray-500 mb-0.5">发生日期</label>
+                                <input type="date" id="record-date" class="input-field !py-1 !px-2 text-xs bg-gray-50">
+                            </div>
+                            <div class="w-[45%]">
+                                <label class="block text-[10px] font-bold text-green-700 mb-0.5">🌿 治疗(扣次)</label>
+                                <div class="relative">
+                                    <input type="number" id="rec-c-count" class="input-field !py-1 !px-2 text-xs bg-green-50/50 border-green-200">
+                                    <span class="absolute right-2 top-1.5 text-gray-400 text-[10px]">次</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center"><span class="text-xs text-gray-300 font-medium">本次预估总收入</span><span class="text-lg font-black text-white">¥<span id="record-income-val">0.00</span></span></div>
-                        <div><input type="text" id="record-remark" placeholder="附言备注(可选)" class="input-field bg-gray-50 text-sm"></div>
+
+                        <div class="p-2 bg-blue-50/40 border border-blue-100 rounded text-xs">
+                            <label class="block text-[10px] font-bold text-blue-700 mb-1">💳 开单购买 (充次)</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span class="text-[9px] text-gray-500 block mb-0.5">充值次数</span>
+                                    <input type="number" id="rec-p-count" class="input-field !py-1 !px-2 text-xs bg-white border-blue-200">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-gray-500 block mb-0.5">实收金额(¥)</span>
+                                    <input type="number" id="rec-p-amount" class="input-field !py-1 !px-2 text-xs bg-white border-blue-200">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="p-2 bg-purple-50/40 border border-purple-100 rounded">
+                                <label class="block text-[10px] font-bold text-purple-700 mb-1">💊 开药收费</label>
+                                <div class="relative">
+                                    <input type="number" id="rec-m-amount" class="input-field !py-1 !px-2 text-xs bg-white border-purple-200 pl-4">
+                                    <span class="absolute left-1.5 top-1.5 text-gray-400 text-[10px]">¥</span>
+                                </div>
+                            </div>
+                            <div class="p-2 bg-gray-800 rounded flex flex-col justify-center items-center">
+                                <span class="text-[9px] text-gray-400 font-medium">本次预估总收入</span>
+                                <span class="text-lg font-black text-white leading-none mt-1">¥<span id="record-income-val">0.00</span></span>
+                            </div>
+                        </div>
+                        
+                        <div><input type="text" id="record-remark" placeholder="附言备注(可选)" class="input-field !py-1 text-[11px] bg-gray-50"></div>
                     </form>
                 </div>
-                <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl shrink-0"><button class="btn btn-secondary" onclick="ui.closeModal('modal-record')">取消</button><button class="btn btn-primary px-8" onclick="app.saveRecord()">提交</button></div>
+                <div class="px-3 py-2 border-t border-gray-100 flex justify-end gap-2 bg-gray-50 rounded-b-xl shrink-0">
+                    <button class="btn btn-secondary !py-1 !px-4 text-xs" onclick="ui.closeModal('modal-record')">取消</button>
+                    <button class="btn btn-primary !py-1 !px-6 text-xs shadow-blue-500/30" onclick="app.saveRecord()">确认提交</button>
+                </div>
             </div>
         </div>
 
-        <!-- 历史详情查看与合并重复弹窗 -->
-        <!-- (复用原有UI) -->
-        <div id="modal-detail" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col transform scale-95 transition-transform h-[85vh] md:h-[75vh]" id="modal-detail-content">
+        <!-- 历史账单修改弹窗 -->
+        <div id="modal-edit-record" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-edit-record')">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm transform scale-95 transition-transform" id="modal-edit-record-content" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-yellow-50 rounded-t-2xl">
+                    <h3 class="font-bold text-lg text-yellow-800"><i class="fa fa-pencil-square-o mr-2"></i>修改历史记录</h3>
+                    <button class="text-yellow-600 hover:text-yellow-800" onclick="ui.closeModal('modal-edit-record')"><i class="fa fa-times text-xl"></i></button>
+                </div>
+                <div class="p-6">
+                    <form id="form-edit-record" class="space-y-4">
+                        <input type="hidden" id="edit-t-id">
+                        <input type="hidden" id="edit-t-type">
+                        <div class="bg-gray-100 p-2 rounded text-center text-sm font-bold text-gray-600 mb-4" id="edit-t-type-display">业务类型</div>
+                        <div><label class="block text-xs font-bold text-gray-500 mb-1">修改日期</label><input type="date" id="edit-t-date" class="input-field bg-gray-50"></div>
+                        <div id="edit-box-count"><label class="block text-xs font-bold text-gray-500 mb-1">修改次数</label><input type="number" id="edit-t-count" class="input-field bg-white" min="0"></div>
+                        <div id="edit-box-amount"><label class="block text-xs font-bold text-gray-500 mb-1">修改金额(¥)</label><input type="number" id="edit-t-amount" class="input-field bg-white" min="0" step="0.01"></div>
+                        <div><label class="block text-xs font-bold text-gray-500 mb-1">修改备注</label><input type="text" id="edit-t-remark" class="input-field bg-gray-50"></div>
+                    </form>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
+                    <button class="btn btn-secondary" onclick="ui.closeModal('modal-edit-record')">取消</button>
+                    <button class="btn btn-warning px-8 text-white shadow-yellow-500/30" onclick="app.saveEditTreatment()">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 详情弹窗 -->
+        <div id="modal-detail" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-detail')">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col transform scale-95 transition-transform h-[85vh] md:h-[75vh]" id="modal-detail-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-100 shrink-0"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0" id="det-avatar">名</div><div><h3 class="font-bold text-base md:text-lg text-gray-800 leading-none flex items-center"><span id="det-p-name">姓名</span><span class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600" id="det-p-source">来源</span></h3><span class="text-[10px] md:text-xs text-gray-400 mt-1 block" id="det-p-phone">手机号</span><div id="det-p-tags" class="flex flex-wrap gap-1 mt-1"></div></div></div><button class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50" onclick="ui.closeModal('modal-detail')"><i class="fa fa-times text-xl"></i></button></div>
                 <div class="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50/50 shrink-0"><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总消费(元)</p><p class="text-base md:text-xl font-bold text-danger" id="det-stat-money">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总计充次</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-p">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">累计消耗</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-c">0</p></div><div class="p-2 md:p-3 text-center bg-blue-50/50"><p class="text-[9px] md:text-[10px] text-blue-500 font-bold">剩余可用</p><p class="text-lg md:text-xl font-black text-primary" id="det-stat-rem">0</p></div></div>
                 <div class="flex-grow overflow-y-auto bg-gray-50/30 p-4 no-scrollbar"><div id="det-history-list" class="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent"></div></div>
             </div>
         </div>
         
-        <div id="modal-merge" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity"><div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform" id="modal-merge-content"><div class="flex justify-between items-center px-6 py-4 border-b border-gray-100"><h3 class="font-bold text-lg text-gray-800">合并重复档案</h3><button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-merge')"><i class="fa fa-times"></i></button></div><div class="p-6"><datalist id="merge-patients-datalist"></datalist><div class="space-y-4"><div class="bg-green-50 p-3 rounded-lg border border-green-100"><label class="block text-xs font-bold text-green-700 mb-1">主档案 (保留)</label><input type="text" id="merge-p1-input" list="merge-patients-datalist" class="input-field bg-white"></div><div class="bg-red-50 p-3 rounded-lg border border-red-100"><label class="block text-xs font-bold text-red-700 mb-1">冗余档案 (删除)</label><input type="text" id="merge-p2-input" list="merge-patients-datalist" class="input-field bg-white"></div></div></div><div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl"><button class="btn btn-secondary" onclick="ui.closeModal('modal-merge')">取消</button><button class="btn btn-danger px-6" onclick="app.executeMerge()">确认合并</button></div></div></div>
+        <!-- 核心重构：支持智能拼音首字母搜索的合并档案弹窗 -->
+        <div id="modal-merge" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-merge')">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform" id="modal-merge-content" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100"><h3 class="font-bold text-lg text-gray-800">合并重复档案</h3><button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-merge')"><i class="fa fa-times"></i></button></div>
+                <div class="p-6 space-y-4 bg-gray-50">
+                    <p class="text-xs text-gray-500 mb-2">将冗余档案的所有流水记录无缝转移给主档案，随后销毁冗余档案。此操作不可逆！</p>
+                    <div class="bg-white p-3 rounded-lg border border-green-200 shadow-sm relative">
+                        <label class="block text-xs font-bold text-green-700 mb-1.5"><i class="fa fa-shield mr-1"></i>主档案 (最终保留)</label>
+                        <input type="text" id="merge-p1-search" placeholder="输入首字母(zs)或姓名..." class="input-field bg-gray-50 !py-1.5 text-sm focus:ring-green-500" autocomplete="off">
+                        <input type="hidden" id="merge-p1-id">
+                        <div id="merge-p1-dropdown" class="absolute z-10 w-full bg-white border border-gray-200 rounded-b-lg mt-0.5 max-h-40 overflow-y-auto hidden shadow-xl left-0 divide-y divide-gray-50"></div>
+                    </div>
+                    <div class="text-center text-gray-300 my-1"><i class="fa fa-arrow-up text-xl"></i></div>
+                    <div class="bg-white p-3 rounded-lg border border-red-200 shadow-sm relative">
+                        <label class="block text-xs font-bold text-red-700 mb-1.5"><i class="fa fa-fire mr-1"></i>冗余档案 (将被销毁)</label>
+                        <input type="text" id="merge-p2-search" placeholder="输入首字母(zs)或姓名..." class="input-field bg-gray-50 !py-1.5 text-sm focus:ring-red-500" autocomplete="off">
+                        <input type="hidden" id="merge-p2-id">
+                        <div id="merge-p2-dropdown" class="absolute z-10 w-full bg-white border border-gray-200 rounded-b-lg mt-0.5 max-h-40 overflow-y-auto hidden shadow-xl left-0 divide-y divide-gray-50"></div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-white rounded-b-2xl">
+                    <button class="btn btn-secondary" onclick="ui.closeModal('modal-merge')">取消</button>
+                    <button class="btn btn-danger px-6 shadow-red-500/30" onclick="app.executeMerge()">确认合并</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- ========================================== JavaScript 逻辑层 ========================================== -->
     <script>
-        // 【核心配置】Firebase 数据库地址
         const DB_URL = "https://clinic-data-913bd-default-rtdb.firebaseio.com/clinic_pro.json";
+
+        // 安全获取拼音首字母的通用方法 (兼容 CDN 延迟加载)
+        const getPinyinInitials = (str) => {
+            if (!str || typeof window.pinyinPro === 'undefined') return '';
+            try {
+                return window.pinyinPro.pinyin(str, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toLowerCase();
+            } catch(e) { return ''; }
+        };
 
         const ui = {
             showToast: (msg, type = 'info') => {
@@ -282,27 +414,40 @@ layout: null
             closeConfirm: () => ui.closeModal('modal-confirm'),
             openModal: (id) => { const m = document.getElementById(id), c = document.getElementById(id+'-content'); m.classList.remove('hidden'); m.classList.add('flex'); requestAnimationFrame(() => { m.classList.remove('opacity-0'); if(c) c.classList.remove('scale-95'); }); },
             closeModal: (id) => { const m = document.getElementById(id), c = document.getElementById(id+'-content'); m.classList.add('opacity-0'); if(c) c.classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 200); },
-            openPatientModal: (pid = null, defaultName = '') => {
+            
+            openPatientModal: (pid = null, defaultName = '', aptId = null) => {
                 document.getElementById('form-patient').reset(); const initBox = document.getElementById('init-options');
+                document.getElementById('field-apt-id').value = aptId || ''; 
                 if (pid) {
-                    const p = dataStore.getPatient(pid); document.getElementById('modal-patient-title').innerText = "修改患者资料";
+                    const p = dataStore.getPatient(pid); document.getElementById('modal-patient-title').innerText = "修改资料";
                     ['id','name','phone','gender','age','source','remark'].forEach(k => document.getElementById('field-p-'+k).value = p[k] || '');
                     document.getElementById('field-p-tags').value = p.tags ? p.tags.join(' ') : '';
                     if(!document.getElementById('field-p-gender').value) document.getElementById('field-p-gender').value = '男';
                     if(!document.getElementById('field-p-source').value) document.getElementById('field-p-source').value = '自来';
                     initBox.classList.add('hidden'); 
                 } else {
-                    document.getElementById('modal-patient-title').innerText = "录入初诊患者";
+                    document.getElementById('modal-patient-title').innerText = "录入初诊";
                     document.getElementById('field-p-id').value = ''; document.getElementById('field-p-name').value = defaultName;
                     initBox.classList.remove('hidden');
                 }
                 ui.openModal('modal-patient');
             },
-            openMergeModal: () => {
-                const list = document.getElementById('merge-patients-datalist'); list.innerHTML = '';
-                dataStore.patients.forEach(p => { const o = document.createElement('option'); o.value = `${p.name} ${p.phone?'('+p.phone+')':''} [ID:${p.id}]`; list.appendChild(o); });
-                document.getElementById('merge-p1-input').value = ''; document.getElementById('merge-p2-input').value = ''; ui.openModal('modal-merge');
+
+            openLinkModal: (aptId) => {
+                document.getElementById('link-apt-id').value = aptId;
+                document.getElementById('link-patient-search').value = '';
+                document.getElementById('link-patient-selected-id').value = '';
+                ui.openModal('modal-link-apt');
             },
+
+            openMergeModal: () => {
+                document.getElementById('merge-p1-search').value = '';
+                document.getElementById('merge-p1-id').value = '';
+                document.getElementById('merge-p2-search').value = '';
+                document.getElementById('merge-p2-id').value = '';
+                ui.openModal('modal-merge');
+            },
+            
             confirmClearData: () => ui.showConfirm("彻底清空本地", "清除本地缓存，不影响云端。继续？", true, () => { localStorage.clear(); location.reload(); })
         };
 
@@ -316,7 +461,7 @@ layout: null
                     if (cloudData) { 
                         dataStore.patients = cloudData.patients || []; 
                         dataStore.treatments = cloudData.treatments || []; 
-                        dataStore.appointments = cloudData.appointments || {}; // 读取 Webhook 队列
+                        dataStore.appointments = cloudData.appointments || {}; 
                     }
                 } catch (e) {
                     dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
@@ -328,15 +473,7 @@ layout: null
                 localStorage.setItem(dataStore.keys.P, JSON.stringify(dataStore.patients));
                 localStorage.setItem(dataStore.keys.T, JSON.stringify(dataStore.treatments));
                 dataStore.rebuildStatsCache();
-                // 核心修改：使用 PATCH 而不是 PUT。只更新这三个字段，防止覆盖 Webhook 推送的 appointments 节点。
-                fetch(DB_URL, { 
-                    method: 'PATCH', 
-                    body: JSON.stringify({ 
-                        patients: dataStore.patients, 
-                        treatments: dataStore.treatments, 
-                        lastUpdate: new Date().toLocaleString() 
-                    }) 
-                }).catch(()=>{});
+                fetch(DB_URL, { method: 'PATCH', body: JSON.stringify({ patients: dataStore.patients, treatments: dataStore.treatments, lastUpdate: new Date().toLocaleString() }) }).catch(()=>{});
                 return true;
             },
             getPatient: (id) => dataStore.patients.find(x => x.id === id),
@@ -365,9 +502,8 @@ layout: null
         };
 
         const app = {
-            state: { page: 0, size: 10, search: '', filterMin: '', filterMax: '', currentPage: 'patients' },
+            state: { page: 0, size: 10, search: '', filterMin: '', filterMax: '', currentPage: 'appointments', currentDetailPid: null },
             
-            // 登录验证拦截
             verifyAuth: () => {
                 const pwd = document.getElementById('login-pwd').value;
                 if (pwd === 'mhtxyc' || sessionStorage.getItem('clinic_auth') === 'true') {
@@ -379,15 +515,65 @@ layout: null
                         setTimeout(() => document.getElementById('main-app').classList.remove('opacity-0'), 50);
                         app.initSystem();
                     }, 300);
-                } else if (pwd) {
-                    ui.showToast("密钥错误", "error");
-                }
+                } else if (pwd) { ui.showToast("密钥错误", "error"); }
+            },
+
+            // 通用的带拼音首字母模糊匹配的智能下拉组件
+            initSearchDropdown: (inputId, dropdownId, hiddenId) => {
+                const input = document.getElementById(inputId);
+                const dropdown = document.getElementById(dropdownId);
+                const hidden = document.getElementById(hiddenId);
+
+                const renderDrop = (term) => {
+                    dropdown.innerHTML = '';
+                    const sortedPatients = [...dataStore.patients].sort((a,b)=>a.name.localeCompare(b.name));
+                    
+                    const filtered = sortedPatients.filter(p => {
+                        if(!term) return true;
+                        const pyInitials = getPinyinInitials(p.name);
+                        return p.name.toLowerCase().includes(term) || pyInitials.includes(term) || (p.phone && p.phone.includes(term));
+                    }).slice(0, 30); // 截取前30个保证性能
+
+                    if(filtered.length === 0) {
+                        dropdown.innerHTML = '<div class="p-3 text-xs text-gray-400 text-center">系统查无此人，请检查输入</div>';
+                    } else {
+                        filtered.forEach(p => {
+                            const div = document.createElement('div');
+                            div.className = "p-2.5 text-sm hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-colors";
+                            div.innerHTML = `<span class="font-bold text-gray-700">${p.name}</span><span class="text-xs text-gray-400 font-mono">${p.phone||'无电话'}</span>`;
+                            // 使用 mousedown 防止 input blur 事件抢先触发导致列表消失
+                            div.onmousedown = (e) => { 
+                                e.preventDefault();
+                                hidden.value = p.id;
+                                input.value = `${p.name} ${p.phone ? '('+p.phone+')' : ''}`;
+                                dropdown.classList.add('hidden');
+                            };
+                            dropdown.appendChild(div);
+                        });
+                    }
+                    dropdown.classList.remove('hidden');
+                };
+
+                input.onfocus = () => renderDrop(input.value.toLowerCase().trim());
+                input.oninput = (e) => {
+                    hidden.value = ''; // 重新输入时清空之前的选择
+                    renderDrop(e.target.value.toLowerCase().trim());
+                };
+                input.onblur = () => { setTimeout(() => dropdown.classList.add('hidden'), 150); };
             },
 
             initSystem: async () => {
                 await dataStore.init();
-                const dPicker = document.getElementById('api-date-picker'); if(dPicker) dPicker.value = new Date().toISOString().split('T')[0];
-                app.updateBadge(); app.renderList(); app.bindEvents();
+                app.updateBadge(); 
+                app.renderList(); 
+                app.bindEvents();
+                
+                // 初始化所有基于拼音的智能下拉框
+                app.initSearchDropdown('link-patient-search', 'link-patient-dropdown', 'link-patient-selected-id');
+                app.initSearchDropdown('merge-p1-search', 'merge-p1-dropdown', 'merge-p1-id');
+                app.initSearchDropdown('merge-p2-search', 'merge-p2-dropdown', 'merge-p2-id');
+
+                app.showPage('appointments');
             },
 
             updateBadge: () => {
@@ -395,64 +581,144 @@ layout: null
                 if(dataStore.patients.length>0) { b.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 云端在线: ${dataStore.patients.length}人`; b.className = "hidden md:inline-flex items-center px-3 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full"; }
             },
 
-            // Webhook 模式：直接从 Firebase 读取 appointments 节点
+            // ===== 确认关联逻辑 =====
+            confirmLinkApt: async () => {
+                const aptId = document.getElementById('link-apt-id').value;
+                const pid = document.getElementById('link-patient-selected-id').value;
+                if (!pid) return ui.showToast("请在下拉提示中点击选中一个真实的档案", "warning");
+
+                const patient = dataStore.getPatient(pid);
+                if (patient && dataStore.appointments[aptId]) {
+                    dataStore.appointments[aptId].name = patient.name;
+                    dataStore.appointments[aptId].phone = patient.phone || '';
+                    
+                    try {
+                        const updateUrl = DB_URL.replace('clinic_pro.json', `clinic_pro/appointments/${aptId}.json`);
+                        await fetch(updateUrl, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ name: patient.name, phone: patient.phone || '' })
+                        });
+                        ui.showToast("秒速关联成功！", "success");
+                        ui.closeModal('modal-link-apt');
+                        app.loadAppointments(); 
+                    } catch(e) {
+                        ui.showToast("网络异常，关联失败", "error");
+                    }
+                }
+            },
+            
+            // 核心功能：高级合并档案逻辑
+            executeMerge: async () => {
+                const p1Id = document.getElementById('merge-p1-id').value;
+                const p2Id = document.getElementById('merge-p2-id').value;
+                if(!p1Id || !p2Id) return ui.showToast('请确保主档案和冗余档案都从下拉列表中正确选中', 'warning');
+                if(p1Id === p2Id) return ui.showToast('主档案和冗余档案不能是同一个人', 'error');
+                
+                ui.showConfirm("高危操作警告", "冗余档案的所有流水将被合并到主档案中，且冗余档案将被永久删除！该操作无法撤销，确认继续？", true, async () => {
+                    let hasChanges = false;
+                    // 转移流水资产
+                    dataStore.treatments.forEach(t => {
+                        if (t.pid === p2Id) { t.pid = p1Id; hasChanges = true; }
+                    });
+                    // 抹除冗余人员
+                    dataStore.patients = dataStore.patients.filter(p => p.id !== p2Id);
+                    
+                    dataStore.save();
+                    ui.showToast("完美合并，世界清静了", "success");
+                    ui.closeModal('modal-merge');
+                    app.renderList();
+                });
+            },
+
+            // ===== 极简 Feed 流渲染引擎 =====
             loadAppointments: async (isManual = false) => {
                 if(isManual) ui.showToast("正在拉取最新推送...", "info");
                 const body = document.getElementById('appointment-list-body');
-                const targetDate = document.getElementById('api-date-picker').value;
                 
                 try {
-                    // 重新获取最新快照
-                    const res = await fetch(DB_URL);
-                    const cloudData = await res.json();
-                    if(cloudData && cloudData.appointments) {
-                        dataStore.appointments = cloudData.appointments;
+                    if(isManual) {
+                        const res = await fetch(DB_URL);
+                        const cloudData = await res.json();
+                        if(cloudData && cloudData.appointments) dataStore.appointments = cloudData.appointments;
                     }
                     
                     const allAppts = Object.values(dataStore.appointments || {});
-                    // 过滤出当天的预约
-                    const list = allAppts.filter(a => a.date === targetDate || (a.time && a.time.startsWith(targetDate)));
                     
-                    if (list.length === 0) {
-                        body.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400"><i class="fa fa-coffee text-2xl mb-2"></i><p>当日无预约推送记录</p></div>`;
+                    if (allAppts.length === 0) {
+                        body.innerHTML = `<div class="py-12 text-center text-gray-400"><i class="fa fa-check-circle-o text-4xl mb-2 opacity-50"></i><p>Inbox Zero！待办已清空</p></div>`;
                         return;
                     }
 
                     const df = document.createDocumentFragment();
-                    // 按时间排序
-                    list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).forEach(apt => {
+                    
+                    allAppts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 50).forEach(apt => {
                         const matchedPatient = dataStore.patients.find(p => (p.phone && apt.phone && p.phone === apt.phone) || p.name === apt.name);
                         const card = document.createElement('div');
-                        card.className = "bg-white rounded-xl border border-gray-200 p-4 shadow-sm relative overflow-hidden group hover:border-primary/50 transition-all";
+                        card.className = "bg-white rounded-xl border border-gray-100 p-3 shadow-sm flex justify-between items-center hover:border-primary/30 transition-all";
                         
-                        let actionHtml = '', matchedBadge = '';
+                        let rightHtml = '';
                         if (matchedPatient) {
                             const stats = dataStore.calcStats(matchedPatient.id);
-                            matchedBadge = `<span class="absolute top-0 right-0 bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded-bl-lg font-bold"><i class="fa fa-link mr-1"></i>已关联档案</span>`;
-                            actionHtml = `<div class="mt-4 flex gap-2"><div class="bg-gray-50 flex-1 rounded-lg p-2 text-center text-xs"><p class="text-gray-400">剩余额度</p><p class="font-black text-lg ${stats.remain > 0 ? 'text-primary' : 'text-danger'}">${stats.remain}次</p></div><button onclick="app.showPage('patients'); app.openRecordUI('${matchedPatient.id}');" class="flex-1 btn btn-primary bg-primary/90 hover:bg-primary shadow-blue-500/20 px-2 py-1 text-sm h-auto"><i class="fa fa-check-circle-o mr-1"></i>去核销</button></div>`;
+                            rightHtml = `
+                                <div class="flex items-center gap-3 shrink-0">
+                                    <div class="text-right">
+                                        <p class="text-[9px] text-gray-400 mb-0.5">剩余</p>
+                                        <p class="font-black text-xl ${stats.remain > 0 ? 'text-primary' : 'text-danger'} leading-none">${stats.remain}</p>
+                                    </div>
+                                    <button onclick="app.openRecordUI('${matchedPatient.id}', '${apt.id}')" class="bg-primary text-white px-3 py-2 rounded-lg text-xs font-medium shadow-sm hover:bg-blue-600 active:scale-95 transition-all"><i class="fa fa-pencil-square-o mr-1"></i>录单</button>
+                                </div>
+                            `;
                         } else {
-                            matchedBadge = `<span class="absolute top-0 right-0 bg-red-50 text-red-500 text-[10px] px-2 py-1 rounded-bl-lg font-bold"><i class="fa fa-exclamation-circle mr-1"></i>未匹配 (新客)</span>`;
-                            actionHtml = `<div class="mt-4"><button onclick="app.showPage('patients'); ui.openPatientModal(null, '${apt.name}'); document.getElementById('field-p-phone').value='${apt.phone||''}';" class="w-full btn border border-primary/30 text-primary bg-blue-50/50 hover:bg-blue-50 text-sm py-2"><i class="fa fa-user-plus mr-1"></i> 一键建档</button></div>`;
+                            rightHtml = `
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-danger border border-red-100 mr-1">新客</span>
+                                    <button onclick="ui.openLinkModal('${apt.id}')" class="bg-blue-50 text-primary border border-blue-100 px-2 py-1.5 rounded-lg text-xs shadow-sm hover:bg-blue-100 active:scale-95 transition-all" title="关联老客"><i class="fa fa-link"></i></button>
+                                    <button onclick="ui.openPatientModal(null, '${apt.name}', '${apt.id}'); document.getElementById('field-p-phone').value='${apt.phone||''}';" class="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm hover:bg-gray-50 active:scale-95 transition-all"><i class="fa fa-user-plus mr-1"></i>建档</button>
+                                </div>
+                            `;
                         }
 
-                        card.innerHTML = `${matchedBadge}<div class="flex items-start gap-3 mt-2"><div class="bg-gray-100 text-gray-700 font-bold text-lg w-12 h-12 rounded-xl flex items-center justify-center shrink-0">${apt.name.charAt(0)}</div><div><h4 class="font-bold text-gray-800 text-base">${apt.name} <span class="text-xs font-mono text-primary ml-2 bg-blue-50 px-1 rounded">${apt.time || '-'}</span></h4>${apt.phone ? `<p class="text-xs text-gray-500 mt-0.5"><i class="fa fa-phone mr-1"></i>${apt.phone}</p>` : ''}${apt.project ? `<p class="text-xs text-gray-500 mt-1 line-clamp-1"><i class="fa fa-tag mr-1"></i>项目: <span class="font-medium text-gray-700">${apt.project}</span></p>` : ''}</div></div>${actionHtml}`;
+                        const timeHint = (apt.time && apt.time !== '00:00') ? ` • ${apt.time}` : '';
+                        
+                        card.innerHTML = `
+                            <div class="flex items-center gap-3 overflow-hidden cursor-pointer" onclick="${matchedPatient ? `app.showDetail('${matchedPatient.id}')` : ''}">
+                                <div class="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 text-sm">
+                                    ${apt.name.charAt(0)}
+                                </div>
+                                <div class="truncate">
+                                    <h4 class="font-bold text-gray-800 text-base truncate">${apt.name}</h4>
+                                    <p class="text-[10px] text-gray-400 mt-0.5"><i class="fa fa-phone mr-1"></i>${apt.phone || '无电话'}${timeHint}</p>
+                                </div>
+                            </div>
+                            ${rightHtml}
+                        `;
                         df.appendChild(card);
                     });
+                    
                     body.innerHTML = ''; body.appendChild(df);
-                    if(isManual) ui.showToast("已同步最新推送", "success");
+                    if(isManual) ui.showToast("已重载最新数据", "success");
                 } catch(e) {
                     body.innerHTML = `<div class="col-span-full py-6 text-center text-red-400"><p>云端读取失败</p></div>`;
                 }
             },
 
-            // 其余核心逻辑保持不变
+            // 核心重构：全面接入拼音首字母过滤算法的患者主列表
             renderList: () => {
                 const tbody = document.getElementById('patient-list-body'); if(!tbody) return;
                 let res = dataStore.patients;
+                
+                // 【搜索算法优化】：支持纯拼音、汉字、电话、标签的混合命中
                 if (app.state.search) {
                     const terms = app.state.search.toLowerCase().split(/\s+/).filter(t=>t);
-                    res = res.filter(p => terms.every(term => (p.name&&p.name.toLowerCase().includes(term)) || (p.phone&&p.phone.includes(term)) || (p.tags&&p.tags.some(t=>t.toLowerCase().includes(term)))));
+                    res = res.filter(p => terms.every(term => {
+                        const pyName = getPinyinInitials(p.name);
+                        return (p.name && p.name.toLowerCase().includes(term)) ||
+                               (pyName.includes(term)) ||
+                               (p.phone && p.phone.includes(term)) ||
+                               (p.tags && p.tags.some(t => t.toLowerCase().includes(term) || getPinyinInitials(t).includes(term)));
+                    }));
                 }
+                
                 const minV = parseInt(app.state.filterMin), maxV = parseInt(app.state.filterMax);
                 if(!isNaN(minV) || !isNaN(maxV)) { res = res.filter(p => { const r = dataStore.calcStats(p.id).remain; return (isNaN(minV)||r>=minV) && (isNaN(maxV)||r<=maxV); }); }
                 res.sort((a,b) => dataStore.calcStats(a.id).remain - dataStore.calcStats(b.id).remain);
@@ -463,7 +729,7 @@ layout: null
 
                 const paged = res.slice(app.state.page * app.state.size, (app.state.page + 1) * app.state.size);
                 tbody.innerHTML = '';
-                if(paged.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">未找到患者记录</td></tr>`; return; }
+                if(paged.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">系统查无此人...</td></tr>`; return; }
 
                 const df = document.createDocumentFragment();
                 paged.forEach(p => {
@@ -472,7 +738,13 @@ layout: null
                     if (rem<=0) { cCls = 'text-danger bg-red-50 border-red-100'; sTxt = '已耗尽'; } else if (rem===1) { cCls = 'text-warning bg-orange-50 border-orange-100'; sTxt = '需复购'; }
                     const tags = (p.tags||[]).map(t => `<span class="inline-block px-1 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded text-[9px] md:text-[10px] whitespace-nowrap">${t}</span>`).join('');
                     const tr = document.createElement('tr'); tr.className = "hover:bg-blue-50/40 transition-colors border-b border-gray-50";
-                    tr.innerHTML = `<td class="px-4 md:px-6 py-3 md:py-4 cursor-pointer text-center" onclick="app.showDetail('${p.id}')"><div class="flex flex-col items-center justify-center"><span class="text-xl md:text-2xl font-black text-gray-800 leading-none">${rem}</span><span class="text-[9px] md:text-[10px] px-1.5 md:px-2 py-0.5 border rounded font-bold ${cCls} mt-1.5">${sTxt}</span></div></td><td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap"><button onclick="app.openRecordUI('${p.id}')" class="btn btn-primary px-3 py-1 md:py-1.5 rounded-full shadow-sm text-xs md:text-[13px] bg-primary/90 hover:bg-primary border-none"><i class="fa fa-pencil-square-o md:mr-1"></i><span class="hidden md:inline">录入</span></button></td><td class="px-4 md:px-6 py-3 md:py-4 cursor-pointer" onclick="app.showDetail('${p.id}')"><div class="font-bold text-gray-800 text-sm md:text-base flex items-center">${p.name} ${p.gender === '女' ? '<i class="fa fa-venus ml-1 text-pink-400 text-xs"></i>' : '<i class="fa fa-mars ml-1 text-blue-400 text-xs"></i>'} ${p.age ? `<span class="text-xs text-gray-500 ml-1 font-normal">${p.age}岁</span>` : ''}</div><div class="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1"><i class="fa fa-phone mr-1"></i>${p.phone||'未预留'}</div><div class="flex flex-wrap gap-1 mt-1">${tags}</div></td><td class="px-4 md:px-6 py-3 md:py-4 cursor-pointer text-xs md:text-sm text-gray-500" onclick="app.showDetail('${p.id}')"><div class="flex items-center"><i class="fa fa-clock-o mr-1"></i>${rec}</div></td><td class="px-4 md:px-6 py-3 md:py-4 text-right"><button onclick="ui.openPatientModal('${p.id}')" class="text-gray-400 hover:text-secondary p-2 text-xs md:text-sm"><i class="fa fa-edit"></i></button></td>`;
+                    tr.innerHTML = `
+                        <td class="px-4 md:px-6 py-3 md:py-4 cursor-pointer text-center" onclick="app.showDetail('${p.id}')"><div class="flex flex-col items-center justify-center"><span class="text-xl md:text-2xl font-black text-gray-800 leading-none">${rem}</span><span class="text-[9px] md:text-[10px] px-1.5 md:px-2 py-0.5 border rounded font-bold ${cCls} mt-1.5">${sTxt}</span></div></td>
+                        <td class="px-4 md:px-6 py-3 md:py-4 cursor-pointer" onclick="app.showDetail('${p.id}')"><div class="font-bold text-gray-800 text-sm md:text-base flex items-center">${p.name} ${p.gender === '女' ? '<i class="fa fa-venus ml-1 text-pink-400 text-xs"></i>' : '<i class="fa fa-mars ml-1 text-blue-400 text-xs"></i>'} ${p.age ? `<span class="text-xs text-gray-500 ml-1 font-normal">${p.age}岁</span>` : ''}</div><div class="text-[10px] md:text-xs text-gray-400 mt-0.5 md:mt-1"><i class="fa fa-phone mr-1"></i>${p.phone||'未预留'}</div><div class="flex flex-wrap gap-1 mt-1">${tags}</div></td>
+                        <td class="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap"><button onclick="app.openRecordUI('${p.id}')" class="btn btn-primary px-3 py-1 md:py-1.5 rounded-full shadow-sm text-xs md:text-[13px] bg-primary/90 hover:bg-primary border-none"><i class="fa fa-pencil-square-o md:mr-1"></i><span class="hidden md:inline">录入</span></button></td>
+                        <td class="px-4 md:px-6 py-3 md:py-4 cursor-pointer text-xs md:text-sm text-gray-500" onclick="app.showDetail('${p.id}')"><div class="flex items-center"><i class="fa fa-clock-o mr-1"></i>${rec}</div></td>
+                        <td class="px-4 md:px-6 py-3 md:py-4 text-right"><button onclick="ui.openPatientModal('${p.id}')" class="text-gray-400 hover:text-secondary p-2 text-xs md:text-sm"><i class="fa fa-edit"></i></button></td>
+                    `;
                     df.appendChild(tr);
                 });
                 tbody.appendChild(df);
@@ -483,6 +755,7 @@ layout: null
                 document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(b => { const act = b.dataset.page === id; if(b.classList.contains('nav-link')){ b.classList.toggle('text-primary',act); b.classList.toggle('bg-primary/5',act); b.classList.toggle('text-gray-500',!act); } else { b.classList.toggle('text-primary',act); b.classList.toggle('text-gray-400',!act); } });
                 if(id === 'appointments') app.loadAppointments();
             },
+            
             savePatient: () => {
                 const name = document.getElementById('field-p-name').value.trim(); if(!name) return ui.showToast("姓名必填", "warning");
                 const finalId = document.getElementById('field-p-id').value || 'p_' + Date.now();
@@ -498,30 +771,136 @@ layout: null
                     if (cCount>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_c', pid:finalId, type:'consume', date:dStr, count:cCount, amount:0, income:0, remark:'首诊治疗' });
                     ui.showToast(`已建档`, "success");
                 }
-                dataStore.save(); app.renderList(); ui.closeModal('modal-patient');
+                dataStore.save(); 
+                app.renderList(); 
+                
+                const aptId = document.getElementById('field-apt-id').value;
+                if (aptId && dataStore.appointments[aptId]) {
+                    delete dataStore.appointments[aptId];
+                    fetch(DB_URL.replace('clinic_pro.json', `clinic_pro/appointments/${aptId}.json`), { method: 'DELETE' }).catch(()=>{});
+                }
+                if (app.state.currentPage === 'appointments') app.loadAppointments();
+                ui.closeModal('modal-patient');
             },
-            openRecordUI: (pid) => {
-                const p = dataStore.getPatient(pid), stats = dataStore.calcStats(pid); document.getElementById('record-p-id').value = pid; document.getElementById('record-patient-name').innerText = p.name; document.getElementById('record-patient-rem').innerText = stats.remain; document.getElementById('record-patient-rem').className = stats.remain<=0?"font-black text-xl text-danger":"font-black text-xl text-success";
-                document.getElementById('record-date').value = new Date().toISOString().split('T')[0]; ['rec-c-count','rec-p-count','rec-p-amount','rec-m-amount','record-remark'].forEach(id => document.getElementById(id).value = ''); document.getElementById('record-income-val').innerText = '0.00'; ui.openModal('modal-record');
+
+            openRecordUI: (pid, aptId = null) => {
+                const p = dataStore.getPatient(pid), stats = dataStore.calcStats(pid); 
+                document.getElementById('record-p-id').value = pid; 
+                document.getElementById('record-apt-id').value = aptId || ''; 
+                
+                document.getElementById('record-patient-name').innerText = p.name; 
+                document.getElementById('record-patient-rem').innerText = stats.remain; 
+                document.getElementById('record-patient-rem').className = stats.remain<=0 ? "font-black text-base text-danger leading-none" : "font-black text-base text-success leading-none";
+                document.getElementById('record-patient-consumed').innerText = stats.consumed;
+                document.getElementById('record-patient-last').innerText = stats.history.length > 0 ? stats.history[0].date.substring(5) : "无";
+
+                document.getElementById('record-date').value = new Date().toISOString().split('T')[0]; 
+                ['rec-c-count','rec-p-count','rec-p-amount','rec-m-amount','record-remark'].forEach(id => document.getElementById(id).value = ''); 
+                document.getElementById('record-income-val').innerText = '0.00'; 
+                ui.openModal('modal-record');
             },
+
             saveRecord: () => {
                 const pid = document.getElementById('record-p-id').value, date = document.getElementById('record-date').value, remark = document.getElementById('record-remark').value; if(!date) return ui.showToast("日期必填", "warning");
                 const cCount = Number(document.getElementById('rec-c-count').value)||0, pCntStr = document.getElementById('rec-p-count').value, pCount = pCntStr===''?0:Number(pCntStr), pAmount = Number(document.getElementById('rec-p-amount').value)||0, mAmount = Number(document.getElementById('rec-m-amount').value)||0;
                 let has = false;
                 if(cCount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_c', pid, type: 'consume', date, count: cCount, amount: 0, income: 0, remark }); has=true; }
                 if(pCntStr!=='' || pAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_p', pid, type: 'purchase', date, count: pCount, amount: pAmount, income: (pCount===0?pAmount*0.4:pAmount*0.6), remark }); has=true; }
-                if(mAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_m', pid, type: 'medicine', date, count: 0, amount: mAmount, income: mAmount*0.2, remark }); has=true; }
+                if(mAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_m', type: 'medicine', pid, date, count: 0, amount: mAmount, income: mAmount*0.2, remark }); has=true; }
                 if(!has) return ui.showToast("请填数据", "warning");
-                dataStore.save(); ui.showToast("录入成功", "success"); app.renderList(); ui.closeModal('modal-record');
+                
+                dataStore.save(); 
+                ui.showToast("录入成功", "success"); 
+                app.renderList(); 
+                
+                const aptId = document.getElementById('record-apt-id').value;
+                if (aptId && dataStore.appointments[aptId]) {
+                    delete dataStore.appointments[aptId];
+                    fetch(DB_URL.replace('clinic_pro.json', `clinic_pro/appointments/${aptId}.json`), { method: 'DELETE' }).catch(()=>{});
+                }
+                
+                if (app.state.currentPage === 'appointments') app.loadAppointments();
+                ui.closeModal('modal-record');
+            },
+            
+            editTreatment: (tid) => {
+                const t = dataStore.treatments.find(x => x.id === tid);
+                if (!t) return;
+                document.getElementById('edit-t-id').value = t.id;
+                document.getElementById('edit-t-type').value = t.type;
+                
+                let typeStr = '治疗 (扣次)', colorClass = 'bg-green-100 text-green-800';
+                if(t.type === 'purchase') { typeStr = '开单 (充次)'; colorClass = 'bg-blue-100 text-blue-800'; }
+                else if(t.type === 'medicine') { typeStr = '开药 (收费)'; colorClass = 'bg-purple-100 text-purple-800'; }
+                
+                const display = document.getElementById('edit-t-type-display');
+                display.innerText = typeStr; display.className = `p-2 rounded text-center text-sm font-bold mb-4 ${colorClass}`;
+                
+                document.getElementById('edit-t-date').value = t.date;
+                document.getElementById('edit-t-count').value = t.count || 0;
+                document.getElementById('edit-t-amount').value = t.amount || 0;
+                document.getElementById('edit-t-remark').value = t.remark || '';
+                
+                const bC = document.getElementById('edit-box-count'), bA = document.getElementById('edit-box-amount');
+                if (t.type === 'consume') { bC.classList.remove('hidden'); bA.classList.add('hidden'); }
+                else if (t.type === 'medicine') { bC.classList.add('hidden'); bA.classList.remove('hidden'); }
+                else { bC.classList.remove('hidden'); bA.classList.remove('hidden'); }
+
+                ui.openModal('modal-edit-record');
+            },
+            saveEditTreatment: () => {
+                const tid = document.getElementById('edit-t-id').value;
+                const idx = dataStore.treatments.findIndex(x => x.id === tid);
+                if(idx === -1) return;
+                const t = dataStore.treatments[idx];
+                const newDate = document.getElementById('edit-t-date').value;
+                if (!newDate) return ui.showToast("日期不能为空", "warning");
+                
+                const newCount = Number(document.getElementById('edit-t-count').value) || 0;
+                const newAmount = Number(document.getElementById('edit-t-amount').value) || 0;
+                const newRemark = document.getElementById('edit-t-remark').value;
+                
+                let newIncome = 0;
+                if (t.type === 'purchase') { newIncome = newCount === 0 ? newAmount * 0.4 : newAmount * 0.6; }
+                else if (t.type === 'medicine') { newIncome = newAmount * 0.2; }
+
+                dataStore.treatments[idx] = { ...t, date: newDate, count: newCount, amount: newAmount, income: newIncome, remark: newRemark };
+                
+                dataStore.save(); ui.showToast("记录已修正", "success"); ui.closeModal('modal-edit-record'); app.renderList();
+                if(app.state.currentDetailPid) app.showDetail(app.state.currentDetailPid);
+            },
+            deleteTreatment: (tid, pid) => {
+                ui.showConfirm("删除流水", "删除后将重新计算患者余额，是否确认？", true, () => {
+                    dataStore.treatments = dataStore.treatments.filter(t => t.id !== tid);
+                    dataStore.save(); ui.showToast("流水已删除", "success"); app.renderList();
+                    if(pid) app.showDetail(pid);
+                });
             },
             showDetail: (pid) => {
+                app.state.currentDetailPid = pid;
                 const p = dataStore.getPatient(pid), stats = dataStore.calcStats(pid);
                 document.getElementById('det-avatar').innerText = p.name.charAt(0); document.getElementById('det-p-name').innerText = p.name; document.getElementById('det-p-source').innerText = p.source||'未知'; document.getElementById('det-p-phone').innerText = p.phone||'无电话'; document.getElementById('det-p-tags').innerHTML = (p.tags||[]).map(t=>`<span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">${t}</span>`).join('');
                 document.getElementById('det-stat-money').innerText = stats.mTotal; document.getElementById('det-stat-p').innerText = stats.purchased; document.getElementById('det-stat-c').innerText = stats.consumed; document.getElementById('det-stat-rem').innerText = stats.remain;
                 const df = document.createDocumentFragment();
                 stats.history.forEach(h => {
                     const d = document.createElement('div'); d.className = `relative pl-6 py-1 before:absolute before:left-1 before:top-4 before:w-2 before:h-2 before:rounded-full ${h.type==='purchase'?'before:bg-primary':h.type==='medicine'?'before:bg-purple-500':'before:bg-success'}`;
-                    d.innerHTML = `<div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex justify-between"><div class="flex flex-col"><div class="flex items-center gap-2"><span class="font-bold text-sm text-gray-800">${h.date}</span><span class="text-[9px] px-1 rounded bg-gray-100 text-gray-600">${h.type==='purchase'?'开单':h.type==='medicine'?'开药':'治疗'}</span></div><span class="text-[10px] text-gray-400 mt-1">${h.remark||'无备注'}</span></div><div class="text-right flex flex-col items-end"><span class="font-black text-lg ${h.type==='purchase'?'text-primary':h.type==='medicine'?'text-purple-600':'text-success'}">${h.count? (h.type==='purchase'?'+':'-')+h.count : ''}</span>${h.amount?`<span class="text-[10px] bg-gray-100 text-gray-500 px-1 rounded">¥${h.amount}</span>`:''}</div></div>`; df.appendChild(d);
+                    d.innerHTML = `
+                    <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex flex-col">
+                        <div class="flex justify-between items-start">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2"><span class="font-bold text-sm text-gray-800">${h.date}</span><span class="text-[9px] px-1 rounded bg-gray-100 text-gray-600">${h.type==='purchase'?'开单':h.type==='medicine'?'开药':'治疗'}</span></div>
+                                <span class="text-[10px] text-gray-400 mt-1">${h.remark||'无备注'}</span>
+                            </div>
+                            <div class="text-right flex flex-col items-end">
+                                <span class="font-black text-lg ${h.type==='purchase'?'text-primary':h.type==='medicine'?'text-purple-600':'text-success'}">${h.count? (h.type==='purchase'?'+':'-')+h.count : ''}</span>
+                                ${h.amount?`<span class="text-[10px] bg-gray-100 text-gray-500 px-1 rounded mt-0.5">¥${h.amount}</span>`:''}
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-end gap-3 mt-2 pt-2 border-t border-gray-50">
+                            <button onclick="app.editTreatment('${h.id}')" class="text-xs text-primary hover:text-blue-700 flex items-center"><i class="fa fa-pencil mr-1"></i>修改</button>
+                            <button onclick="app.deleteTreatment('${h.id}', '${pid}')" class="text-xs text-danger hover:text-red-700 flex items-center"><i class="fa fa-trash mr-1"></i>删除</button>
+                        </div>
+                    </div>`; df.appendChild(d);
                 });
                 document.getElementById('det-history-list').innerHTML=''; document.getElementById('det-history-list').appendChild(df); ui.openModal('modal-detail');
             },
@@ -537,7 +916,6 @@ layout: null
             }
         };
 
-        // 入口改为检查密码
         document.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('clinic_auth') === 'true') app.verifyAuth();
         });
