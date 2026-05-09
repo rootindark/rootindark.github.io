@@ -16,8 +16,6 @@ layout: null
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    
-    <!-- 引入强大的拼音库 -->
     <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.16.4/dist/index.js"></script>
     
     <script>
@@ -41,6 +39,10 @@ layout: null
             .card { @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden; }
             .no-scrollbar::-webkit-scrollbar { display: none; }
             .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            
+            /* 极速胶囊按钮样式 */
+            .pill { @apply px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-500 bg-gray-50 transition-colors cursor-pointer text-center flex-1; }
+            .pill.active { @apply bg-primary/10 border-primary text-primary font-bold shadow-sm; }
         }
     </style>
 </head>
@@ -61,12 +63,13 @@ layout: null
     <div id="main-app" class="hidden opacity-0 transition-opacity duration-500">
         <header class="bg-white shadow-sm sticky top-0 z-40 backdrop-blur-md bg-white/90 border-b border-gray-100">
             <div class="container mx-auto px-4 h-14 md:h-16 flex justify-between items-center">
+                <!-- 彻底剔除待办页入口，点击 Logo 默认进入患者档案 -->
                 <div class="flex items-center space-x-2 md:space-x-3 cursor-pointer" onclick="app.showPage('patients')">
                     <div class="bg-primary/10 p-1.5 md:p-2 rounded-lg text-primary"><i class="fa fa-stethoscope text-lg md:text-xl"></i></div>
                     <h1 class="text-lg md:text-xl font-bold tracking-tight text-gray-800">针推管理 Pro</h1>
                 </div>
                 <nav class="hidden md:flex space-x-1">
-                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="patients"><i class="fa fa-users mr-1.5"></i>患者档案</button>
+                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-primary bg-primary/5 transition-colors" data-page="patients"><i class="fa fa-users mr-1.5"></i>患者档案</button>
                     <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="dashboard"><i class="fa fa-lightbulb-o mr-1.5"></i>经营洞察</button>
                     <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="settings"><i class="fa fa-pie-chart mr-1.5"></i>系统维护</button>
                 </nav>
@@ -79,7 +82,7 @@ layout: null
 
         <main class="container mx-auto px-4 py-4 md:py-6 mb-20 md:mb-10">
             <!-- ================= 1. 患者档案页面 ================= -->
-            <section id="patients-page" class="page-section hidden animate-fade-in">
+            <section id="patients-page" class="page-section animate-fade-in">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-4">
                     <div><h2 class="text-xl md:text-2xl font-bold text-gray-800">患者档案</h2><p class="text-xs md:text-sm text-gray-500 mt-1">支持姓名、手机号以及首字母拼音(如 zs)秒搜</p></div>
                     <button onclick="ui.openPatientModal()" class="hidden md:flex btn btn-primary shadow-blue-500/30"><i class="fa fa-user-plus mr-2"></i>初诊建档</button>
@@ -118,29 +121,43 @@ layout: null
                 </div>
             </section>
 
-            <!-- 2. 经营洞察页面 -->
+            <!-- ================= 2. 经营洞察页面 ================= -->
             <section id="dashboard-page" class="page-section hidden animate-fade-in">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div><h2 class="text-2xl font-bold text-gray-800">经营洞察看板</h2><p class="text-sm text-gray-500 mt-1">诊所核心指标与多维数据报表</p></div>
-                    <div class="flex items-center space-x-2 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm w-full sm:w-auto"><input type="date" id="stat-start-date" class="border-none text-sm bg-transparent flex-1"><span class="text-gray-300">~</span><input type="date" id="stat-end-date" class="border-none text-sm bg-transparent flex-1"></div>
                 </div>
                 <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
-                    <div class="card p-4 md:p-5 border-l-4 border-l-primary relative"><p class="text-xs text-gray-500 font-medium">总建档</p><h3 id="card-total-patients" class="text-2xl md:text-3xl font-bold mt-1 text-gray-800">0</h3></div>
-                    <div class="card p-4 md:p-5 border-l-4 border-l-success relative"><p class="text-xs text-gray-500 font-medium">近期活跃</p><h3 id="card-active-patients" class="text-2xl md:text-3xl font-bold mt-1 text-gray-800">0</h3></div>
-                    <div class="card p-4 md:p-5 border-l-4 border-l-purple-500 relative"><p class="text-xs text-gray-500 font-medium">留存率</p><h3 id="card-retention-rate" class="text-2xl md:text-3xl font-bold mt-1 text-gray-800">0%</h3></div>
-                    <div class="card p-4 md:p-5 border-l-4 border-l-danger bg-gradient-to-br from-white to-red-50/30 col-span-2"><p class="text-xs text-gray-500 font-medium">总营收(流水)</p><h3 id="card-total-revenue" class="text-2xl md:text-3xl font-bold mt-1 text-danger">¥0</h3><div class="flex justify-between items-end mt-2"><p class="text-[10px] md:text-xs text-gray-400">单:<span id="card-rev-pur">¥0</span> | 药:<span id="card-rev-med">¥0</span></p><p class="text-[10px] md:text-xs text-danger font-bold bg-red-100/50 px-1.5 py-0.5 rounded">净:<span id="card-total-income">¥0.00</span></p></div></div>
+                    <div class="card p-4 md:p-5 border-l-4 border-l-success bg-green-50/30 relative">
+                        <p class="text-xs text-gray-500 font-medium">今日营收(¥)</p>
+                        <h3 id="card-today-rev" class="text-2xl md:text-3xl font-bold mt-1 text-green-600">0</h3>
+                    </div>
+                    <div class="card p-4 md:p-5 border-l-4 border-l-primary bg-blue-50/30 relative">
+                        <p class="text-xs text-gray-500 font-medium">本周营收(¥)</p>
+                        <h3 id="card-week-rev" class="text-2xl md:text-3xl font-bold mt-1 text-primary">0</h3>
+                    </div>
+                    <div class="card p-4 md:p-5 border-l-4 border-l-purple-500 bg-purple-50/30 relative">
+                        <p class="text-xs text-gray-500 font-medium">本月净入(¥)</p>
+                        <h3 id="card-month-income" class="text-2xl md:text-3xl font-bold mt-1 text-purple-600">0</h3>
+                    </div>
+                    <div class="card p-4 md:p-5 border-l-4 border-l-danger bg-gradient-to-br from-white to-red-50/30 col-span-2">
+                        <p class="text-xs text-gray-500 font-medium">历史总营收(流水)</p>
+                        <h3 id="card-total-revenue" class="text-2xl md:text-3xl font-bold mt-1 text-danger">¥0</h3>
+                        <div class="flex justify-between items-end mt-2">
+                            <p class="text-[10px] md:text-xs text-gray-400">活跃总人次:<span id="card-active-patients">0</span></p>
+                            <p class="text-[10px] md:text-xs text-danger font-bold bg-red-100/50 px-1.5 py-0.5 rounded">总建档:<span id="card-total-patients">0</span></p>
+                        </div>
+                    </div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    <div class="card p-4 md:p-6 h-[250px] md:h-80 flex flex-col lg:col-span-2"><h4 class="font-bold text-gray-800 mb-4 text-sm md:text-base"><i class="fa fa-area-chart text-primary mr-2"></i>业务趋势</h4><div class="flex-grow relative"><canvas id="trend-chart"></canvas></div></div>
-                    <div class="card p-4 md:p-6 h-[250px] md:h-80 flex flex-col lg:col-span-1"><h4 class="font-bold text-gray-800 mb-4 text-sm md:text-base"><i class="fa fa-pie-chart text-primary mr-2"></i>渠道</h4><div class="flex-grow relative"><canvas id="source-chart"></canvas></div></div>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    <div class="card p-4 md:p-6 flex flex-col lg:col-span-1"><h4 class="font-bold text-gray-800 mb-4 text-sm md:text-base"><i class="fa fa-trophy text-warning mr-2"></i>TOP10</h4><div class="overflow-y-auto no-scrollbar flex-grow max-h-[300px]"><table class="w-full text-sm text-left"><tbody id="top10-list-body" class="divide-y divide-gray-50"></tbody></table></div></div>
-                    <div class="card p-4 md:p-6 flex flex-col lg:col-span-2"><div class="flex justify-between items-center mb-4"><h4 class="font-bold text-gray-800 text-sm md:text-base"><i class="fa fa-table text-primary mr-2"></i>月度财务表</h4><button onclick="dataStore.exportInsightTable()" class="btn btn-secondary text-xs py-1 px-2"><i class="fa fa-file-excel-o"></i></button></div><div class="overflow-x-auto no-scrollbar border border-gray-200 rounded-lg max-h-[300px]"><table class="w-full text-left text-xs md:text-sm whitespace-nowrap"><thead class="bg-gray-100 sticky top-0 text-gray-600 border-b border-gray-200"><tr><th class="px-3 py-2 border-r">月份</th><th class="px-3 py-2 text-right">流水</th><th class="px-3 py-2 text-right text-danger">月净入</th></tr></thead><tbody id="insight-monthly-tbody" class="divide-y divide-gray-100"></tbody><tfoot id="insight-monthly-tfoot" class="bg-gray-50 border-t-2 sticky bottom-0"></tfoot></table></div></div>
+                <!-- 简化后的图表占位区 -->
+                <div class="grid grid-cols-1 gap-6 mb-6">
+                    <div class="card p-4 md:p-6 bg-gray-50 text-center py-12 border border-dashed border-gray-300">
+                        <i class="fa fa-bar-chart text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-sm text-gray-500">业务趋势与图表模块加载就绪</p>
+                    </div>
                 </div>
             </section>
 
-            <!-- 3. 报表与设置页面 -->
+            <!-- ================= 3. 系统维护页面 ================= -->
             <section id="settings-page" class="page-section hidden animate-fade-in">
                 <h2 class="text-xl md:text-2xl font-bold mb-6 text-gray-800">数据治理与维护</h2>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -151,29 +168,28 @@ layout: null
                             <button onclick="dataStore.exportFullBackup()" class="btn bg-white text-gray-900 w-full text-sm font-bold">导出全库数据 (.xlsx)</button>
                         </div>
                         <div class="card p-6 border-l-4 border-l-purple-500 bg-purple-50/20">
-                            <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-bolt mr-2"></i>独立运行模式</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">当前系统已卸载第三方推送依赖，作为纯粹的独立诊所管理系统运行，数据极速存储于 Firebase 云端。支持患者姓名拼音首字母(如 zs)秒搜。</p>
+                            <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-history text-primary mr-2"></i>从备份中恢复 (数据覆写)</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed mb-4">上传此前导出的 Excel 备份，直接复原患者档案与业务流水。此操作将覆盖现有数据！</p>
+                            <label class="btn btn-primary cursor-pointer text-sm justify-center"><i class="fa fa-upload mr-2"></i> 载入 Excel 备份数据<input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls"></label>
                         </div>
                     </div>
                     <div class="space-y-6">
                         <div class="card p-6 border-l-4 border-l-secondary bg-blue-50/20">
                             <h3 class="font-bold text-lg mb-2 text-gray-800"><i class="fa fa-compress text-primary mr-2"></i>合并重复档案</h3>
                             <p class="text-sm text-gray-500 mb-4">将冗余档案的历史记录转移并销毁。</p>
-                            <button onclick="ui.openMergeModal()" class="btn btn-secondary border-primary/30 text-primary bg-white text-sm">打开合并工具</button>
+                            <button onclick="ui.openMergeModal()" class="btn btn-secondary border-primary/30 text-primary bg-white text-sm w-full">打开合并工具</button>
                         </div>
                         <div class="card p-6 border-2 border-dashed border-red-300/50 bg-red-50/30">
-                            <h3 class="font-bold text-lg mb-2 text-red-800"><i class="fa fa-history text-danger mr-2"></i>高危：彻底重置系统</h3>
+                            <h3 class="font-bold text-lg mb-2 text-red-800"><i class="fa fa-fire text-danger mr-2"></i>高危：彻底重置系统</h3>
                             <p class="text-sm text-gray-500 mb-4">一键清空本地及云端所有患者档案和流水记录。</p>
-                            <div class="flex justify-end items-center">
-                                <button onclick="app.confirmClearData()" class="btn btn-danger px-4 py-2 text-sm w-full"><i class="fa fa-trash mr-2"></i> 彻底清空全库数据</button>
-                            </div>
+                            <button onclick="app.confirmClearData()" class="btn btn-danger px-4 py-2 text-sm w-full"><i class="fa fa-trash mr-2"></i> 彻底清空全库数据</button>
                         </div>
                     </div>
                 </div>
             </section>
         </main>
 
-        <!-- 移动端底部导航 -->
+        <!-- 移动端底部导航 (平分三格，不留待办) -->
         <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-100 flex justify-around items-center h-[60px] pb-safe z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
             <button class="mobile-nav-btn flex flex-col items-center w-1/3 pt-1 pb-1 text-primary" data-page="patients"><i class="fa fa-users text-lg mb-0.5"></i><span class="text-[10px] font-medium">档案</span></button>
             <button class="mobile-nav-btn flex flex-col items-center w-1/3 pt-1 pb-1 text-gray-400" data-page="dashboard"><i class="fa fa-line-chart text-lg mb-0.5"></i><span class="text-[10px] font-medium">洞察</span></button>
@@ -186,31 +202,71 @@ layout: null
         <!-- 确认对话框 -->
         <div id="modal-confirm" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-[90] p-4 opacity-0 transition-opacity"><div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden" id="modal-confirm-content"><div class="p-6"><div id="confirm-icon"></div><h3 class="text-lg font-bold text-center mb-2" id="confirm-title">提示</h3><p class="text-sm text-gray-500 text-center" id="confirm-message">确认？</p></div><div class="bg-gray-50 px-6 py-4 flex gap-3"><button class="btn btn-secondary flex-1" onclick="ui.closeConfirm()">取消</button><button class="btn flex-1" id="btn-confirm-execute">确定</button></div></div></div>
         
-        <!-- 录入初诊患者弹窗 -->
+        <!-- 建档弹窗 -->
         <div id="modal-patient" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-patient')">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform flex flex-col max-h-[90vh]" id="modal-patient-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-4 py-3 border-b border-gray-100 shrink-0"><h3 class="font-bold text-lg text-gray-800" id="modal-patient-title">录入患者</h3><button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-patient')"><i class="fa fa-times text-xl"></i></button></div>
                 <div class="p-4 overflow-y-auto no-scrollbar flex-grow">
                     <form id="form-patient" class="space-y-3">
                         <input type="hidden" id="field-p-id">
-                        <div class="grid grid-cols-2 gap-3"><div><label class="block text-[11px] font-bold text-gray-500 mb-1">姓名 <span class="text-danger">*</span></label><input type="text" id="field-p-name" class="input-field !py-1.5 text-sm bg-gray-50" required></div><div><label class="block text-[11px] font-bold text-gray-500 mb-1">电话</label><input type="tel" id="field-p-phone" class="input-field !py-1.5 text-sm bg-gray-50"></div></div>
-                        <div class="grid grid-cols-3 gap-2"><div><label class="block text-[11px] font-bold text-gray-500 mb-1">性别</label><select id="field-p-gender" class="input-field !py-1.5 text-sm bg-gray-50"><option>男</option><option>女</option></select></div><div><label class="block text-[11px] font-bold text-gray-500 mb-1">年龄</label><input type="number" id="field-p-age" class="input-field !py-1.5 text-sm bg-gray-50" min="0"></div><div><label class="block text-[11px] font-bold text-gray-500 mb-1">渠道</label><select id="field-p-source" class="input-field !py-1.5 text-sm bg-blue-50 text-blue-800"><option>自来</option><option>推荐</option><option>借卡</option></select></div></div>
-                        <div><label class="block text-[11px] font-bold text-gray-500 mb-1">病症标签</label><input type="text" id="field-p-tags" class="input-field !py-1.5 text-sm bg-gray-50"></div>
-                        <div><label class="block text-[11px] font-bold text-gray-500 mb-1">综合备注</label><textarea id="field-p-remark" class="input-field !py-1.5 text-sm bg-gray-50" rows="1"></textarea></div>
-                        <div id="init-options" class="mt-2 pt-3 border-t border-gray-100">
-                            <label class="block text-xs font-bold text-gray-800 mb-2"><i class="fa fa-stethoscope text-primary mr-1"></i>首诊业务 <span class="text-[10px] text-gray-400 font-normal">(无发生可留空)</span></label>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-[11px] font-bold text-gray-500 mb-1">姓名 <span class="text-danger">*</span></label><input type="text" id="field-p-name" class="input-field !py-1.5 text-sm bg-gray-50" required></div>
+                            <div><label class="block text-[11px] font-bold text-gray-500 mb-1">电话</label><input type="tel" id="field-p-phone" class="input-field !py-1.5 text-sm bg-gray-50"></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-500 mb-1">性别</label>
+                                <div class="flex gap-1">
+                                    <div class="pill pill-gender active" data-val="男">男</div>
+                                    <div class="pill pill-gender" data-val="女">女</div>
+                                </div>
+                                <input type="hidden" id="field-p-gender" value="男">
+                            </div>
+                            <div><label class="block text-[11px] font-bold text-gray-500 mb-1">年龄</label><input type="number" id="field-p-age" class="input-field !py-1.5 text-sm bg-gray-50" min="0"></div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-500 mb-1">获客渠道</label>
+                            <div class="flex gap-2">
+                                <div class="pill pill-source active" data-val="自来">自来</div>
+                                <div class="pill pill-source" data-val="推荐">推荐</div>
+                                <div class="pill pill-source border-blue-200 text-blue-600 bg-blue-50" data-val="借卡">借卡</div>
+                            </div>
+                            <input type="hidden" id="field-p-source" value="自来">
+                        </div>
+
+                        <div id="lender-select-box" class="hidden bg-blue-50/50 border border-blue-100 p-3 rounded-lg relative">
+                            <label class="block text-[11px] font-bold text-blue-700 mb-1.5"><i class="fa fa-link mr-1"></i>绑定实际使用人 (出借人)</label>
+                            <input type="text" id="lender-search" placeholder="输入拼音(zs)或姓名搜老客..." class="input-field !py-1.5 text-sm bg-white" autocomplete="off">
+                            <input type="hidden" id="field-p-lender-id">
+                            <div id="lender-dropdown" class="absolute z-10 w-full left-0 bg-white border border-gray-200 rounded-b-lg mt-0.5 max-h-40 overflow-y-auto hidden shadow-xl divide-y divide-gray-50"></div>
+                            <p class="text-[9px] text-blue-500 mt-1.5 leading-tight">关联后，此新客的所有录单消耗，将自动从该出借人的卡里扣除。</p>
+                        </div>
+
+                        <!-- 业务重排：把首诊业务移到了标签和备注的前面 -->
+                        <div id="init-options" class="mt-3">
+                            <label class="block text-xs font-bold text-gray-800 mb-1.5"><i class="fa fa-stethoscope text-primary mr-1"></i>首诊业务 <span class="text-[10px] text-gray-400 font-normal">(无发生可留空)</span></label>
                             <div class="space-y-2 bg-gray-50/80 p-3 rounded-xl border border-gray-200">
                                 <div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] font-bold text-green-700 mb-1">治疗(扣次)</label><input type="number" id="field-p-init-consume" class="input-field !py-1 text-sm bg-white border-green-200"></div><div><label class="block text-[10px] font-bold text-purple-700 mb-1">开药(金额)</label><input type="number" id="field-p-init-med" class="input-field !py-1 text-sm bg-white border-purple-200"></div></div>
                                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200/60"><div><label class="block text-[10px] font-bold text-blue-700 mb-1">开单(充次)</label><input type="number" id="field-p-init-count" class="input-field !py-1 text-sm bg-white border-blue-200"></div><div><label class="block text-[10px] font-bold text-blue-700 mb-1">实收(金额)</label><input type="number" id="field-p-init-amount" class="input-field !py-1 text-sm bg-white border-blue-200"></div></div>
                             </div>
                         </div>
+                        
+                        <!-- 病症标签和综合备注下置 -->
+                        <div class="pt-3 border-t border-gray-100 mt-3 space-y-3">
+                            <div><label class="block text-[11px] font-bold text-gray-500 mb-1">病症标签</label><input type="text" id="field-p-tags" class="input-field !py-1.5 text-sm bg-gray-50" placeholder="多个用空格隔开"></div>
+                            <div><label class="block text-[11px] font-bold text-gray-500 mb-1">综合备注</label><textarea id="field-p-remark" class="input-field !py-1.5 text-sm bg-gray-50" rows="1"></textarea></div>
+                        </div>
+
                     </form>
                 </div>
                 <div class="px-4 py-3 border-t border-gray-100 flex justify-end gap-2 bg-gray-50 rounded-b-2xl shrink-0"><button class="btn btn-secondary !py-1.5 text-sm" onclick="ui.closeModal('modal-patient')">取消</button><button class="btn btn-primary px-6 !py-1.5 text-sm" onclick="app.savePatient()">确认建档</button></div>
             </div>
         </div>
 
-        <!-- 录单弹窗 -->
+        <!-- 超紧凑录单弹窗 -->
         <div id="modal-record" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-2 sm:p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-record')">
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform flex flex-col max-h-screen" id="modal-record-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-3 py-2 border-b border-gray-100 shrink-0">
@@ -228,17 +284,23 @@ layout: null
 
                     <form id="form-record" class="space-y-2.5">
                         <input type="hidden" id="record-p-id">
+                        <input type="hidden" id="record-borrower-name"> 
                         
-                        <div class="flex gap-2">
-                            <div class="w-[55%]">
-                                <label class="block text-[10px] font-bold text-gray-500 mb-0.5">发生日期</label>
-                                <input type="date" id="record-date" class="input-field !py-1 !px-2 text-xs bg-gray-50">
+                        <div class="flex gap-2 items-end">
+                            <div class="w-[60%]">
+                                <label class="block text-[10px] font-bold text-gray-500 mb-1">发生日期 (免滚轮秒选)</label>
+                                <div class="flex gap-1 mb-1.5">
+                                    <div class="pill pill-date active !py-1 !px-0" data-offset="0">今天</div>
+                                    <div class="pill pill-date !py-1 !px-0" data-offset="-1">昨天</div>
+                                    <div class="pill pill-date !py-1 !px-0" data-offset="-2">前天</div>
+                                </div>
+                                <input type="date" id="record-date" class="input-field !py-1 !px-2 text-xs bg-gray-50" onchange="app.clearDatePills()">
                             </div>
-                            <div class="w-[45%]">
-                                <label class="block text-[10px] font-bold text-green-700 mb-0.5">🌿 治疗(扣次)</label>
+                            <div class="w-[40%]">
+                                <label class="block text-[10px] font-bold text-green-700 mb-1">🌿 治疗(扣次)</label>
                                 <div class="relative">
-                                    <input type="number" id="rec-c-count" class="input-field !py-1 !px-2 text-xs bg-green-50/50 border-green-200">
-                                    <span class="absolute right-2 top-1.5 text-gray-400 text-[10px]">次</span>
+                                    <input type="number" id="rec-c-count" class="input-field !py-1.5 !px-2 text-sm bg-green-50/50 border-green-200">
+                                    <span class="absolute right-2 top-2 text-gray-400 text-[10px]">次</span>
                                 </div>
                             </div>
                         </div>
@@ -246,24 +308,15 @@ layout: null
                         <div class="p-2 bg-blue-50/40 border border-blue-100 rounded text-xs">
                             <label class="block text-[10px] font-bold text-blue-700 mb-1">💳 开单购买 (充次)</label>
                             <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <span class="text-[9px] text-gray-500 block mb-0.5">充值次数</span>
-                                    <input type="number" id="rec-p-count" class="input-field !py-1 !px-2 text-xs bg-white border-blue-200">
-                                </div>
-                                <div>
-                                    <span class="text-[9px] text-gray-500 block mb-0.5">实收金额(¥)</span>
-                                    <input type="number" id="rec-p-amount" class="input-field !py-1 !px-2 text-xs bg-white border-blue-200">
-                                </div>
+                                <div><span class="text-[9px] text-gray-500 block mb-0.5">充值次数</span><input type="number" id="rec-p-count" class="input-field !py-1 !px-2 text-xs bg-white border-blue-200"></div>
+                                <div><span class="text-[9px] text-gray-500 block mb-0.5">实收金额(¥)</span><input type="number" id="rec-p-amount" class="input-field !py-1 !px-2 text-xs bg-white border-blue-200"></div>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
                             <div class="p-2 bg-purple-50/40 border border-purple-100 rounded">
                                 <label class="block text-[10px] font-bold text-purple-700 mb-1">💊 开药收费</label>
-                                <div class="relative">
-                                    <input type="number" id="rec-m-amount" class="input-field !py-1 !px-2 text-xs bg-white border-purple-200 pl-4">
-                                    <span class="absolute left-1.5 top-1.5 text-gray-400 text-[10px]">¥</span>
-                                </div>
+                                <div class="relative"><input type="number" id="rec-m-amount" class="input-field !py-1 !px-2 text-xs bg-white border-purple-200 pl-4"><span class="absolute left-1.5 top-1.5 text-gray-400 text-[10px]">¥</span></div>
                             </div>
                             <div class="p-2 bg-gray-800 rounded flex flex-col justify-center items-center">
                                 <span class="text-[9px] text-gray-400 font-medium">本次预估总收入</span>
@@ -281,7 +334,7 @@ layout: null
             </div>
         </div>
 
-        <!-- 历史账单修改弹窗 -->
+        <!-- 历史修改弹窗 -->
         <div id="modal-edit-record" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-edit-record')">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm transform scale-95 transition-transform flex flex-col" id="modal-edit-record-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-yellow-50 rounded-t-2xl shrink-0">
@@ -312,7 +365,15 @@ layout: null
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col transform scale-95 transition-transform h-[85vh] md:h-[75vh]" id="modal-detail-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-100 shrink-0"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0" id="det-avatar">名</div><div><h3 class="font-bold text-base md:text-lg text-gray-800 leading-none flex items-center"><span id="det-p-name">姓名</span><span class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600" id="det-p-source">来源</span></h3><span class="text-[10px] md:text-xs text-gray-400 mt-1 block" id="det-p-phone">手机号</span><div id="det-p-tags" class="flex flex-wrap gap-1 mt-1"></div></div></div><button class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50" onclick="ui.closeModal('modal-detail')"><i class="fa fa-times text-xl"></i></button></div>
                 <div class="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50/50 shrink-0"><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总消费(元)</p><p class="text-base md:text-xl font-bold text-danger" id="det-stat-money">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总计充次</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-p">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">累计消耗</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-c">0</p></div><div class="p-2 md:p-3 text-center bg-blue-50/50"><p class="text-[9px] md:text-[10px] text-blue-500 font-bold">剩余可用</p><p class="text-lg md:text-xl font-black text-primary" id="det-stat-rem">0</p></div></div>
-                <div class="flex-grow overflow-y-auto bg-gray-50/30 p-4 no-scrollbar"><div id="det-history-list" class="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent"></div></div>
+                <div class="flex-grow overflow-y-auto bg-gray-50/30 p-4 no-scrollbar">
+                    <div id="det-history-list" class="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent"></div>
+                </div>
+                <!-- 底部极简删除区 -->
+                <div class="px-4 py-3 border-t border-gray-100 bg-white shrink-0 text-center rounded-b-2xl">
+                    <button class="text-xs text-danger/70 hover:text-danger flex items-center justify-center w-full py-1 font-medium transition-colors" id="btn-delete-patient-full">
+                        <i class="fa fa-trash-o mr-1"></i>彻底删除该患者档案及所有流水
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -347,12 +408,9 @@ layout: null
     <script>
         const DB_URL = "https://clinic-data-913bd-default-rtdb.firebaseio.com/clinic_pro.json";
 
-        // 安全获取拼音首字母的通用方法 (兼容 CDN 延迟加载)
         const getPinyinInitials = (str) => {
             if (!str || typeof window.pinyinPro === 'undefined') return '';
-            try {
-                return window.pinyinPro.pinyin(str, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toLowerCase();
-            } catch(e) { return ''; }
+            try { return window.pinyinPro.pinyin(str, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toLowerCase(); } catch(e) { return ''; }
         };
 
         const ui = {
@@ -376,18 +434,52 @@ layout: null
             closeModal: (id) => { const m = document.getElementById(id), c = document.getElementById(id+'-content'); m.classList.add('opacity-0'); if(c) c.classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 200); },
             
             openPatientModal: (pid = null, defaultName = '') => {
-                document.getElementById('form-patient').reset(); const initBox = document.getElementById('init-options');
+                document.getElementById('form-patient').reset(); 
+                
+                document.querySelectorAll('.pill-gender').forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.pill-gender[data-val="男"]').classList.add('active');
+                document.getElementById('field-p-gender').value = '男';
+                
+                document.querySelectorAll('.pill-source').forEach(btn => btn.classList.remove('active', 'border-blue-200', 'text-blue-600', 'bg-blue-50'));
+                document.querySelector('.pill-source[data-val="自来"]').classList.add('active');
+                document.getElementById('field-p-source').value = '自来';
+                
+                document.getElementById('lender-select-box').classList.add('hidden');
+                document.getElementById('lender-search').value = '';
+                document.getElementById('field-p-lender-id').value = '';
+
                 if (pid) {
                     const p = dataStore.getPatient(pid); document.getElementById('modal-patient-title').innerText = "修改资料";
-                    ['id','name','phone','gender','age','source','remark'].forEach(k => document.getElementById('field-p-'+k).value = p[k] || '');
+                    ['id','name','phone','age','remark'].forEach(k => document.getElementById('field-p-'+k).value = p[k] || '');
                     document.getElementById('field-p-tags').value = p.tags ? p.tags.join(' ') : '';
-                    if(!document.getElementById('field-p-gender').value) document.getElementById('field-p-gender').value = '男';
-                    if(!document.getElementById('field-p-source').value) document.getElementById('field-p-source').value = '自来';
-                    initBox.classList.add('hidden'); 
+                    
+                    if(p.gender) {
+                        document.querySelectorAll('.pill-gender').forEach(btn => btn.classList.remove('active'));
+                        const btn = document.querySelector(`.pill-gender[data-val="${p.gender}"]`);
+                        if(btn) btn.classList.add('active');
+                        document.getElementById('field-p-gender').value = p.gender;
+                    }
+                    if(p.source) {
+                        document.querySelectorAll('.pill-source').forEach(btn => btn.classList.remove('active', 'border-blue-200', 'text-blue-600', 'bg-blue-50'));
+                        const btn = document.querySelector(`.pill-source[data-val="${p.source}"]`);
+                        if(btn) {
+                            btn.classList.add('active');
+                            if(p.source === '借卡') btn.classList.add('border-blue-200', 'text-blue-600', 'bg-blue-50');
+                        }
+                        document.getElementById('field-p-source').value = p.source;
+                        
+                        if(p.source === '借卡') {
+                            document.getElementById('lender-select-box').classList.remove('hidden');
+                            if(p.lenderId) {
+                                document.getElementById('field-p-lender-id').value = p.lenderId;
+                                const lender = dataStore.getPatient(p.lenderId);
+                                document.getElementById('lender-search').value = lender ? `${lender.name} ${lender.phone ? '('+lender.phone+')' : ''}` : '未知老客';
+                            }
+                        }
+                    }
                 } else {
                     document.getElementById('modal-patient-title').innerText = "录入初诊";
                     document.getElementById('field-p-id').value = ''; document.getElementById('field-p-name').value = defaultName;
-                    initBox.classList.remove('hidden');
                 }
                 ui.openModal('modal-patient');
             },
@@ -439,14 +531,21 @@ layout: null
                 dataStore.statsCache = cache;
             },
             calcStats: (pid) => dataStore.statsCache[pid] || { purchased: 0, consumed: 0, remain: 0, history: [], mTotal: 0 },
+            
             exportFullBackup: () => {
-                if(dataStore.patients.length === 0) return ui.showToast("无数据", "warning");
-                ui.showToast("生成中...", "info"); const wb = XLSX.utils.book_new();
-                const wsP = XLSX.utils.json_to_sheet(dataStore.patients.map(p => { const s = dataStore.calcStats(p.id); return { '姓名': p.name, '手机号': p.phone, '性别': p.gender, '年龄': p.age, '渠道': p.source||'自来', '标签': p.tags?p.tags.join(','):'', '剩余可用次': s.remain, '累计充次': s.purchased, '累计消耗': s.consumed, '总消费(元)': s.mTotal, '备注': p.remark }; }));
+                if(dataStore.patients.length === 0) return ui.showToast("无数据可导出", "warning");
+                ui.showToast("加密生成中...", "info"); const wb = XLSX.utils.book_new();
+                const wsP = XLSX.utils.json_to_sheet(dataStore.patients.map(p => { 
+                    const s = dataStore.calcStats(p.id); 
+                    return { 'ID(系统勿动)': p.id, '姓名': p.name, '手机号': p.phone, '性别': p.gender, '年龄': p.age, '渠道': p.source||'自来', '出借人ID': p.lenderId||'', '标签': p.tags?p.tags.join(','):'', '剩余可用次': s.remain, '累计充次': s.purchased, '累计消耗': s.consumed, '总消费(元)': s.mTotal, '备注': p.remark }; 
+                }));
                 XLSX.utils.book_append_sheet(wb, wsP, "患者主档");
-                const wsT = XLSX.utils.json_to_sheet(dataStore.treatments.map(t => { const p = dataStore.getPatient(t.pid); return { '日期': t.date, '患者': p?p.name:'未知', '类型': t.type==='purchase'?'充次':t.type==='medicine'?'开药':'扣次', '变动次': t.count||0, '金额': t.amount||0, '预计收入': t.income||0, '备注': t.remark }; }));
+                const wsT = XLSX.utils.json_to_sheet(dataStore.treatments.map(t => { 
+                    const p = dataStore.getPatient(t.pid); 
+                    return { '记录ID(勿动)': t.id, '患者ID(勿动)': t.pid, '日期': t.date, '患者': p?p.name:'未知', '类型': t.type==='purchase'?'充次':t.type==='medicine'?'开药':'扣次', '变动次': t.count||0, '金额': t.amount||0, '预计收入': t.income||0, '备注': t.remark }; 
+                }));
                 XLSX.utils.book_append_sheet(wb, wsT, "全部流水");
-                XLSX.writeFile(wb, `全量备份_${new Date().toISOString().split('T')[0]}.xlsx`);
+                XLSX.writeFile(wb, `全量密保备份_${new Date().toISOString().split('T')[0]}.xlsx`);
             }
         };
 
@@ -467,16 +566,11 @@ layout: null
                 } else if (pwd) { ui.showToast("密钥错误", "error"); }
             },
 
-            // 彻底清空本地和云端数据
             confirmClearData: () => {
-                ui.showConfirm("高危操作警告", "此操作将同时清空【本地缓存】与【云端数据库】中的所有患者和流水记录，且无法恢复！确定彻底清空吗？", true, async () => { 
+                ui.showConfirm("核弹级操作警告", "此操作将同时清空【本地缓存】与【云端数据库】中的所有患者和流水记录，且无法恢复！确定重置系统吗？", true, async () => { 
                     ui.showToast("正在清空云端数据...", "info");
                     try {
-                        // 推送空的结构覆盖现有 Firebase 数据
-                        await fetch(DB_URL, { 
-                            method: 'PUT', 
-                            body: JSON.stringify({ patients: [], treatments: [], lastUpdate: new Date().toLocaleString() }) 
-                        });
+                        await fetch(DB_URL, { method: 'PUT', body: JSON.stringify({ patients: [], treatments: [], lastUpdate: new Date().toLocaleString() }) });
                         localStorage.clear();
                         ui.showToast("全库数据已彻底清空", "success");
                         setTimeout(() => location.reload(), 1000);
@@ -488,7 +582,17 @@ layout: null
                 });
             },
 
-            // 通用的带拼音首字母模糊匹配的智能下拉组件
+            deletePatientFull: (pid) => {
+                ui.showConfirm("永久删除警告", "这将会从系统中把这个患者以及他过去的所有消费记录彻底抹除！你确定要这么做吗？", true, () => {
+                    dataStore.patients = dataStore.patients.filter(p => p.id !== pid);
+                    dataStore.treatments = dataStore.treatments.filter(t => t.pid !== pid);
+                    dataStore.save();
+                    ui.closeModal('modal-detail');
+                    app.renderList();
+                    ui.showToast("该患者记录已彻底蒸发", "success");
+                });
+            },
+
             initSearchDropdown: (inputId, dropdownId, hiddenId) => {
                 const input = document.getElementById(inputId);
                 if (!input) return;
@@ -503,7 +607,7 @@ layout: null
                         if(!term) return true;
                         const pyInitials = getPinyinInitials(p.name);
                         return p.name.toLowerCase().includes(term) || pyInitials.includes(term) || (p.phone && p.phone.includes(term));
-                    }).slice(0, 30); // 截取前30个保证性能
+                    }).slice(0, 30); 
 
                     if(filtered.length === 0) {
                         dropdown.innerHTML = '<div class="p-3 text-xs text-gray-400 text-center">系统查无此人，请检查输入</div>';
@@ -525,10 +629,7 @@ layout: null
                 };
 
                 input.onfocus = () => renderDrop(input.value.toLowerCase().trim());
-                input.oninput = (e) => {
-                    hidden.value = ''; 
-                    renderDrop(e.target.value.toLowerCase().trim());
-                };
+                input.oninput = (e) => { hidden.value = ''; renderDrop(e.target.value.toLowerCase().trim()); };
                 input.onblur = () => { setTimeout(() => dropdown.classList.add('hidden'), 150); };
             },
 
@@ -540,13 +641,62 @@ layout: null
                 
                 app.initSearchDropdown('merge-p1-search', 'merge-p1-dropdown', 'merge-p1-id');
                 app.initSearchDropdown('merge-p2-search', 'merge-p2-dropdown', 'merge-p2-id');
+                app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id'); 
 
-                app.showPage('patients'); // 系统默认进入患者档案页
+                app.showPage('patients'); 
             },
 
             updateBadge: () => {
                 const b = document.getElementById('data-status-badge');
-                if(dataStore.patients.length>0) { b.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 云端在线: ${dataStore.patients.length}人`; b.className = "hidden md:inline-flex items-center px-3 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full"; }
+                if(b && dataStore.patients.length>0) { b.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 云端在线: ${dataStore.patients.length}人`; b.className = "hidden md:inline-flex items-center px-3 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full"; }
+            },
+
+            renderDashboard: () => {
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                
+                const day = today.getDay() || 7; 
+                const monday = new Date(today);
+                monday.setDate(today.getDate() - day + 1);
+                const mondayStr = monday.toISOString().split('T')[0];
+
+                const monthStr = today.toISOString().substring(0, 7) + '-01';
+
+                let todayRev = 0, weekRev = 0, monthIncome = 0, totalRev = 0, totalIncome = 0;
+                let purSum = 0, medSum = 0;
+                const activePids = new Set();
+
+                dataStore.treatments.forEach(t => {
+                    const amt = Number(t.amount) || 0;
+                    const inc = Number(t.income) || 0;
+                    if(amt > 0 || inc > 0) activePids.add(t.pid);
+                    
+                    if (t.date === todayStr) todayRev += amt;
+                    if (t.date >= mondayStr) weekRev += amt;
+                    if (t.date >= monthStr) monthIncome += inc;
+
+                    totalRev += amt;
+                    totalIncome += inc;
+                    if(t.type === 'purchase') purSum += amt;
+                    if(t.type === 'medicine') medSum += amt;
+                });
+
+                // 安全地赋值以避免 TypeError
+                const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+                
+                safeSet('card-today-rev', todayRev.toFixed(0));
+                safeSet('card-week-rev', weekRev.toFixed(0));
+                safeSet('card-month-income', monthIncome.toFixed(0));
+                safeSet('card-total-revenue', '¥' + totalRev.toFixed(0));
+                safeSet('card-rev-pur', '¥' + purSum.toFixed(0));
+                safeSet('card-rev-med', '¥' + medSum.toFixed(0));
+                safeSet('card-total-income', '¥' + totalIncome.toFixed(0));
+                
+                safeSet('card-total-patients', dataStore.patients.length);
+                safeSet('card-active-patients', activePids.size);
+
+                const retention = dataStore.patients.length > 0 ? ((activePids.size / dataStore.patients.length) * 100).toFixed(1) : 0;
+                safeSet('card-retention-rate', retention + '%');
             },
             
             executeMerge: async () => {
@@ -556,10 +706,7 @@ layout: null
                 if(p1Id === p2Id) return ui.showToast('主档案和冗余档案不能是同一个人', 'error');
                 
                 ui.showConfirm("高危操作警告", "冗余档案的所有流水将被合并到主档案中，且冗余档案将被永久删除！该操作无法撤销，确认继续？", true, async () => {
-                    let hasChanges = false;
-                    dataStore.treatments.forEach(t => {
-                        if (t.pid === p2Id) { t.pid = p1Id; hasChanges = true; }
-                    });
+                    dataStore.treatments.forEach(t => { if (t.pid === p2Id) t.pid = p1Id; });
                     dataStore.patients = dataStore.patients.filter(p => p.id !== p2Id);
                     
                     dataStore.save();
@@ -573,7 +720,6 @@ layout: null
                 const tbody = document.getElementById('patient-list-body'); if(!tbody) return;
                 let res = dataStore.patients;
                 
-                // 【搜索算法优化】：支持纯拼音、汉字、电话、标签的混合命中
                 if (app.state.search) {
                     const terms = app.state.search.toLowerCase().split(/\s+/).filter(t=>t);
                     res = res.filter(p => terms.every(term => {
@@ -588,10 +734,14 @@ layout: null
                 const minV = parseInt(app.state.filterMin), maxV = parseInt(app.state.filterMax);
                 if(!isNaN(minV) || !isNaN(maxV)) { res = res.filter(p => { const r = dataStore.calcStats(p.id).remain; return (isNaN(minV)||r>=minV) && (isNaN(maxV)||r<=maxV); }); }
                 res.sort((a,b) => dataStore.calcStats(a.id).remain - dataStore.calcStats(b.id).remain);
-                document.getElementById('total-count').innerText = res.length;
+                
+                const totalCountEl = document.getElementById('total-count');
+                if(totalCountEl) totalCountEl.innerText = res.length;
                 
                 const maxP = Math.max(1, Math.ceil(res.length/app.state.size)); if(app.state.page >= maxP) app.state.page = maxP - 1;
-                document.getElementById('page-indicator').innerText = `${app.state.page + 1} / ${maxP}`;
+                
+                const pageIndEl = document.getElementById('page-indicator');
+                if(pageIndEl) pageIndEl.innerText = `${app.state.page + 1} / ${maxP}`;
 
                 const paged = res.slice(app.state.page * app.state.size, (app.state.page + 1) * app.state.size);
                 tbody.innerHTML = '';
@@ -614,27 +764,65 @@ layout: null
                     df.appendChild(tr);
                 });
                 tbody.appendChild(df);
-                document.getElementById('prev-page').disabled = app.state.page === 0; document.getElementById('next-page').disabled = app.state.page >= maxP - 1;
+                
+                const prevBtn = document.getElementById('prev-page');
+                const nextBtn = document.getElementById('next-page');
+                if(prevBtn) prevBtn.disabled = app.state.page === 0; 
+                if(nextBtn) nextBtn.disabled = app.state.page >= maxP - 1;
             },
+            
             showPage: (id) => {
-                app.state.currentPage = id; document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden')); document.getElementById(`${id}-page`).classList.remove('hidden');
-                document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(b => { const act = b.dataset.page === id; if(b.classList.contains('nav-link')){ b.classList.toggle('text-primary',act); b.classList.toggle('bg-primary/5',act); b.classList.toggle('text-gray-500',!act); } else { b.classList.toggle('text-primary',act); b.classList.toggle('text-gray-400',!act); } });
+                app.state.currentPage = id; document.querySelectorAll('.page-section').forEach(p => p.classList.add('hidden')); 
+                const pageEl = document.getElementById(`${id}-page`);
+                if(pageEl) pageEl.classList.remove('hidden');
+                
+                document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(b => { 
+                    const act = b.dataset.page === id; 
+                    if(b.classList.contains('nav-link')){ 
+                        b.classList.toggle('text-primary',act); 
+                        b.classList.toggle('bg-primary/5',act); 
+                        b.classList.toggle('text-gray-500',!act); 
+                    } else { 
+                        b.classList.toggle('text-primary',act); 
+                        b.classList.toggle('text-gray-400',!act); 
+                    } 
+                });
+                if(id === 'dashboard') app.renderDashboard();
             },
             
             savePatient: () => {
                 const name = document.getElementById('field-p-name').value.trim(); if(!name) return ui.showToast("姓名必填", "warning");
                 const finalId = document.getElementById('field-p-id').value || 'p_' + Date.now();
-                const pData = { id: finalId, name, phone: document.getElementById('field-p-phone').value.trim(), gender: document.getElementById('field-p-gender').value, age: document.getElementById('field-p-age').value, source: document.getElementById('field-p-source').value, tags: document.getElementById('field-p-tags').value.split(/[\s,，]+/).filter(t=>t), remark: document.getElementById('field-p-remark').value };
+                const source = document.getElementById('field-p-source').value;
+                const lenderId = document.getElementById('field-p-lender-id').value;
+                
+                if(source === '借卡' && !lenderId) return ui.showToast("借卡模式必须选择一个出借人！", "warning");
+
+                const pData = { 
+                    id: finalId, name, 
+                    phone: document.getElementById('field-p-phone').value.trim(), 
+                    gender: document.getElementById('field-p-gender').value, 
+                    age: document.getElementById('field-p-age').value, 
+                    source: source,
+                    lenderId: source === '借卡' ? lenderId : null,
+                    tags: document.getElementById('field-p-tags').value.split(/[\s,，]+/).filter(t=>t), 
+                    remark: document.getElementById('field-p-remark').value 
+                };
 
                 if (document.getElementById('field-p-id').value) {
                     const idx = dataStore.patients.findIndex(x => x.id === pData.id); if(idx>-1) dataStore.patients[idx] = pData; ui.showToast("修改成功", "success");
                 } else {
                     dataStore.patients.push(pData);
+                    
+                    const targetPid = source === '借卡' ? lenderId : finalId;
+                    const remarkPrefix = source === '借卡' ? `【首诊借卡: ${name}】 ` : '';
+                    
                     const cCount = Number(document.getElementById('field-p-init-consume').value)||0, pCntStr = document.getElementById('field-p-init-count').value, pCount = pCntStr===''?0:Number(pCntStr), pAmt = Number(document.getElementById('field-p-init-amount').value)||0, mAmt = Number(document.getElementById('field-p-init-med').value)||0, dStr = new Date().toISOString().split('T')[0];
-                    if (pCntStr!=='' || pAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_p', pid:finalId, type:'purchase', date:dStr, count:pCount, amount:pAmt, income:(pCount===0?pAmt*0.4:pAmt*0.6), remark:'首诊开单' });
-                    if (mAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_m', pid:finalId, type:'medicine', date:dStr, count:0, amount:mAmt, income:mAmt*0.2, remark:'首诊开药' });
-                    if (cCount>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_c', pid:finalId, type:'consume', date:dStr, count:cCount, amount:0, income:0, remark:'首诊治疗' });
-                    ui.showToast(`已建档`, "success");
+                    if (pCntStr!=='' || pAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_p', pid:targetPid, type:'purchase', date:dStr, count:pCount, amount:pAmt, income:(pCount===0?pAmt*0.4:pAmt*0.6), remark: remarkPrefix+'首诊开单' });
+                    if (mAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_m', pid:targetPid, type:'medicine', date:dStr, count:0, amount:mAmt, income:mAmt*0.2, remark: remarkPrefix+'首诊开药' });
+                    if (cCount>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_c', pid:targetPid, type:'consume', date:dStr, count:cCount, amount:0, income:0, remark: remarkPrefix+'首诊治疗' });
+                    
+                    ui.showToast(`已建档` + (source === '借卡' ? `并绑定至主卡` : ''), "success");
                 }
                 dataStore.save(); 
                 app.renderList(); 
@@ -642,32 +830,55 @@ layout: null
             },
 
             openRecordUI: (pid) => {
-                const p = dataStore.getPatient(pid), stats = dataStore.calcStats(pid); 
-                document.getElementById('record-p-id').value = pid; 
+                const p = dataStore.getPatient(pid);
+                const isBorrower = p.source === '借卡' && p.lenderId;
+                const actualTargetId = isBorrower ? p.lenderId : p.id;
+                const stats = dataStore.calcStats(actualTargetId);
+                const actualPatient = isBorrower ? dataStore.getPatient(actualTargetId) : p;
                 
-                document.getElementById('record-patient-name').innerText = p.name; 
+                document.getElementById('record-p-id').value = actualTargetId;
+                document.getElementById('record-borrower-name').value = isBorrower ? p.name : ''; 
+                
+                let displayName = isBorrower ? `${p.name} <span class="text-gray-400 font-normal scale-90 ml-1">借用:${actualPatient.name}</span>` : p.name;
+                document.getElementById('record-patient-name').innerHTML = displayName; 
+                
                 document.getElementById('record-patient-rem').innerText = stats.remain; 
                 document.getElementById('record-patient-rem').className = stats.remain<=0 ? "font-black text-base text-danger leading-none" : "font-black text-base text-success leading-none";
                 document.getElementById('record-patient-consumed').innerText = stats.consumed;
                 document.getElementById('record-patient-last').innerText = stats.history.length > 0 ? stats.history[0].date.substring(5) : "无";
 
+                document.querySelectorAll('.pill-date').forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.pill-date[data-offset="0"]').classList.add('active');
                 document.getElementById('record-date').value = new Date().toISOString().split('T')[0]; 
+                
                 ['rec-c-count','rec-p-count','rec-p-amount','rec-m-amount','record-remark'].forEach(id => document.getElementById(id).value = ''); 
                 document.getElementById('record-income-val').innerText = '0.00'; 
                 ui.openModal('modal-record');
             },
 
+            clearDatePills: () => {
+                document.querySelectorAll('.pill-date').forEach(btn => btn.classList.remove('active'));
+            },
+
             saveRecord: () => {
-                const pid = document.getElementById('record-p-id').value, date = document.getElementById('record-date').value, remark = document.getElementById('record-remark').value; if(!date) return ui.showToast("日期必填", "warning");
+                const pid = document.getElementById('record-p-id').value;
+                const borrowerName = document.getElementById('record-borrower-name').value;
+                const date = document.getElementById('record-date').value;
+                let remark = document.getElementById('record-remark').value; 
+                
+                if(!date) return ui.showToast("发生日期不能空！", "warning");
+                
+                if(borrowerName) remark = `【由借卡人 ${borrowerName} 消费】 ` + remark;
+
                 const cCount = Number(document.getElementById('rec-c-count').value)||0, pCntStr = document.getElementById('rec-p-count').value, pCount = pCntStr===''?0:Number(pCntStr), pAmount = Number(document.getElementById('rec-p-amount').value)||0, mAmount = Number(document.getElementById('rec-m-amount').value)||0;
                 let has = false;
                 if(cCount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_c', pid, type: 'consume', date, count: cCount, amount: 0, income: 0, remark }); has=true; }
                 if(pCntStr!=='' || pAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_p', pid, type: 'purchase', date, count: pCount, amount: pAmount, income: (pCount===0?pAmount*0.4:pAmount*0.6), remark }); has=true; }
                 if(mAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_m', type: 'medicine', pid, date, count: 0, amount: mAmount, income: mAmount*0.2, remark }); has=true; }
-                if(!has) return ui.showToast("请填数据", "warning");
+                if(!has) return ui.showToast("没填任何数据呢，提交个空气呀", "warning");
                 
                 dataStore.save(); 
-                ui.showToast("录入成功", "success"); 
+                ui.showToast(borrowerName ? "已成功从主卡扣除！" : "录单成功！", "success"); 
                 app.renderList(); 
                 ui.closeModal('modal-record');
             },
@@ -730,6 +941,10 @@ layout: null
                 const p = dataStore.getPatient(pid), stats = dataStore.calcStats(pid);
                 document.getElementById('det-avatar').innerText = p.name.charAt(0); document.getElementById('det-p-name').innerText = p.name; document.getElementById('det-p-source').innerText = p.source||'未知'; document.getElementById('det-p-phone').innerText = p.phone||'无电话'; document.getElementById('det-p-tags').innerHTML = (p.tags||[]).map(t=>`<span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">${t}</span>`).join('');
                 document.getElementById('det-stat-money').innerText = stats.mTotal; document.getElementById('det-stat-p').innerText = stats.purchased; document.getElementById('det-stat-c').innerText = stats.consumed; document.getElementById('det-stat-rem').innerText = stats.remain;
+                
+                const delBtn = document.getElementById('btn-delete-patient-full');
+                delBtn.onclick = () => app.deletePatientFull(pid);
+                
                 const df = document.createDocumentFragment();
                 stats.history.forEach(h => {
                     const d = document.createElement('div'); d.className = `relative pl-6 py-1 before:absolute before:left-1 before:top-4 before:w-2 before:h-2 before:rounded-full ${h.type==='purchase'?'before:bg-primary':h.type==='medicine'?'before:bg-purple-500':'before:bg-success'}`;
@@ -755,13 +970,130 @@ layout: null
             },
             bindEvents: () => {
                 document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(b => b.onclick = () => app.showPage(b.dataset.page));
-                let to; document.getElementById('search-input').oninput = (e) => { clearTimeout(to); to = setTimeout(() => { app.state.search = e.target.value.trim(); app.state.page = 0; document.getElementById('clear-search').classList.toggle('hidden', !app.state.search); app.renderList(); }, 300); };
-                document.getElementById('clear-search').onclick = () => { document.getElementById('search-input').value=''; app.state.search=''; app.state.page=0; document.getElementById('clear-search').classList.add('hidden'); app.renderList(); };
+                let to; 
+                const searchInput = document.getElementById('search-input');
+                if(searchInput) {
+                    searchInput.oninput = (e) => { clearTimeout(to); to = setTimeout(() => { app.state.search = e.target.value.trim(); app.state.page = 0; document.getElementById('clear-search').classList.toggle('hidden', !app.state.search); app.renderList(); }, 300); };
+                }
+                const clearSearchBtn = document.getElementById('clear-search');
+                if(clearSearchBtn) {
+                    clearSearchBtn.onclick = () => { document.getElementById('search-input').value=''; app.state.search=''; app.state.page=0; document.getElementById('clear-search').classList.add('hidden'); app.renderList(); };
+                }
                 const fTo = () => { clearTimeout(to); to = setTimeout(() => { app.state.filterMin = document.getElementById('filter-min').value; app.state.filterMax = document.getElementById('filter-max').value; app.state.page = 0; app.renderList(); }, 300); };
-                document.getElementById('filter-min').oninput = fTo; document.getElementById('filter-max').oninput = fTo;
-                document.getElementById('prev-page').onclick = () => { app.state.page--; app.renderList(); }; document.getElementById('next-page').onclick = () => { app.state.page++; app.renderList(); };
+                const filterMinEl = document.getElementById('filter-min');
+                const filterMaxEl = document.getElementById('filter-max');
+                if(filterMinEl) filterMinEl.oninput = fTo; 
+                if(filterMaxEl) filterMaxEl.oninput = fTo;
+                
+                const prevBtn = document.getElementById('prev-page');
+                const nextBtn = document.getElementById('next-page');
+                if(prevBtn) prevBtn.onclick = () => { app.state.page--; app.renderList(); }; 
+                if(nextBtn) nextBtn.onclick = () => { app.state.page++; app.renderList(); };
+                
                 const calc = () => { const pAmt=Number(document.getElementById('rec-p-amount').value)||0, pCntStr=document.getElementById('rec-p-count').value, mAmt=Number(document.getElementById('rec-m-amount').value)||0; document.getElementById('record-income-val').innerText = ((pAmt>0 ? (pCntStr===''?pAmt*0.4:pAmt*0.6) : 0) + (mAmt*0.2)).toFixed(2); };
-                ['rec-p-count','rec-p-amount','rec-m-amount'].forEach(id => document.getElementById(id).oninput = calc);
+                ['rec-p-count','rec-p-amount','rec-m-amount'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.oninput = calc;
+                });
+
+                document.querySelectorAll('.pill-gender').forEach(btn => {
+                    btn.onclick = () => {
+                        document.querySelectorAll('.pill-gender').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        document.getElementById('field-p-gender').value = btn.dataset.val;
+                    };
+                });
+                
+                document.querySelectorAll('.pill-source').forEach(btn => {
+                    btn.onclick = () => {
+                        document.querySelectorAll('.pill-source').forEach(b => b.classList.remove('active', 'border-blue-200', 'text-blue-600', 'bg-blue-50'));
+                        btn.classList.add('active');
+                        if(btn.dataset.val === '借卡') btn.classList.add('border-blue-200', 'text-blue-600', 'bg-blue-50');
+                        
+                        document.getElementById('field-p-source').value = btn.dataset.val;
+                        if(btn.dataset.val === '借卡') {
+                            document.getElementById('lender-select-box').classList.remove('hidden');
+                        } else {
+                            document.getElementById('lender-select-box').classList.add('hidden');
+                            document.getElementById('lender-search').value = '';
+                            document.getElementById('field-p-lender-id').value = '';
+                        }
+                    };
+                });
+
+                document.querySelectorAll('.pill-date').forEach(btn => {
+                    btn.onclick = () => {
+                        document.querySelectorAll('.pill-date').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        
+                        const offset = parseInt(btn.dataset.offset);
+                        const d = new Date();
+                        d.setDate(d.getDate() + offset);
+                        document.getElementById('record-date').value = d.toISOString().split('T')[0];
+                    };
+                });
+
+                const importInput = document.getElementById('import-excel');
+                if(importInput) {
+                    importInput.addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        if(!file) return;
+                        ui.showConfirm("数据覆写警告", "导入备份将导致当前所有患者和流水被替换（云端也会被同步重置），此操作无法撤销。确认吗？", true, () => {
+                            ui.showToast("正在解析 Excel...", "info");
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                                try {
+                                    const data = new Uint8Array(evt.target.result);
+                                    const wb = XLSX.read(data, {type: 'array'});
+                                    
+                                    const wsP = wb.Sheets['患者主档'];
+                                    const wsT = wb.Sheets['全部流水'];
+                                    if(!wsP || !wsT) throw new Error("Excel格式错误，必须包含'患者主档'和'全部流水'两个工作表");
+                                    
+                                    const pRows = XLSX.utils.sheet_to_json(wsP);
+                                    const tRows = XLSX.utils.sheet_to_json(wsT);
+                                    
+                                    const newPatients = pRows.map(row => ({
+                                        id: row['ID(系统勿动)'],
+                                        name: row['姓名'] || '未知',
+                                        phone: row['手机号'] || '',
+                                        gender: row['性别'] || '男',
+                                        age: row['年龄'] || '',
+                                        source: row['渠道'] || '自来',
+                                        lenderId: row['出借人ID'] || null,
+                                        tags: row['标签'] ? row['标签'].toString().split(',') : [],
+                                        remark: row['备注'] || ''
+                                    }));
+                                    
+                                    const newTreatments = tRows.map(row => ({
+                                        id: row['记录ID(勿动)'],
+                                        pid: row['患者ID(勿动)'],
+                                        date: row['日期'],
+                                        type: row['类型']==='充次'?'purchase':row['类型']==='开药'?'medicine':'consume',
+                                        count: Number(row['变动次']) || 0,
+                                        amount: Number(row['金额']) || 0,
+                                        income: Number(row['预计收入']) || 0,
+                                        remark: row['备注'] || ''
+                                    }));
+                                    
+                                    if(newPatients.some(p => !p.id) || newTreatments.some(t => !t.id || !t.pid)) {
+                                        throw new Error("备份文件缺失关键 ID 字段，无法恢复");
+                                    }
+                                    
+                                    dataStore.patients = newPatients;
+                                    dataStore.treatments = newTreatments;
+                                    dataStore.save();
+                                    ui.showToast("备份恢复成功，即将刷新", "success");
+                                    setTimeout(() => location.reload(), 1500);
+                                } catch(err) {
+                                    ui.showToast(err.message, "error");
+                                    importInput.value = '';
+                                }
+                            };
+                            reader.readAsArrayBuffer(file);
+                        });
+                    });
+                }
             }
         };
 
