@@ -40,7 +40,6 @@ layout: null
             .no-scrollbar::-webkit-scrollbar { display: none; }
             .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             
-            /* 极速胶囊按钮样式 */
             .pill { @apply px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-500 bg-gray-50 transition-colors cursor-pointer text-center flex-1; }
             .pill.active { @apply bg-primary/10 border-primary text-primary font-bold shadow-sm; }
         }
@@ -63,7 +62,6 @@ layout: null
     <div id="main-app" class="hidden opacity-0 transition-opacity duration-500">
         <header class="bg-white shadow-sm sticky top-0 z-40 backdrop-blur-md bg-white/90 border-b border-gray-100">
             <div class="container mx-auto px-4 h-14 md:h-16 flex justify-between items-center">
-                <!-- 彻底剔除待办页入口，点击 Logo 默认进入患者档案 -->
                 <div class="flex items-center space-x-2 md:space-x-3 cursor-pointer" onclick="app.showPage('patients')">
                     <div class="bg-primary/10 p-1.5 md:p-2 rounded-lg text-primary"><i class="fa fa-stethoscope text-lg md:text-xl"></i></div>
                     <h1 class="text-lg md:text-xl font-bold tracking-tight text-gray-800">针推管理 Pro</h1>
@@ -89,11 +87,11 @@ layout: null
                 </div>
                 <div class="card p-3 md:p-4 mb-4 md:mb-6 flex flex-col md:flex-row gap-3">
                     <div class="relative flex-grow group">
-                        <input type="text" id="search-input" placeholder="输入姓名、拼音首字母(如zs)或手机号..." class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/50 outline-none transition-colors">
+                        <input type="text" id="search-input" placeholder="输入姓名、拼音首字母或手机号..." class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/50 outline-none transition-colors">
                         <button id="clear-search" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 hidden"><i class="fa fa-times-circle"></i></button>
                     </div>
                     <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30 transition-all shrink-0">
-                        <span class="text-xs md:text-sm text-gray-500 whitespace-nowrap pl-2"><i class="fa fa-filter mr-1"></i>剩余次数：</span>
+                        <span class="text-xs md:text-sm text-gray-500 whitespace-nowrap pl-2"><i class="fa fa-filter mr-1"></i>余次：</span>
                         <input type="number" id="filter-min" placeholder="最小" class="w-12 md:w-16 bg-transparent border-none text-center text-sm focus:ring-0 outline-none text-gray-700 placeholder-gray-400">
                         <span class="text-gray-300 mx-1">~</span>
                         <input type="number" id="filter-max" placeholder="最大" class="w-12 md:w-16 bg-transparent border-none text-center text-sm focus:ring-0 outline-none text-gray-700 placeholder-gray-400">
@@ -143,12 +141,11 @@ layout: null
                         <p class="text-xs text-gray-500 font-medium">历史总营收(流水)</p>
                         <h3 id="card-total-revenue" class="text-2xl md:text-3xl font-bold mt-1 text-danger">¥0</h3>
                         <div class="flex justify-between items-end mt-2">
-                            <p class="text-[10px] md:text-xs text-gray-400">活跃总人次:<span id="card-active-patients">0</span></p>
+                            <p class="text-[10px] md:text-xs text-gray-400">活跃人次:<span id="card-active-patients">0</span></p>
                             <p class="text-[10px] md:text-xs text-danger font-bold bg-red-100/50 px-1.5 py-0.5 rounded">总建档:<span id="card-total-patients">0</span></p>
                         </div>
                     </div>
                 </div>
-                <!-- 简化后的图表占位区 -->
                 <div class="grid grid-cols-1 gap-6 mb-6">
                     <div class="card p-4 md:p-6 bg-gray-50 text-center py-12 border border-dashed border-gray-300">
                         <i class="fa fa-bar-chart text-4xl text-gray-300 mb-2"></i>
@@ -169,14 +166,14 @@ layout: null
                         </div>
                         <div class="card p-6 border-l-4 border-l-purple-500 bg-purple-50/20">
                             <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-history text-primary mr-2"></i>从备份中恢复 (智能引擎)</h3>
-                            <p class="text-sm text-gray-600 leading-relaxed mb-4">上传你此前导出的 Excel，或者你自己按模板创建的 Excel。引擎会自动补全缺失的 ID 字段，并根据患者姓名智能关联流水！</p>
+                            <p class="text-sm text-gray-600 leading-relaxed mb-4">上传你此前导出的 Excel，引擎会自动补全缺失的 ID 字段并关联流水。</p>
                             <label class="btn btn-primary cursor-pointer text-sm justify-center"><i class="fa fa-upload mr-2"></i> 载入 Excel 备份数据<input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls"></label>
                         </div>
                     </div>
                     <div class="space-y-6">
                         <div class="card p-6 border-l-4 border-l-secondary bg-blue-50/20">
                             <h3 class="font-bold text-lg mb-2 text-gray-800"><i class="fa fa-compress text-primary mr-2"></i>合并重复档案</h3>
-                            <p class="text-sm text-gray-500 mb-4">将冗余档案的历史记录转移并销毁。</p>
+                            <p class="text-sm text-gray-500 mb-4">将冗余档案的历史记录无损转移并销毁。</p>
                             <button onclick="ui.openMergeModal()" class="btn btn-secondary border-primary/30 text-primary bg-white text-sm w-full">打开合并工具</button>
                         </div>
                         <div class="card p-6 border-2 border-dashed border-red-300/50 bg-red-50/30">
@@ -189,7 +186,7 @@ layout: null
             </section>
         </main>
 
-        <!-- 移动端底部导航 (平分三格，不留待办) -->
+        <!-- 移动端底部导航 -->
         <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-100 flex justify-around items-center h-[60px] pb-safe z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
             <button class="mobile-nav-btn flex flex-col items-center w-1/3 pt-1 pb-1 text-primary" data-page="patients"><i class="fa fa-users text-lg mb-0.5"></i><span class="text-[10px] font-medium">档案</span></button>
             <button class="mobile-nav-btn flex flex-col items-center w-1/3 pt-1 pb-1 text-gray-400" data-page="dashboard"><i class="fa fa-line-chart text-lg mb-0.5"></i><span class="text-[10px] font-medium">洞察</span></button>
@@ -239,13 +236,12 @@ layout: null
 
                         <div id="lender-select-box" class="hidden bg-blue-50/50 border border-blue-100 p-3 rounded-lg relative">
                             <label class="block text-[11px] font-bold text-blue-700 mb-1.5"><i class="fa fa-link mr-1"></i>绑定实际使用人 (出借人)</label>
-                            <input type="text" id="lender-search" placeholder="输入拼音(zs)或姓名搜老客..." class="input-field !py-1.5 text-sm bg-white" autocomplete="off">
+                            <input type="text" id="lender-search" placeholder="输入拼音或姓名搜老客..." class="input-field !py-1.5 text-sm bg-white" autocomplete="off">
                             <input type="hidden" id="field-p-lender-id">
                             <div id="lender-dropdown" class="absolute z-10 w-full left-0 bg-white border border-gray-200 rounded-b-lg mt-0.5 max-h-40 overflow-y-auto hidden shadow-xl divide-y divide-gray-50"></div>
                             <p class="text-[9px] text-blue-500 mt-1.5 leading-tight">关联后，此新客的所有录单消耗，将自动从该出借人的卡里扣除。</p>
                         </div>
 
-                        <!-- 业务重排：把首诊业务移到了标签和备注的前面 -->
                         <div id="init-options" class="mt-3">
                             <label class="block text-xs font-bold text-gray-800 mb-1.5"><i class="fa fa-stethoscope text-primary mr-1"></i>首诊业务 <span class="text-[10px] text-gray-400 font-normal">(无发生可留空)</span></label>
                             <div class="space-y-2 bg-gray-50/80 p-3 rounded-xl border border-gray-200">
@@ -254,7 +250,6 @@ layout: null
                             </div>
                         </div>
                         
-                        <!-- 病症标签和综合备注下置 -->
                         <div class="pt-3 border-t border-gray-100 mt-3 space-y-3">
                             <div><label class="block text-[11px] font-bold text-gray-500 mb-1">病症标签</label><input type="text" id="field-p-tags" class="input-field !py-1.5 text-sm bg-gray-50" placeholder="多个用空格隔开"></div>
                             <div><label class="block text-[11px] font-bold text-gray-500 mb-1">综合备注</label><textarea id="field-p-remark" class="input-field !py-1.5 text-sm bg-gray-50" rows="1"></textarea></div>
@@ -266,7 +261,7 @@ layout: null
             </div>
         </div>
 
-        <!-- 超紧凑录单弹窗 -->
+        <!-- 录单弹窗 -->
         <div id="modal-record" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-2 sm:p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-record')">
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform flex flex-col max-h-screen" id="modal-record-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-3 py-2 border-b border-gray-100 shrink-0">
@@ -288,7 +283,7 @@ layout: null
                         
                         <div class="flex gap-2 items-end">
                             <div class="w-[60%]">
-                                <label class="block text-[10px] font-bold text-gray-500 mb-1">发生日期 (免滚轮秒选)</label>
+                                <label class="block text-[10px] font-bold text-gray-500 mb-1">发生日期</label>
                                 <div class="flex gap-1 mb-1.5">
                                     <div class="pill pill-date active !py-1 !px-0" data-offset="0">今天</div>
                                     <div class="pill pill-date !py-1 !px-0" data-offset="-1">昨天</div>
@@ -354,7 +349,6 @@ layout: null
                 </div>
                 <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl shrink-0">
                     <button class="btn btn-secondary" onclick="ui.closeModal('modal-edit-record')">取消</button>
-                    <!-- 修正并强化了确认按钮 -->
                     <button class="btn btn-warning px-8 text-white shadow-yellow-500/30" onclick="app.saveEditTreatment()">确认修改</button>
                 </div>
             </div>
@@ -363,13 +357,31 @@ layout: null
         <!-- 详情弹窗 -->
         <div id="modal-detail" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-detail')">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col transform scale-95 transition-transform h-[85vh] md:h-[75vh]" id="modal-detail-content" onclick="event.stopPropagation()">
-                <div class="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-100 shrink-0"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0" id="det-avatar">名</div><div><h3 class="font-bold text-base md:text-lg text-gray-800 leading-none flex items-center"><span id="det-p-name">姓名</span><span class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600" id="det-p-source">来源</span></h3><span class="text-[10px] md:text-xs text-gray-400 mt-1 block" id="det-p-phone">手机号</span><div id="det-p-tags" class="flex flex-wrap gap-1 mt-1"></div></div></div><button class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50" onclick="ui.closeModal('modal-detail')"><i class="fa fa-times text-xl"></i></button></div>
-                <div class="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50/50 shrink-0"><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总消费(元)</p><p class="text-base md:text-xl font-bold text-danger" id="det-stat-money">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总计充次</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-p">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">累计消耗</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-c">0</p></div><div class="p-2 md:p-3 text-center bg-blue-50/50"><p class="text-[9px] md:text-[10px] text-blue-500 font-bold">剩余可用</p><p class="text-lg md:text-xl font-black text-primary" id="det-stat-rem">0</p></div></div>
-                <div class="flex-grow overflow-y-auto bg-gray-50/30 p-4 no-scrollbar">
-                    <div id="det-history-list" class="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent"></div>
+                <div class="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-100 shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0" id="det-avatar">名</div>
+                        <div>
+                            <h3 class="font-bold text-base md:text-lg text-gray-800 leading-none flex items-center">
+                                <span id="det-p-name">姓名</span><span class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600" id="det-p-source">来源</span>
+                            </h3>
+                            <span class="text-[10px] md:text-xs text-gray-400 mt-1 block" id="det-p-phone">手机号</span>
+                            <div id="det-p-tags" class="flex flex-wrap gap-1 mt-1"></div>
+                            <!-- 借卡人展示区 -->
+                            <div id="det-borrowers" class="mt-1.5 text-[10px] md:text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded hidden w-fit border border-indigo-100"></div>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50" onclick="ui.closeModal('modal-detail')"><i class="fa fa-times text-xl"></i></button>
                 </div>
-                <!-- 底部极简删除区 -->
-                <div class="px-4 py-3 border-t border-gray-100 bg-white shrink-0 text-center rounded-b-2xl">
+                <div class="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50/50 shrink-0"><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总消费(元)</p><p class="text-base md:text-xl font-bold text-danger" id="det-stat-money">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总计充次</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-p">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">累计消耗</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-c">0</p></div><div class="p-2 md:p-3 text-center bg-blue-50/50"><p class="text-[9px] md:text-[10px] text-blue-500 font-bold">剩余可用</p><p class="text-lg md:text-xl font-black text-primary" id="det-stat-rem">0</p></div></div>
+                
+                <!-- 修改区：去掉 padding，背景变白，用于紧凑单行列表 -->
+                <div class="flex-grow overflow-y-auto bg-gray-50/20 no-scrollbar relative" id="det-history-container">
+                    <div id="det-history-list" class="flex flex-col divide-y divide-gray-100 border-t border-gray-100">
+                        <!-- 流水由 JS 动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="px-4 py-3 border-t border-gray-100 bg-white shrink-0 text-center rounded-b-2xl z-10">
                     <button class="text-xs text-danger/70 hover:text-danger flex items-center justify-center w-full py-1 font-medium transition-colors" id="btn-delete-patient-full">
                         <i class="fa fa-trash-o mr-1"></i>彻底删除该患者档案及所有流水
                     </button>
@@ -382,7 +394,7 @@ layout: null
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform" id="modal-merge-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100"><h3 class="font-bold text-lg text-gray-800">合并重复档案</h3><button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-merge')"><i class="fa fa-times"></i></button></div>
                 <div class="p-6 space-y-4 bg-gray-50">
-                    <p class="text-xs text-gray-500 mb-2">将冗余档案的所有流水记录无缝转移给主档案，随后销毁冗余档案。此操作不可逆！</p>
+                    <p class="text-xs text-gray-500 mb-2">将冗余档案的所有流水无缝转移给主档案，随后销毁冗余档案。</p>
                     <div class="bg-white p-3 rounded-lg border border-green-200 shadow-sm relative">
                         <label class="block text-xs font-bold text-green-700 mb-1.5"><i class="fa fa-shield mr-1"></i>主档案 (最终保留)</label>
                         <input type="text" id="merge-p1-search" placeholder="输入首字母(zs)或姓名..." class="input-field bg-gray-50 !py-1.5 text-sm focus:ring-green-500" autocomplete="off">
@@ -430,8 +442,19 @@ layout: null
                 document.getElementById('btn-confirm-execute').onclick = () => { ui.closeConfirm(); fn(); }; ui.openModal('modal-confirm');
             },
             closeConfirm: () => ui.closeModal('modal-confirm'),
-            openModal: (id) => { const m = document.getElementById(id), c = document.getElementById(id+'-content'); m.classList.remove('hidden'); m.classList.add('flex'); requestAnimationFrame(() => { m.classList.remove('opacity-0'); if(c) c.classList.remove('scale-95'); }); },
-            closeModal: (id) => { const m = document.getElementById(id), c = document.getElementById(id+'-content'); m.classList.add('opacity-0'); if(c) c.classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 200); },
+            openModal: (id) => { 
+                const m = document.getElementById(id), c = document.getElementById(id+'-content'); 
+                m.classList.remove('hidden'); m.classList.add('flex'); 
+                requestAnimationFrame(() => { 
+                    m.classList.remove('opacity-0'); if(c) c.classList.remove('scale-95'); 
+                }); 
+            },
+            closeModal: (id) => { 
+                const m = document.getElementById(id), c = document.getElementById(id+'-content'); 
+                m.classList.add('opacity-0'); if(c) c.classList.add('scale-95'); 
+                setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 200); 
+                if(id === 'modal-detail') app.resetSwipe(); // 关闭详情时复位滑块
+            },
             
             openPatientModal: (pid = null, defaultName = '') => {
                 document.getElementById('form-patient').reset(); 
@@ -551,6 +574,8 @@ layout: null
 
         const app = {
             state: { page: 0, size: 10, search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
+            // 滑动状态记录
+            swipe: { startX: 0, startY: 0, ele: null, isSwiping: false, maxDistance: -128 },
             
             verifyAuth: () => {
                 const pwd = document.getElementById('login-pwd').value;
@@ -567,29 +592,27 @@ layout: null
             },
 
             confirmClearData: () => {
-                ui.showConfirm("核弹级操作警告", "此操作将同时清空【本地缓存】与【云端数据库】中的所有患者和流水记录，且无法恢复！确定重置系统吗？", true, async () => { 
-                    ui.showToast("正在清空云端数据...", "info");
+                ui.showConfirm("核弹级操作警告", "清空所有记录且无法恢复！确定重置系统吗？", true, async () => { 
+                    ui.showToast("正在清空...", "info");
                     try {
                         await fetch(DB_URL, { method: 'PUT', body: JSON.stringify({ patients: [], treatments: [], lastUpdate: new Date().toLocaleString() }) });
                         localStorage.clear();
-                        ui.showToast("全库数据已彻底清空", "success");
-                        setTimeout(() => location.reload(), 1000);
+                        setTimeout(() => location.reload(), 500);
                     } catch (e) {
                         localStorage.clear();
-                        ui.showToast("本地已清空，但云端响应超时，请检查网络", "warning");
-                        setTimeout(() => location.reload(), 1000);
+                        setTimeout(() => location.reload(), 500);
                     }
                 });
             },
 
             deletePatientFull: (pid) => {
-                ui.showConfirm("永久删除警告", "这将会从系统中把这个患者以及他过去的所有消费记录彻底抹除！你确定要这么做吗？", true, () => {
+                ui.showConfirm("永久删除警告", "这将会从系统中把这个患者以及他过去的所有消费记录彻底抹除！确定吗？", true, () => {
                     dataStore.patients = dataStore.patients.filter(p => p.id !== pid);
                     dataStore.treatments = dataStore.treatments.filter(t => t.pid !== pid);
                     dataStore.save();
                     ui.closeModal('modal-detail');
                     app.renderList();
-                    ui.showToast("该患者记录已彻底蒸发", "success");
+                    ui.showToast("患者记录已彻底蒸发", "success");
                 });
             },
 
@@ -610,7 +633,7 @@ layout: null
                     }).slice(0, 30); 
 
                     if(filtered.length === 0) {
-                        dropdown.innerHTML = '<div class="p-3 text-xs text-gray-400 text-center">系统查无此人，请检查输入</div>';
+                        dropdown.innerHTML = '<div class="p-3 text-xs text-gray-400 text-center">查无此人</div>';
                     } else {
                         filtered.forEach(p => {
                             const div = document.createElement('div');
@@ -644,22 +667,25 @@ layout: null
                 app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id'); 
 
                 app.showPage('patients'); 
+                
+                // 全局点击取消滑动
+                document.getElementById('det-history-container').addEventListener('touchstart', (e) => {
+                    if (!e.target.closest('.swipe-item')) app.resetSwipe();
+                });
             },
 
             updateBadge: () => {
                 const b = document.getElementById('data-status-badge');
-                if(b && dataStore.patients.length>0) { b.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 云端在线: ${dataStore.patients.length}人`; b.className = "hidden md:inline-flex items-center px-3 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full"; }
+                if(b && dataStore.patients.length>0) { b.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 在线: ${dataStore.patients.length}人`; b.className = "hidden md:inline-flex items-center px-3 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full"; }
             },
 
             renderDashboard: () => {
                 const today = new Date();
                 const todayStr = today.toISOString().split('T')[0];
-                
                 const day = today.getDay() || 7; 
                 const monday = new Date(today);
                 monday.setDate(today.getDate() - day + 1);
                 const mondayStr = monday.toISOString().split('T')[0];
-
                 const monthStr = today.toISOString().substring(0, 7) + '-01';
 
                 let todayRev = 0, weekRev = 0, monthIncome = 0, totalRev = 0, totalIncome = 0;
@@ -682,34 +708,25 @@ layout: null
                 });
 
                 const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-                
                 safeSet('card-today-rev', todayRev.toFixed(0));
                 safeSet('card-week-rev', weekRev.toFixed(0));
                 safeSet('card-month-income', monthIncome.toFixed(0));
                 safeSet('card-total-revenue', '¥' + totalRev.toFixed(0));
-                safeSet('card-rev-pur', '¥' + purSum.toFixed(0));
-                safeSet('card-rev-med', '¥' + medSum.toFixed(0));
-                safeSet('card-total-income', '¥' + totalIncome.toFixed(0));
-                
                 safeSet('card-total-patients', dataStore.patients.length);
                 safeSet('card-active-patients', activePids.size);
-
-                const retention = dataStore.patients.length > 0 ? ((activePids.size / dataStore.patients.length) * 100).toFixed(1) : 0;
-                safeSet('card-retention-rate', retention + '%');
             },
             
             executeMerge: async () => {
                 const p1Id = document.getElementById('merge-p1-id').value;
                 const p2Id = document.getElementById('merge-p2-id').value;
-                if(!p1Id || !p2Id) return ui.showToast('请确保主档案和冗余档案都从下拉列表中正确选中', 'warning');
-                if(p1Id === p2Id) return ui.showToast('主档案和冗余档案不能是同一个人', 'error');
+                if(!p1Id || !p2Id) return ui.showToast('主档和冗余档案都须从列表选中', 'warning');
+                if(p1Id === p2Id) return ui.showToast('不能是同一个人', 'error');
                 
-                ui.showConfirm("高危操作警告", "冗余档案的所有流水将被合并到主档案中，且冗余档案将被永久删除！该操作无法撤销，确认继续？", true, async () => {
+                ui.showConfirm("合并警告", "冗余档案的流水将被转移到主档案，且冗余档案将被永久删除，确认继续？", true, async () => {
                     dataStore.treatments.forEach(t => { if (t.pid === p2Id) t.pid = p1Id; });
                     dataStore.patients = dataStore.patients.filter(p => p.id !== p2Id);
-                    
                     dataStore.save();
-                    ui.showToast("完美合并，世界清静了", "success");
+                    ui.showToast("合并完成", "success");
                     ui.closeModal('modal-merge');
                     app.renderList();
                 });
@@ -738,13 +755,12 @@ layout: null
                 if(totalCountEl) totalCountEl.innerText = res.length;
                 
                 const maxP = Math.max(1, Math.ceil(res.length/app.state.size)); if(app.state.page >= maxP) app.state.page = maxP - 1;
-                
                 const pageIndEl = document.getElementById('page-indicator');
                 if(pageIndEl) pageIndEl.innerText = `${app.state.page + 1} / ${maxP}`;
 
                 const paged = res.slice(app.state.page * app.state.size, (app.state.page + 1) * app.state.size);
                 tbody.innerHTML = '';
-                if(paged.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">系统查无此人...</td></tr>`; return; }
+                if(paged.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">查无此人...</td></tr>`; return; }
 
                 const df = document.createDocumentFragment();
                 paged.forEach(p => {
@@ -795,7 +811,7 @@ layout: null
                 const source = document.getElementById('field-p-source').value;
                 const lenderId = document.getElementById('field-p-lender-id').value;
                 
-                if(source === '借卡' && !lenderId) return ui.showToast("借卡模式必须选择一个出借人！", "warning");
+                if(source === '借卡' && !lenderId) return ui.showToast("借卡模式必须绑定出借人！", "warning");
 
                 const pData = { 
                     id: finalId, name, 
@@ -814,14 +830,14 @@ layout: null
                     dataStore.patients.push(pData);
                     
                     const targetPid = source === '借卡' ? lenderId : finalId;
-                    const remarkPrefix = source === '借卡' ? `【首诊借卡: ${name}】 ` : '';
+                    const remarkPrefix = source === '借卡' ? `【借卡首诊: ${name}】 ` : '';
                     
                     const cCount = Number(document.getElementById('field-p-init-consume').value)||0, pCntStr = document.getElementById('field-p-init-count').value, pCount = pCntStr===''?0:Number(pCntStr), pAmt = Number(document.getElementById('field-p-init-amount').value)||0, mAmt = Number(document.getElementById('field-p-init-med').value)||0, dStr = new Date().toISOString().split('T')[0];
                     if (pCntStr!=='' || pAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_p', pid:targetPid, type:'purchase', date:dStr, count:pCount, amount:pAmt, income:(pCount===0?pAmt*0.4:pAmt*0.6), remark: remarkPrefix+'首诊开单' });
                     if (mAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_m', pid:targetPid, type:'medicine', date:dStr, count:0, amount:mAmt, income:mAmt*0.2, remark: remarkPrefix+'首诊开药' });
                     if (cCount>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_c', pid:targetPid, type:'consume', date:dStr, count:cCount, amount:0, income:0, remark: remarkPrefix+'首诊治疗' });
                     
-                    ui.showToast(`已建档` + (source === '借卡' ? `并绑定至主卡` : ''), "success");
+                    ui.showToast(`已建档` + (source === '借卡' ? `并绑定扣卡` : ''), "success");
                 }
                 dataStore.save(); 
                 app.renderList(); 
@@ -838,7 +854,7 @@ layout: null
                 document.getElementById('record-p-id').value = actualTargetId;
                 document.getElementById('record-borrower-name').value = isBorrower ? p.name : ''; 
                 
-                let displayName = isBorrower ? `${p.name} <span class="text-gray-400 font-normal scale-90 ml-1">借用:${actualPatient.name}</span>` : p.name;
+                let displayName = isBorrower ? `${p.name} <span class="text-gray-400 font-normal scale-90 ml-1">扣卡:${actualPatient?.name||'未知'}</span>` : p.name;
                 document.getElementById('record-patient-name').innerHTML = displayName; 
                 
                 document.getElementById('record-patient-rem').innerText = stats.remain; 
@@ -865,19 +881,18 @@ layout: null
                 const date = document.getElementById('record-date').value;
                 let remark = document.getElementById('record-remark').value; 
                 
-                if(!date) return ui.showToast("发生日期不能空！", "warning");
-                
-                if(borrowerName) remark = `【由借卡人 ${borrowerName} 消费】 ` + remark;
+                if(!date) return ui.showToast("发生日期不能空", "warning");
+                if(borrowerName) remark = `【借用者:${borrowerName}】 ` + remark;
 
                 const cCount = Number(document.getElementById('rec-c-count').value)||0, pCntStr = document.getElementById('rec-p-count').value, pCount = pCntStr===''?0:Number(pCntStr), pAmount = Number(document.getElementById('rec-p-amount').value)||0, mAmount = Number(document.getElementById('rec-m-amount').value)||0;
                 let has = false;
                 if(cCount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_c', pid, type: 'consume', date, count: cCount, amount: 0, income: 0, remark }); has=true; }
                 if(pCntStr!=='' || pAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_p', pid, type: 'purchase', date, count: pCount, amount: pAmount, income: (pCount===0?pAmount*0.4:pAmount*0.6), remark }); has=true; }
                 if(mAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_m', type: 'medicine', pid, date, count: 0, amount: mAmount, income: mAmount*0.2, remark }); has=true; }
-                if(!has) return ui.showToast("没填任何数据呢，提交个空气呀", "warning");
+                if(!has) return ui.showToast("没填任何数据呢", "warning");
                 
                 dataStore.save(); 
-                ui.showToast(borrowerName ? "已成功从主卡扣除！" : "录单成功！", "success"); 
+                ui.showToast(borrowerName ? "已成功扣除主卡" : "录单成功", "success"); 
                 app.renderList(); 
                 ui.closeModal('modal-record');
             },
@@ -925,7 +940,7 @@ layout: null
 
                 dataStore.treatments[idx] = { ...t, date: newDate, count: newCount, amount: newAmount, income: newIncome, remark: newRemark };
                 
-                dataStore.save(); ui.showToast("记录已修正", "success"); ui.closeModal('modal-edit-record'); app.renderList();
+                dataStore.save(); ui.showToast("记录修正成功", "success"); ui.closeModal('modal-edit-record'); app.renderList();
                 if(app.state.currentDetailPid) app.showDetail(app.state.currentDetailPid);
             },
             deleteTreatment: (tid, pid) => {
@@ -935,37 +950,143 @@ layout: null
                     if(pid) app.showDetail(pid);
                 });
             },
+            
+            // --- 滑动核心逻辑 ---
+            ts: (e) => {
+                const touch = e.touches ? e.touches[0] : e;
+                app.swipe.startX = touch.clientX;
+                app.swipe.startY = touch.clientY;
+                app.swipe.ele = e.currentTarget;
+                app.swipe.isSwiping = false;
+                // 复位其他项
+                document.querySelectorAll('.swipe-content').forEach(el => {
+                    if (el !== app.swipe.ele) el.style.transform = '';
+                });
+            },
+            tm: (e) => {
+                if (!app.swipe.ele) return;
+                const touch = e.touches ? e.touches[0] : e;
+                const deltaX = touch.clientX - app.swipe.startX;
+                const deltaY = touch.clientY - app.swipe.startY;
+                
+                // 优先垂直滚动判定
+                if (Math.abs(deltaY) > Math.abs(deltaX) && !app.swipe.isSwiping) {
+                    app.swipe.ele = null;
+                    return;
+                }
+                
+                app.swipe.isSwiping = true;
+                
+                // 仅允许左滑，设置弹簧阻尼效果
+                if (deltaX < 0) {
+                    e.preventDefault(); // 阻止默认滚动和侧滑返回
+                    let tx = deltaX;
+                    if (tx < app.swipe.maxDistance) {
+                        tx = app.swipe.maxDistance + (tx - app.swipe.maxDistance) * 0.3; // 越界阻尼
+                    }
+                    app.swipe.ele.style.transition = 'none';
+                    app.swipe.ele.style.transform = `translateX(${tx}px)`;
+                } else if (deltaX > 0 && app.swipe.ele.style.transform !== '') {
+                     e.preventDefault();
+                     app.swipe.ele.style.transform = `translateX(${Math.min(0, app.swipe.maxDistance + deltaX)}px)`;
+                }
+            },
+            te: (e) => {
+                if (!app.swipe.ele) return;
+                let deltaX = 0;
+                if(app.swipe.ele.style.transform) {
+                    deltaX = parseFloat(app.swipe.ele.style.transform.replace('translateX(', ''));
+                }
+                
+                app.swipe.ele.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+                if (deltaX < (app.swipe.maxDistance / 2)) {
+                    app.swipe.ele.style.transform = `translateX(${app.swipe.maxDistance}px)`; // 吸附打开
+                } else {
+                    app.swipe.ele.style.transform = ''; // 弹回关闭
+                }
+                app.swipe.ele = null;
+            },
+            resetSwipe: () => {
+                document.querySelectorAll('.swipe-content').forEach(el => {
+                    el.style.transition = 'transform 0.25s ease-out';
+                    el.style.transform = '';
+                });
+            },
+
             showDetail: (pid) => {
                 app.state.currentDetailPid = pid;
                 const p = dataStore.getPatient(pid), stats = dataStore.calcStats(pid);
-                document.getElementById('det-avatar').innerText = p.name.charAt(0); document.getElementById('det-p-name').innerText = p.name; document.getElementById('det-p-source').innerText = p.source||'未知'; document.getElementById('det-p-phone').innerText = p.phone||'无电话'; document.getElementById('det-p-tags').innerHTML = (p.tags||[]).map(t=>`<span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">${t}</span>`).join('');
-                document.getElementById('det-stat-money').innerText = stats.mTotal; document.getElementById('det-stat-p').innerText = stats.purchased; document.getElementById('det-stat-c').innerText = stats.consumed; document.getElementById('det-stat-rem').innerText = stats.remain;
+                document.getElementById('det-avatar').innerText = p.name.charAt(0); 
+                document.getElementById('det-p-name').innerText = p.name; 
+                document.getElementById('det-p-source').innerText = p.source||'未知'; 
+                document.getElementById('det-p-phone').innerText = p.phone||'无电话'; 
+                document.getElementById('det-p-tags').innerHTML = (p.tags||[]).map(t=>`<span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">${t}</span>`).join('');
+                
+                // === 借卡人反向查询逻辑 ===
+                const borrowers = dataStore.patients.filter(x => x.source === '借卡' && x.lenderId === pid).map(x => x.name);
+                const borrowersEl = document.getElementById('det-borrowers');
+                if(borrowers.length > 0) {
+                    borrowersEl.innerHTML = `<i class="fa fa-users mr-1"></i>被借用给: ${borrowers.join('、')}`;
+                    borrowersEl.classList.remove('hidden');
+                } else {
+                    borrowersEl.classList.add('hidden');
+                }
+
+                document.getElementById('det-stat-money').innerText = stats.mTotal; 
+                document.getElementById('det-stat-p').innerText = stats.purchased; 
+                document.getElementById('det-stat-c').innerText = stats.consumed; 
+                document.getElementById('det-stat-rem').innerText = stats.remain;
                 
                 const delBtn = document.getElementById('btn-delete-patient-full');
                 delBtn.onclick = () => app.deletePatientFull(pid);
                 
+                // === 生成紧凑单行左滑流水 ===
                 const df = document.createDocumentFragment();
                 stats.history.forEach(h => {
-                    const d = document.createElement('div'); d.className = `relative pl-6 py-1 before:absolute before:left-1 before:top-4 before:w-2 before:h-2 before:rounded-full ${h.type==='purchase'?'before:bg-primary':h.type==='medicine'?'before:bg-purple-500':'before:bg-success'}`;
+                    // 定义类型图标颜色和字
+                    let iconBg = 'bg-green-100 text-green-600', iconText = '治', valColor = 'text-success';
+                    let valStr = h.count ? `-${h.count}` : '';
+                    if(h.type === 'purchase') { iconBg = 'bg-blue-100 text-blue-600'; iconText = '充'; valColor = 'text-primary'; valStr = h.count ? `+${h.count}` : (h.amount ? `¥${h.amount}` : ''); }
+                    else if(h.type === 'medicine') { iconBg = 'bg-purple-100 text-purple-600'; iconText = '药'; valColor = 'text-purple-600'; valStr = h.amount ? `¥${h.amount}` : ''; }
+
+                    const d = document.createElement('div');
+                    // 必须加 touch-action: pan-y 防止浏览器全局前进后退手势冲突
+                    d.className = "relative overflow-hidden swipe-item bg-gray-50 touch-action-pan-y";
                     d.innerHTML = `
-                    <div class="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex flex-col">
-                        <div class="flex justify-between items-start">
-                            <div class="flex flex-col">
-                                <div class="flex items-center gap-2"><span class="font-bold text-sm text-gray-800">${h.date}</span><span class="text-[9px] px-1 rounded bg-gray-100 text-gray-600">${h.type==='purchase'?'开单':h.type==='medicine'?'开药':'治疗'}</span></div>
-                                <span class="text-[10px] text-gray-400 mt-1">${h.remark||'无备注'}</span>
+                        <!-- 底层滑块操作区 (两个按钮总宽 128px) -->
+                        <div class="absolute inset-y-0 right-0 flex text-sm text-white font-medium z-0 w-32">
+                            <button onclick="app.editTreatment('${h.id}');" class="flex-1 bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition-colors"><i class="fa fa-pencil text-lg"></i></button>
+                            <button onclick="app.deleteTreatment('${h.id}', '${pid}');" class="flex-1 bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors"><i class="fa fa-trash text-lg"></i></button>
+                        </div>
+                        
+                        <!-- 顶层单行内容区 -->
+                        <div class="swipe-content relative z-10 bg-white flex items-center justify-between px-3 md:px-5 py-3 transition-transform duration-200 shadow-[2px_0_5px_rgba(0,0,0,0.02)]" 
+                             ontouchstart="app.ts(event)" ontouchmove="app.tm(event)" ontouchend="app.te(event)">
+                            <div class="flex items-center gap-2.5 overflow-hidden flex-1 pr-2">
+                                <span class="shrink-0 text-[10px] w-6 h-6 flex items-center justify-center rounded ${iconBg} font-bold shadow-sm">${iconText}</span>
+                                <div class="flex flex-col truncate min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[13px] font-bold text-gray-800">${h.date.substring(5)}</span>
+                                        ${h.amount && h.count ? `<span class="text-[9px] bg-gray-100 text-gray-500 px-1 rounded truncate shrink-0 mt-0.5">实收 ¥${h.amount}</span>` : ''}
+                                    </div>
+                                    <span class="text-[11px] text-gray-400 truncate mt-0.5">${h.remark||'无备注'}</span>
+                                </div>
                             </div>
-                            <div class="text-right flex flex-col items-end">
-                                <span class="font-black text-lg ${h.type==='purchase'?'text-primary':h.type==='medicine'?'text-purple-600':'text-success'}">${h.count? (h.type==='purchase'?'+':'-')+h.count : ''}</span>
-                                ${h.amount?`<span class="text-[10px] bg-gray-100 text-gray-500 px-1 rounded mt-0.5">¥${h.amount}</span>`:''}
+                            <div class="flex flex-col items-end shrink-0 pl-2">
+                                <span class="font-black text-lg ${valColor} leading-none tracking-tight">${valStr}</span>
                             </div>
                         </div>
-                        <div class="flex items-center justify-end gap-3 mt-2 pt-2 border-t border-gray-50">
-                            <button onclick="app.editTreatment('${h.id}')" class="text-xs text-primary hover:text-blue-700 flex items-center"><i class="fa fa-pencil mr-1"></i>修改</button>
-                            <button onclick="app.deleteTreatment('${h.id}', '${pid}')" class="text-xs text-danger hover:text-red-700 flex items-center"><i class="fa fa-trash mr-1"></i>删除</button>
-                        </div>
-                    </div>`; df.appendChild(d);
+                    `;
+                    df.appendChild(d);
                 });
-                document.getElementById('det-history-list').innerHTML=''; document.getElementById('det-history-list').appendChild(df); ui.openModal('modal-detail');
+                const container = document.getElementById('det-history-list');
+                container.innerHTML=''; 
+                if(stats.history.length === 0) {
+                    container.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm">暂无流水记录</div>';
+                } else {
+                    container.appendChild(df); 
+                }
+                ui.openModal('modal-detail');
             },
             bindEvents: () => {
                 document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(b => b.onclick = () => app.showPage(b.dataset.page));
@@ -1037,9 +1158,24 @@ layout: null
                     importInput.addEventListener('change', (e) => {
                         const file = e.target.files[0];
                         if(!file) return;
-                        ui.showConfirm("数据覆写警告", "导入备份将导致当前所有患者和流水被替换（云端也会被同步重置），此操作无法撤销。确认吗？", true, () => {
+                        ui.showConfirm("数据覆写警告", "导入备份将导致当前所有患者和流水被替换（云端也会被重置），确认吗？", true, () => {
                             ui.showToast("正在解析 Excel...", "info");
                             const reader = new FileReader();
+                            
+                            const parseExcelDate = (val) => {
+                                if (!val) return new Date().toISOString().split('T')[0];
+                                if (typeof val === 'number') {
+                                    const parsed = XLSX.SSF.parse_date_code(val);
+                                    return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
+                                }
+                                if (typeof val === 'string') {
+                                    const parts = val.split(/[-/]/);
+                                    if (parts.length === 3) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                                    return val;
+                                }
+                                return String(val);
+                            };
+
                             reader.onload = (evt) => {
                                 try {
                                     const data = new Uint8Array(evt.target.result);
@@ -1047,12 +1183,11 @@ layout: null
                                     
                                     const wsP = wb.Sheets['患者主档'];
                                     const wsT = wb.Sheets['全部流水'];
-                                    if(!wsP || !wsT) throw new Error("Excel格式错误，必须包含'患者主档'和'全部流水'两个工作表");
+                                    if(!wsP || !wsT) throw new Error("Excel格式错误，必须包含'患者主档'和'全部流水'");
                                     
                                     const pRows = XLSX.utils.sheet_to_json(wsP);
                                     const tRows = XLSX.utils.sheet_to_json(wsT);
                                     
-                                    // 智能解析患者：如果没有 ID(系统勿动)，就自动生成一个
                                     const newPatients = pRows.map((row, index) => ({
                                         id: row['ID(系统勿动)'] || `p_${Date.now()}_${index}`,
                                         name: row['姓名'] ? String(row['姓名']).trim() : '未知',
@@ -1065,7 +1200,6 @@ layout: null
                                         remark: row['备注'] || ''
                                     }));
                                     
-                                    // 智能解析流水：如果没有 患者ID，就用 姓名 去新患者列表里找
                                     const newTreatments = tRows.map((row, index) => {
                                         let pid = row['患者ID(勿动)'];
                                         const pName = row['患者'] ? String(row['患者']).trim() : '';
@@ -1075,12 +1209,12 @@ layout: null
                                             if (matchedP) pid = matchedP.id;
                                         }
 
-                                        if (!pid) throw new Error(`流水记录中【${pName||'未知'}】无法匹配到患者主档，请核对姓名！`);
+                                        if (!pid) throw new Error(`流水中【${pName||'未知'}】无法匹配到患者主档`);
 
                                         return {
                                             id: row['记录ID(勿动)'] || `t_${Date.now()}_${index}`,
                                             pid: pid,
-                                            date: row['日期'],
+                                            date: parseExcelDate(row['日期']),
                                             type: row['类型']==='充次'?'purchase':row['类型']==='开药'?'medicine':'consume',
                                             count: Number(row['变动次']) || 0,
                                             amount: Number(row['金额']) || 0,
@@ -1092,7 +1226,7 @@ layout: null
                                     dataStore.patients = newPatients;
                                     dataStore.treatments = newTreatments;
                                     dataStore.save();
-                                    ui.showToast("备份恢复成功，即将刷新", "success");
+                                    ui.showToast("备份恢复成功", "success");
                                     setTimeout(() => location.reload(), 1500);
                                 } catch(err) {
                                     ui.showToast(err.message, "error");
