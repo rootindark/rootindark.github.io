@@ -1183,7 +1183,7 @@ layout: null
                     const remarkPrefix = source === '借卡' ? `【借卡首诊: ${name}】 ` : '';
                     
                     const cCount = Number(document.getElementById('field-p-init-consume').value)||0, pCntStr = document.getElementById('field-p-init-count').value, pCount = pCntStr===''?0:Number(pCntStr), pAmt = Number(document.getElementById('field-p-init-amount').value)||0, mAmt = Number(document.getElementById('field-p-init-med').value)||0, dStr = new Date().toISOString().split('T')[0];
-                    if (pCntStr!=='' || pAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_p', pid:targetPid, type:'purchase', date:dStr, count:pCount, amount:pAmt, income:(pCount===0?pAmt*0.4:pAmt*0.6), remark: remarkPrefix+'首诊开单' });
+                    if (pCntStr!=='' || pAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_p', pid:targetPid, type:'purchase', date:dStr, count:pCount, amount:pAmt, income:(pCount===0?pAmt*0.45:pAmt*0.65), remark: remarkPrefix+'首诊开单' });
                     if (mAmt>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_m', pid:targetPid, type:'medicine', date:dStr, count:0, amount:mAmt, income:mAmt*0.2, remark: remarkPrefix+'首诊开药' });
                     if (cCount>0) dataStore.treatments.push({ id:'t_'+Date.now()+'_c', pid:targetPid, type:'consume', date:dStr, count:cCount, amount:0, income:0, remark: remarkPrefix+'首诊治疗' });
                     
@@ -1238,7 +1238,7 @@ layout: null
                 const cCount = Number(document.getElementById('rec-c-count').value)||0, pCntStr = document.getElementById('rec-p-count').value, pCount = pCntStr===''?0:Number(pCntStr), pAmount = Number(document.getElementById('rec-p-amount').value)||0, mAmount = Number(document.getElementById('rec-m-amount').value)||0;
                 let has = false;
                 if(cCount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_c', pid, type: 'consume', date, count: cCount, amount: 0, income: 0, remark }); has=true; }
-                if(pCntStr!=='' || pAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_p', pid, type: 'purchase', date, count: pCount, amount: pAmount, income: (pCount===0?pAmount*0.4:pAmount*0.6), remark }); has=true; }
+                if(pCntStr!=='' || pAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_p', pid, type: 'purchase', date, count: pCount, amount: pAmount, income: (pCount===0?pAmount*0.45:pAmount*0.65), remark }); has=true; }
                 if(mAmount>0) { dataStore.treatments.push({ id: 't_'+Date.now()+'_m', type: 'medicine', pid, date, count: 0, amount: mAmount, income: mAmount*0.2, remark }); has=true; }
                 if(!has) return ui.showToast("没填任何数据呢", "warning");
                 
@@ -1287,7 +1287,7 @@ layout: null
                 const newRemark = document.getElementById('edit-t-remark').value;
                 
                 let newIncome = 0;
-                if (t.type === 'purchase') { newIncome = newCount === 0 ? newAmount * 0.4 : newAmount * 0.6; }
+                if (t.type === 'purchase') { newIncome = newCount === 0 ? newAmount * 0.45 : newAmount * 0.65; }
                 else if (t.type === 'medicine') { newIncome = newAmount * 0.2; }
 
                 dataStore.treatments[idx] = { ...t, date: newDate, count: newCount, amount: newAmount, income: newIncome, remark: newRemark };
@@ -1457,7 +1457,7 @@ layout: null
                 if(filterMinEl) filterMinEl.oninput = fTo; 
                 if(filterMaxEl) filterMaxEl.oninput = fTo;
                 
-                const calc = () => { const pAmt=Number(document.getElementById('rec-p-amount').value)||0, pCntStr=document.getElementById('rec-p-count').value, mAmt=Number(document.getElementById('rec-m-amount').value)||0; document.getElementById('record-income-val').innerText = ((pAmt>0 ? (pCntStr===''?pAmt*0.4:pAmt*0.6) : 0) + (mAmt*0.2)).toFixed(2); };
+                const calc = () => { const pAmt=Number(document.getElementById('rec-p-amount').value)||0, pCntStr=document.getElementById('rec-p-count').value, pCount=pCntStr===''?0:Number(pCntStr), mAmt=Number(document.getElementById('rec-m-amount').value)||0; document.getElementById('record-income-val').innerText = ((pAmt>0 ? (pCount===0?pAmt*0.45:pAmt*0.65) : 0) + (mAmt*0.2)).toFixed(2); };
                 ['rec-p-count','rec-p-amount','rec-m-amount'].forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.oninput = calc;
