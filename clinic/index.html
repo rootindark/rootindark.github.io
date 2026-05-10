@@ -66,10 +66,12 @@ layout: null
                     <div class="bg-primary/10 p-1.5 md:p-2 rounded-lg text-primary"><i class="fa fa-stethoscope text-lg md:text-xl"></i></div>
                     <h1 class="text-lg md:text-xl font-bold tracking-tight text-gray-800">针推管理 Pro</h1>
                 </div>
+                <!-- 导航栏扩充为4个 -->
                 <nav class="hidden md:flex space-x-1">
-                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-primary bg-primary/5 transition-colors" data-page="patients"><i class="fa fa-users mr-1.5"></i>患者档案</button>
-                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="dashboard"><i class="fa fa-lightbulb-o mr-1.5"></i>经营洞察</button>
-                    <button class="nav-link px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="settings"><i class="fa fa-pie-chart mr-1.5"></i>系统维护</button>
+                    <button class="nav-link px-3 lg:px-4 py-2 rounded-lg font-medium text-primary bg-primary/5 transition-colors" data-page="patients"><i class="fa fa-users mr-1.5"></i>患者档案</button>
+                    <button class="nav-link px-3 lg:px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="daily"><i class="fa fa-calculator mr-1.5"></i>每日对账</button>
+                    <button class="nav-link px-3 lg:px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="dashboard"><i class="fa fa-lightbulb-o mr-1.5"></i>经营洞察</button>
+                    <button class="nav-link px-3 lg:px-4 py-2 rounded-lg font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors" data-page="settings"><i class="fa fa-cog mr-1.5"></i>系统维护</button>
                 </nav>
                 <div class="flex items-center gap-3">
                     <button onclick="ui.openPatientModal()" class="md:hidden btn btn-primary px-3 py-1.5 text-xs shadow-sm bg-primary/90 hover:bg-primary"><i class="fa fa-plus mr-1"></i>建档</button>
@@ -79,12 +81,13 @@ layout: null
         </header>
 
         <main class="container mx-auto px-4 py-4 md:py-6 mb-20 md:mb-10">
-            <!-- ================= 1. 患者档案页面 ================= -->
+            <!-- ================= 1. 患者档案页面 (实时录单操作台) ================= -->
             <section id="patients-page" class="page-section animate-fade-in">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-4">
-                    <div><h2 class="text-xl md:text-2xl font-bold text-gray-800">患者档案</h2><p class="text-xs md:text-sm text-gray-500 mt-1">支持姓名、手机号以及首字母拼音(如 zs)秒搜</p></div>
+                    <div><h2 class="text-xl md:text-2xl font-bold text-gray-800">患者工作台</h2><p class="text-xs md:text-sm text-gray-500 mt-1">支持姓名、手机号以及首字母拼音秒搜，若无此人可直接建档</p></div>
                     <button onclick="ui.openPatientModal()" class="hidden md:flex btn btn-primary shadow-blue-500/30"><i class="fa fa-user-plus mr-2"></i>初诊建档</button>
                 </div>
+
                 <div class="card p-3 md:p-4 mb-4 md:mb-6 flex flex-col md:flex-row gap-3">
                     <div class="relative flex-grow group">
                         <input type="text" id="search-input" placeholder="输入姓名、拼音首字母或手机号..." class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/50 outline-none transition-colors">
@@ -97,10 +100,12 @@ layout: null
                         <input type="number" id="filter-max" placeholder="最大" class="w-12 md:w-16 bg-transparent border-none text-center text-sm focus:ring-0 outline-none text-gray-700 placeholder-gray-400">
                     </div>
                 </div>
-                <div class="card min-h-[300px]">
-                    <div class="overflow-x-auto no-scrollbar">
+                
+                <!-- 列表区：去掉翻页，纯纵向滚动，活跃排序 -->
+                <div class="card flex flex-col h-[65vh] max-h-[800px]">
+                    <div class="overflow-x-auto no-scrollbar flex-grow overflow-y-auto relative">
                         <table class="w-full text-left border-collapse min-w-[700px]">
-                            <thead class="bg-gray-50 border-b border-gray-100 text-xs md:text-sm text-gray-500">
+                            <thead class="bg-gray-50 border-b border-gray-100 text-xs md:text-sm text-gray-500 sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th class="px-4 md:px-6 py-3 md:py-4 font-semibold whitespace-nowrap w-20 md:w-24 text-center">剩余额度</th>
                                     <th class="px-4 md:px-6 py-3 md:py-4 font-semibold whitespace-nowrap">患者信息 & 标签</th>
@@ -112,49 +117,149 @@ layout: null
                             <tbody id="patient-list-body" class="divide-y divide-gray-100 text-sm"></tbody>
                         </table>
                     </div>
-                    <div class="bg-gray-50 px-4 md:px-6 py-3 border-t border-gray-100 flex justify-between items-center text-xs md:text-sm text-gray-500">
-                        <span>筛选结果：<span id="total-count" class="font-bold text-primary text-base">0</span> 人</span>
-                        <div class="flex items-center space-x-3 md:space-x-4"><span id="page-indicator" class="font-medium">1 / 1</span><div class="flex space-x-1"><button id="prev-page" class="p-1.5 rounded hover:bg-gray-200 text-gray-600 disabled:opacity-30"><i class="fa fa-chevron-left"></i></button><button id="next-page" class="p-1.5 rounded hover:bg-gray-200 text-gray-600 disabled:opacity-30"><i class="fa fa-chevron-right"></i></button></div></div>
+                    <div class="bg-gray-50 px-4 md:px-6 py-3 border-t border-gray-100 flex justify-between items-center text-xs md:text-sm text-gray-500 shrink-0">
+                        <span>共建档 <span id="total-count" class="font-bold text-primary text-base">0</span> 人</span>
+                        <span class="text-gray-400"><i class="fa fa-sort text-primary mr-1"></i>近期活跃靠前 (上下滑动浏览)</span>
                     </div>
                 </div>
             </section>
 
-            <!-- ================= 2. 经营洞察页面 ================= -->
-            <section id="dashboard-page" class="page-section hidden animate-fade-in">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <div><h2 class="text-2xl font-bold text-gray-800">经营洞察看板</h2><p class="text-sm text-gray-500 mt-1">诊所核心指标与多维数据报表</p></div>
+            <!-- ================= 2. 每日对账页面 (重构：含周月面板) ================= -->
+            <section id="daily-page" class="page-section hidden animate-fade-in">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3 md:gap-4">
+                    <div><h2 class="text-xl md:text-2xl font-bold text-gray-800">每日经营对账</h2><p class="text-xs md:text-sm text-gray-500 mt-1">核对当天流水情况，区分现金流与实际利润</p></div>
+                    <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
+                        <i class="fa fa-calendar text-primary text-sm"></i>
+                        <input type="date" id="daily-date-picker" class="border-none bg-transparent text-xs md:text-sm font-bold text-gray-700 outline-none cursor-pointer">
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
-                    <div class="card p-4 md:p-5 border-l-4 border-l-success bg-green-50/30 relative">
-                        <p class="text-xs text-gray-500 font-medium">今日营收(¥)</p>
-                        <h3 id="card-today-rev" class="text-2xl md:text-3xl font-bold mt-1 text-green-600">0</h3>
+
+                <!-- 当日总览 (更小的内边距和字号) -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-3">
+                    <div class="card p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-100">
+                        <p class="text-[11px] text-blue-600 font-medium mb-0.5">当日总实收(¥)</p>
+                        <h3 id="daily-total-rev" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">0</h3>
                     </div>
-                    <div class="card p-4 md:p-5 border-l-4 border-l-primary bg-blue-50/30 relative">
-                        <p class="text-xs text-gray-500 font-medium">本周营收(¥)</p>
-                        <h3 id="card-week-rev" class="text-2xl md:text-3xl font-bold mt-1 text-primary">0</h3>
+                    <div class="card p-3 bg-purple-50/50 border border-purple-100">
+                        <p class="text-[11px] text-purple-700 font-medium mb-0.5">当日收入额(¥)</p>
+                        <h3 id="daily-total-income" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">0</h3>
                     </div>
-                    <div class="card p-4 md:p-5 border-l-4 border-l-purple-500 bg-purple-50/30 relative">
-                        <p class="text-xs text-gray-500 font-medium">本月净入(¥)</p>
-                        <h3 id="card-month-income" class="text-2xl md:text-3xl font-bold mt-1 text-purple-600">0</h3>
+                    <div class="card p-3 bg-gray-50 border border-gray-100">
+                        <p class="text-[11px] text-gray-500 font-medium mb-0.5">新充总次</p>
+                        <h3 id="daily-pur-count" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">0</h3>
                     </div>
-                    <div class="card p-4 md:p-5 border-l-4 border-l-danger bg-gradient-to-br from-white to-red-50/30 col-span-2">
-                        <p class="text-xs text-gray-500 font-medium">历史总营收(流水)</p>
-                        <h3 id="card-total-revenue" class="text-2xl md:text-3xl font-bold mt-1 text-danger">¥0</h3>
-                        <div class="flex justify-between items-end mt-2">
-                            <p class="text-[10px] md:text-xs text-gray-400">活跃人次:<span id="card-active-patients">0</span></p>
-                            <p class="text-[10px] md:text-xs text-danger font-bold bg-red-100/50 px-1.5 py-0.5 rounded">总建档:<span id="card-total-patients">0</span></p>
+                    <div class="card p-3 bg-green-50/50 border border-green-100">
+                        <p class="text-[11px] text-green-700 font-medium mb-0.5">消耗总次(体力)</p>
+                        <h3 id="daily-consume-count" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">0</h3>
+                    </div>
+                </div>
+
+                <!-- 新增：多时间框微型面板 (周/月) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
+                    <!-- 本周 -->
+                    <div class="card p-2 md:p-3 bg-white border border-gray-100">
+                        <div class="flex justify-between items-center mb-2 px-1">
+                            <span class="font-bold text-gray-700 text-xs">所在周累计 <span class="font-normal text-gray-400 ml-1 text-[10px]" id="week-date-range"></span></span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5 text-center">
+                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">实收 | 收入(¥)</p><p class="text-xs font-bold text-gray-800"><span id="wk-rev">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="wk-inc" class="text-purple-600">0</span></p></div>
+                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">新充 | 扣次</p><p class="text-xs font-bold text-gray-800"><span id="wk-pur">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="wk-con" class="text-green-600">0</span></p></div>
+                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">接诊 (新/老)</p><p class="text-xs font-bold text-gray-800"><span id="wk-new" class="text-red-500">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="wk-old">0</span></p></div>
+                        </div>
+                    </div>
+                    <!-- 本月 -->
+                    <div class="card p-2 md:p-3 bg-white border border-gray-100">
+                        <div class="flex justify-between items-center mb-2 px-1">
+                            <span class="font-bold text-gray-700 text-xs">所在月累计 <span class="font-normal text-gray-400 ml-1 text-[10px]" id="month-date-range"></span></span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5 text-center">
+                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">实收 | 收入(¥)</p><p class="text-xs font-bold text-gray-800"><span id="mo-rev">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="mo-inc" class="text-purple-600">0</span></p></div>
+                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">新充 | 扣次</p><p class="text-xs font-bold text-gray-800"><span id="mo-pur">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="mo-con" class="text-green-600">0</span></p></div>
+                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">接诊 (新/老)</p><p class="text-xs font-bold text-gray-800"><span id="mo-new" class="text-red-500">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="mo-old">0</span></p></div>
                         </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 gap-6 mb-6">
-                    <div class="card p-4 md:p-6 bg-gray-50 text-center py-12 border border-dashed border-gray-300">
-                        <i class="fa fa-bar-chart text-4xl text-gray-300 mb-2"></i>
-                        <p class="text-sm text-gray-500">业务趋势与图表模块加载就绪</p>
+
+                <!-- 当日纵向明细表 -->
+                <div class="card flex flex-col h-[40vh] max-h-[500px]">
+                    <div class="bg-gray-50 border-b border-gray-100 px-3 md:px-4 py-2.5 shrink-0 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-700 text-[13px] md:text-sm"><i class="fa fa-list-ul mr-1.5 text-primary"></i>接诊明细 (<span id="daily-patient-count" class="text-primary">0</span>人)</h3>
+                    </div>
+                    <div class="overflow-y-auto no-scrollbar flex-grow p-0">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-white border-b border-gray-50 text-[10px] md:text-[11px] text-gray-400 sticky top-0">
+                                <tr>
+                                    <th class="px-3 md:px-4 py-2 font-medium">患者姓名</th>
+                                    <th class="px-2 py-2 font-medium">发生活动</th>
+                                    <th class="px-2 py-2 font-medium text-center">余次</th>
+                                    <th class="px-3 md:px-4 py-2 font-medium text-right">详情</th>
+                                </tr>
+                            </thead>
+                            <tbody id="daily-list-body" class="text-sm divide-y divide-gray-50">
+                                <!-- JS Render -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
 
-            <!-- ================= 3. 系统维护页面 ================= -->
+            <!-- ================= 3. 经营洞察页面 (宏观分析) ================= -->
+            <section id="dashboard-page" class="page-section hidden animate-fade-in">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div><h2 class="text-2xl font-bold text-gray-800">质量与口碑洞察</h2><p class="text-sm text-gray-500 mt-1">定期复盘核心数据：留存、转介绍与诊疗强度</p></div>
+                </div>
+                
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+                    <div class="card p-4 md:p-5 border-l-4 border-l-primary bg-blue-50/30 relative">
+                        <div class="flex justify-between items-start"><p class="text-xs text-gray-500 font-medium">近30日活跃人次</p><i class="fa fa-heartbeat text-primary/30 text-xl"></i></div>
+                        <h3 id="dash-active-30" class="text-2xl md:text-3xl font-bold mt-1 text-primary">0</h3><p class="text-[10px] md:text-xs text-gray-400 mt-2">衡量近期热度</p>
+                    </div>
+                    <div class="card p-4 md:p-5 border-l-4 border-l-success bg-green-50/30 relative">
+                        <div class="flex justify-between items-start"><p class="text-xs text-gray-500 font-medium">全局老客复购率</p><i class="fa fa-refresh text-success/30 text-xl"></i></div>
+                        <h3 id="dash-repurchase" class="text-2xl md:text-3xl font-bold mt-1 text-green-600">0%</h3><p class="text-[10px] md:text-xs text-gray-400 mt-2">购≥2次疗程占比</p>
+                    </div>
+                    <div class="card p-4 md:p-5 border-l-4 border-l-purple-500 bg-purple-50/30 relative">
+                        <div class="flex justify-between items-start"><p class="text-xs text-gray-500 font-medium">口碑获客占比</p><i class="fa fa-share-alt text-purple-500/30 text-xl"></i></div>
+                        <h3 id="dash-referral-rate" class="text-2xl md:text-3xl font-bold mt-1 text-purple-600">0%</h3><p class="text-[10px] md:text-xs text-gray-400 mt-2">推荐/借卡渠道占比</p>
+                    </div>
+                    <div class="card p-4 md:p-5 border-l-4 border-l-warning bg-orange-50/30 relative">
+                        <div class="flex justify-between items-start"><p class="text-xs text-gray-500 font-medium">库内总建档</p><i class="fa fa-folder-open text-warning/30 text-xl"></i></div>
+                        <h3 id="dash-total-patients" class="text-2xl md:text-3xl font-bold mt-1 text-warning">0</h3><p class="text-[10px] md:text-xs text-gray-400 mt-2">数字资产总数</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="card p-4 md:p-5 lg:col-span-2">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fa fa-line-chart text-primary mr-2"></i>近15日接诊强度走势 <span class="text-xs font-normal text-gray-400 ml-2">(物理输出负荷)</span></h3>
+                        <div class="h-64 w-full relative"><canvas id="trendChart"></canvas></div>
+                    </div>
+                    <div class="card p-4 md:p-5 flex flex-col">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fa fa-pie-chart text-purple-500 mr-2"></i>客源护城河结构</h3>
+                        <div class="h-48 w-full relative flex-grow flex items-center justify-center"><canvas id="sourceChart"></canvas></div>
+                        <p class="text-xs text-center text-gray-400 mt-2">口碑客越多，医患信任成本越低</p>
+                    </div>
+                </div>
+
+                <div class="card p-0 mb-6 border-red-100 overflow-hidden">
+                    <div class="bg-red-50/80 px-4 md:px-5 py-3 border-b border-red-100 flex justify-between items-center">
+                        <h3 class="font-bold text-danger flex items-center"><i class="fa fa-bell-o mr-2 animate-pulse-fast"></i>沉睡与流失预警名单</h3>
+                        <span class="text-xs bg-red-100 text-danger px-2 py-0.5 rounded-full font-medium"><span id="dash-dormant-count">0</span> 人需跟进</span>
+                    </div>
+                    <div class="p-4 md:p-5 bg-white">
+                        <p class="text-xs text-gray-500 mb-4">自动抓取：① 卡内有次，>15天未接诊； ② 卡内无次，>30天未复购。</p>
+                        <div class="overflow-x-auto no-scrollbar">
+                            <table class="w-full text-left border-collapse min-w-[500px]">
+                                <thead class="border-b border-gray-100 text-[11px] text-gray-400">
+                                    <tr><th class="py-2 font-medium">患者信息</th><th class="py-2 font-medium">当前余次</th><th class="py-2 font-medium">最后一次接诊</th><th class="py-2 font-medium">预警状态</th><th class="py-2 font-medium text-right">操作</th></tr>
+                                </thead>
+                                <tbody id="dormant-list-body" class="divide-y divide-gray-50 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= 4. 系统维护页面 ================= -->
             <section id="settings-page" class="page-section hidden animate-fade-in">
                 <h2 class="text-xl md:text-2xl font-bold mb-6 text-gray-800">数据治理与维护</h2>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -165,15 +270,15 @@ layout: null
                             <button onclick="dataStore.exportFullBackup()" class="btn bg-white text-gray-900 w-full text-sm font-bold">导出全库数据 (.xlsx)</button>
                         </div>
                         <div class="card p-6 border-l-4 border-l-purple-500 bg-purple-50/20">
-                            <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-history text-primary mr-2"></i>从备份中恢复 (智能引擎)</h3>
-                            <p class="text-sm text-gray-600 leading-relaxed mb-4">上传你此前导出的 Excel，引擎会自动补全缺失的 ID 字段并关联流水。</p>
-                            <label class="btn btn-primary cursor-pointer text-sm justify-center"><i class="fa fa-upload mr-2"></i> 载入 Excel 备份数据<input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls"></label>
+                            <h3 class="font-bold text-lg mb-2 text-purple-800"><i class="fa fa-history text-primary mr-2"></i>从备份中恢复</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed mb-4">上传此前导出的 Excel，引擎会自动补全缺失ID并关联。</p>
+                            <label class="btn btn-primary cursor-pointer text-sm justify-center"><i class="fa fa-upload mr-2"></i> 载入 Excel 数据<input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls"></label>
                         </div>
                     </div>
                     <div class="space-y-6">
                         <div class="card p-6 border-l-4 border-l-secondary bg-blue-50/20">
                             <h3 class="font-bold text-lg mb-2 text-gray-800"><i class="fa fa-compress text-primary mr-2"></i>合并重复档案</h3>
-                            <p class="text-sm text-gray-500 mb-4">将冗余档案的历史记录无损转移并销毁。</p>
+                            <p class="text-sm text-gray-500 mb-4">将冗余档案的历史记录无损转移给主档案并销毁冗余。</p>
                             <button onclick="ui.openMergeModal()" class="btn btn-secondary border-primary/30 text-primary bg-white text-sm w-full">打开合并工具</button>
                         </div>
                         <div class="card p-6 border-2 border-dashed border-red-300/50 bg-red-50/30">
@@ -186,11 +291,12 @@ layout: null
             </section>
         </main>
 
-        <!-- 移动端底部导航 -->
-        <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-100 flex justify-around items-center h-[60px] pb-safe z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-            <button class="mobile-nav-btn flex flex-col items-center w-1/3 pt-1 pb-1 text-primary" data-page="patients"><i class="fa fa-users text-lg mb-0.5"></i><span class="text-[10px] font-medium">档案</span></button>
-            <button class="mobile-nav-btn flex flex-col items-center w-1/3 pt-1 pb-1 text-gray-400" data-page="dashboard"><i class="fa fa-line-chart text-lg mb-0.5"></i><span class="text-[10px] font-medium">洞察</span></button>
-            <button class="mobile-nav-btn flex flex-col items-center w-1/3 pt-1 pb-1 text-gray-400" data-page="settings"><i class="fa fa-cog text-lg mb-0.5"></i><span class="text-[10px] font-medium">维护</span></button>
+        <!-- 移动端底部导航 (更新为4个) -->
+        <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-100 flex justify-between items-center h-[60px] pb-safe z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-primary" data-page="patients"><i class="fa fa-users text-lg mb-0.5"></i><span class="text-[10px] font-medium">档案</span></button>
+            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="daily"><i class="fa fa-calculator text-lg mb-0.5"></i><span class="text-[10px] font-medium">对账</span></button>
+            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="dashboard"><i class="fa fa-line-chart text-lg mb-0.5"></i><span class="text-[10px] font-medium">洞察</span></button>
+            <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="settings"><i class="fa fa-cog text-lg mb-0.5"></i><span class="text-[10px] font-medium">维护</span></button>
         </footer>
 
         <!-- ================= 全局弹窗容器区 ================= -->
@@ -366,7 +472,6 @@ layout: null
                             </h3>
                             <span class="text-[10px] md:text-xs text-gray-400 mt-1 block" id="det-p-phone">手机号</span>
                             <div id="det-p-tags" class="flex flex-wrap gap-1 mt-1"></div>
-                            <!-- 借卡人展示区 -->
                             <div id="det-borrowers" class="mt-1.5 text-[10px] md:text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded hidden w-fit border border-indigo-100"></div>
                         </div>
                     </div>
@@ -374,11 +479,8 @@ layout: null
                 </div>
                 <div class="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50/50 shrink-0"><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总消费(元)</p><p class="text-base md:text-xl font-bold text-danger" id="det-stat-money">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">总计充次</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-p">0</p></div><div class="p-2 md:p-3 text-center"><p class="text-[9px] md:text-[10px] text-gray-400 font-bold">累计消耗</p><p class="text-base md:text-xl font-bold text-gray-700" id="det-stat-c">0</p></div><div class="p-2 md:p-3 text-center bg-blue-50/50"><p class="text-[9px] md:text-[10px] text-blue-500 font-bold">剩余可用</p><p class="text-lg md:text-xl font-black text-primary" id="det-stat-rem">0</p></div></div>
                 
-                <!-- 修改区：去掉 padding，背景变白，用于紧凑单行列表 -->
                 <div class="flex-grow overflow-y-auto bg-gray-50/20 no-scrollbar relative" id="det-history-container">
-                    <div id="det-history-list" class="flex flex-col divide-y divide-gray-100 border-t border-gray-100">
-                        <!-- 流水由 JS 动态生成 -->
-                    </div>
+                    <div id="det-history-list" class="flex flex-col divide-y divide-gray-100 border-t border-gray-100"></div>
                 </div>
                 
                 <div class="px-4 py-3 border-t border-gray-100 bg-white shrink-0 text-center rounded-b-2xl z-10">
@@ -453,7 +555,7 @@ layout: null
                 const m = document.getElementById(id), c = document.getElementById(id+'-content'); 
                 m.classList.add('opacity-0'); if(c) c.classList.add('scale-95'); 
                 setTimeout(() => { m.classList.add('hidden'); m.classList.remove('flex'); }, 200); 
-                if(id === 'modal-detail') app.resetSwipe(); // 关闭详情时复位滑块
+                if(id === 'modal-detail') app.resetSwipe(); 
             },
             
             openPatientModal: (pid = null, defaultName = '') => {
@@ -573,8 +675,7 @@ layout: null
         };
 
         const app = {
-            state: { page: 0, size: 10, search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
-            // 滑动状态记录
+            state: { search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
             swipe: { startX: 0, startY: 0, ele: null, isSwiping: false, maxDistance: -128 },
             
             verifyAuth: () => {
@@ -612,6 +713,7 @@ layout: null
                     dataStore.save();
                     ui.closeModal('modal-detail');
                     app.renderList();
+                    if(app.state.currentPage === 'daily') app.renderDaily();
                     ui.showToast("患者记录已彻底蒸发", "success");
                 });
             },
@@ -666,9 +768,10 @@ layout: null
                 app.initSearchDropdown('merge-p2-search', 'merge-p2-dropdown', 'merge-p2-id');
                 app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id'); 
 
+                document.getElementById('daily-date-picker').value = new Date().toISOString().split('T')[0];
+
                 app.showPage('patients'); 
                 
-                // 全局点击取消滑动
                 document.getElementById('det-history-container').addEventListener('touchstart', (e) => {
                     if (!e.target.closest('.swipe-item')) app.resetSwipe();
                 });
@@ -679,41 +782,279 @@ layout: null
                 if(b && dataStore.patients.length>0) { b.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> 在线: ${dataStore.patients.length}人`; b.className = "hidden md:inline-flex items-center px-3 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full"; }
             },
 
-            renderDashboard: () => {
-                const today = new Date();
-                const todayStr = today.toISOString().split('T')[0];
-                const day = today.getDay() || 7; 
-                const monday = new Date(today);
-                monday.setDate(today.getDate() - day + 1);
-                const mondayStr = monday.toISOString().split('T')[0];
-                const monthStr = today.toISOString().substring(0, 7) + '-01';
+            renderDaily: (targetDate) => {
+                if (!targetDate) targetDate = document.getElementById('daily-date-picker').value;
+                if (!targetDate) {
+                    targetDate = new Date().toISOString().split('T')[0];
+                    document.getElementById('daily-date-picker').value = targetDate;
+                }
 
-                let todayRev = 0, weekRev = 0, monthIncome = 0, totalRev = 0, totalIncome = 0;
-                let purSum = 0, medSum = 0;
-                const activePids = new Set();
+                // 1. 当日数据计算
+                const ts = dataStore.treatments.filter(t => t.date === targetDate);
+                let totalRev = 0, totalIncome = 0, totalPurCount = 0, totalConsume = 0;
+                const pMap = {};
 
-                dataStore.treatments.forEach(t => {
-                    const amt = Number(t.amount) || 0;
-                    const inc = Number(t.income) || 0;
-                    if(amt > 0 || inc > 0) activePids.add(t.pid);
+                ts.forEach(t => {
+                    const amt = Number(t.amount)||0;
+                    const cnt = Number(t.count)||0;
+                    const inc = Number(t.income)||0;
                     
-                    if (t.date === todayStr) todayRev += amt;
-                    if (t.date >= mondayStr) weekRev += amt;
-                    if (t.date >= monthStr) monthIncome += inc;
-
-                    totalRev += amt;
+                    if (!pMap[t.pid]) pMap[t.pid] = { consumes: 0, purchases: 0, pAmt: 0, mAmt: 0 };
+                    
                     totalIncome += inc;
-                    if(t.type === 'purchase') purSum += amt;
-                    if(t.type === 'medicine') medSum += amt;
+
+                    if (t.type === 'purchase') {
+                        totalRev += amt; totalPurCount += cnt;
+                        pMap[t.pid].purchases += cnt; pMap[t.pid].pAmt += amt;
+                    } else if (t.type === 'medicine') {
+                        totalRev += amt; pMap[t.pid].mAmt += amt;
+                    } else if (t.type === 'consume') {
+                        totalConsume += cnt; pMap[t.pid].consumes += cnt;
+                    }
                 });
 
-                const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-                safeSet('card-today-rev', todayRev.toFixed(0));
-                safeSet('card-week-rev', weekRev.toFixed(0));
-                safeSet('card-month-income', monthIncome.toFixed(0));
-                safeSet('card-total-revenue', '¥' + totalRev.toFixed(0));
-                safeSet('card-total-patients', dataStore.patients.length);
-                safeSet('card-active-patients', activePids.size);
+                document.getElementById('daily-total-rev').innerText = totalRev.toFixed(0);
+                document.getElementById('daily-total-income').innerText = totalIncome.toFixed(0);
+                document.getElementById('daily-pur-count').innerText = totalPurCount;
+                document.getElementById('daily-consume-count').innerText = totalConsume;
+
+                // --- 2. 所在周/月 数据计算 ---
+                const formatD = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const [ty, tm, tdd] = targetDate.split('-').map(Number);
+                const tdObj = new Date(ty, tm - 1, tdd);
+                
+                // 本周起止
+                const day = tdObj.getDay() || 7;
+                const wkStart = new Date(tdObj.getTime() - (day - 1) * 86400000);
+                const wkEnd = new Date(wkStart.getTime() + 6 * 86400000);
+                const wkStartStr = formatD(wkStart);
+                const wkEndStr = formatD(wkEnd);
+                
+                // 本月起止
+                const moStartStr = `${ty}-${String(tm).padStart(2, '0')}-01`;
+                const nextMo = new Date(ty, tm, 0);
+                const moEndStr = `${ty}-${String(tm).padStart(2, '0')}-${String(nextMo.getDate()).padStart(2, '0')}`;
+
+                document.getElementById('week-date-range').innerText = `(${wkStartStr.substring(5)} ~ ${wkEndStr.substring(5)})`;
+                document.getElementById('month-date-range').innerText = `(${moStartStr.substring(5)} ~ ${moEndStr.substring(5)})`;
+
+                const calcPeriod = (startStr, endStr) => {
+                    const trs = dataStore.treatments.filter(t => t.date >= startStr && t.date <= endStr);
+                    let rev = 0, inc = 0, pur = 0, con = 0;
+                    const activePids = new Set();
+                    trs.forEach(t => {
+                        const amt = Number(t.amount)||0, c = Number(t.count)||0, i = Number(t.income)||0;
+                        activePids.add(t.pid); inc += i;
+                        if (t.type === 'purchase') { rev += amt; pur += c; }
+                        else if (t.type === 'medicine') { rev += amt; }
+                        else if (t.type === 'consume') { con += c; }
+                    });
+
+                    let newP = 0, oldP = 0;
+                    activePids.forEach(pid => {
+                        const stats = dataStore.calcStats(pid);
+                        if(stats.history.length === 0) return;
+                        const firstVisitDate = stats.history[stats.history.length - 1].date;
+                        if (firstVisitDate >= startStr && firstVisitDate <= endStr) newP++;
+                        else oldP++;
+                    });
+                    return { rev, inc, pur, con, newP, oldP };
+                };
+
+                const wkData = calcPeriod(wkStartStr, wkEndStr);
+                const moData = calcPeriod(moStartStr, moEndStr);
+
+                const renderPeriod = (prefix, data) => {
+                    document.getElementById(`${prefix}-rev`).innerText = data.rev.toFixed(0);
+                    document.getElementById(`${prefix}-inc`).innerText = data.inc.toFixed(0);
+                    document.getElementById(`${prefix}-pur`).innerText = data.pur;
+                    document.getElementById(`${prefix}-con`).innerText = data.con;
+                    document.getElementById(`${prefix}-new`).innerText = data.newP;
+                    document.getElementById(`${prefix}-old`).innerText = data.oldP;
+                };
+                renderPeriod('wk', wkData);
+                renderPeriod('mo', moData);
+
+                // --- 3. 渲染当日明细列表 ---
+                const pids = Object.keys(pMap);
+                document.getElementById('daily-patient-count').innerText = pids.length;
+
+                const tbody = document.getElementById('daily-list-body');
+                tbody.innerHTML = '';
+
+                if (pids.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-gray-400 text-xs">选择的日期 (${targetDate}) 无任何业务流水</td></tr>`;
+                    return;
+                }
+
+                const df = document.createDocumentFragment();
+                pids.forEach(pid => {
+                    const p = dataStore.getPatient(pid);
+                    if (!p) return;
+                    const stats = dataStore.calcStats(pid);
+                    const d = pMap[pid];
+                    
+                    const firstVisitDate = stats.history.length > 0 ? stats.history[stats.history.length - 1].date : null;
+                    const isNew = firstVisitDate === targetDate;
+                    const newBadge = isNew ? `<span class="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[9px] ml-1.5 font-bold leading-none shrink-0 scale-90 origin-left">新客</span>` : '';
+
+                    let actionHtml = '';
+                    if (d.consumes > 0) actionHtml += `<span class="inline-block text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold mr-1 mb-1">扣${d.consumes}次</span>`;
+                    if (d.purchases > 0) actionHtml += `<span class="inline-block text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold mr-1 mb-1">充${d.purchases}次</span>`;
+                    if (d.pAmt > 0 || d.mAmt > 0) actionHtml += `<span class="inline-block text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold mr-1 mb-1">收¥${d.pAmt + d.mAmt}</span>`;
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-50 border-b border-gray-50 cursor-pointer transition-colors";
+                    tr.onclick = () => app.showDetail(pid);
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 md:px-4 w-[35%]">
+                            <div class="font-bold text-gray-800 text-[13px] flex items-center truncate">${p.name}${newBadge}</div>
+                        </td>
+                        <td class="py-2.5 px-2 w-[40%]">${actionHtml}</td>
+                        <td class="py-2.5 px-2 text-center w-[15%]"><span class="font-black text-[13px] ${stats.remain > 0 ? 'text-success' : 'text-danger'}">${stats.remain}</span></td>
+                        <td class="py-2.5 px-3 md:px-4 text-right w-[10%]"><i class="fa fa-angle-right text-gray-300 text-lg"></i></td>
+                    `;
+                    df.appendChild(tr);
+                });
+                tbody.appendChild(df);
+            },
+
+            renderDashboard: () => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const thirtyDaysAgoStr = new Date(today.getTime() - 30 * 86400000).toISOString().split('T')[0];
+                
+                let active30Count = new Set();
+                let repurchaseCount = 0;
+                let patientsWithPurchase = 0;
+                
+                let sourceCounts = { '自来': 0, '推荐': 0, '借卡': 0 };
+                dataStore.patients.forEach(p => {
+                    if(sourceCounts[p.source] !== undefined) sourceCounts[p.source]++;
+                    else sourceCounts['自来']++;
+                });
+
+                for (const pid in dataStore.statsCache) {
+                    const stats = dataStore.statsCache[pid];
+                    if(stats.history.length === 0) continue;
+                    
+                    const lastDate = stats.history[0].date;
+                    if(lastDate >= thirtyDaysAgoStr) active30Count.add(pid);
+
+                    const purDates = new Set(stats.history.filter(t => t.type === 'purchase').map(t => t.date));
+                    if(purDates.size > 0) patientsWithPurchase++;
+                    if(purDates.size >= 2) repurchaseCount++;
+                }
+
+                const repurchaseRate = patientsWithPurchase > 0 ? ((repurchaseCount / patientsWithPurchase) * 100).toFixed(1) : 0;
+                const totalReferrals = sourceCounts['推荐'] + sourceCounts['借卡'];
+                const referralRate = dataStore.patients.length > 0 ? ((totalReferrals / dataStore.patients.length) * 100).toFixed(1) : 0;
+
+                document.getElementById('dash-active-30').innerText = active30Count.size;
+                document.getElementById('dash-repurchase').innerText = `${repurchaseRate}%`;
+                document.getElementById('dash-referral-rate').innerText = `${referralRate}%`;
+                document.getElementById('dash-total-patients').innerText = dataStore.patients.length;
+
+                const trendLabels = [];
+                const trendData = [];
+                for(let i=14; i>=0; i--) {
+                    const d = new Date(today.getTime() - i * 86400000);
+                    const localDateStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                    trendLabels.push(localDateStr.substring(5));
+                    trendData.push(0);
+                }
+                const dateIdxMap = {};
+                trendLabels.forEach((lbl, idx) => dateIdxMap[lbl] = idx);
+
+                dataStore.treatments.forEach(t => {
+                    const tDateShort = t.date.substring(5);
+                    if(dateIdxMap[tDateShort] !== undefined) trendData[dateIdxMap[tDateShort]]++; 
+                });
+
+                if(dataStore.charts.trend) dataStore.charts.trend.destroy();
+                const ctxTrend = document.getElementById('trendChart').getContext('2d');
+                dataStore.charts.trend = new Chart(ctxTrend, {
+                    type: 'line',
+                    data: {
+                        labels: trendLabels,
+                        datasets: [{
+                            label: '接诊频次',
+                            data: trendData,
+                            borderColor: '#1e88e5',
+                            backgroundColor: 'rgba(30, 136, 229, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#1e88e5'
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+                });
+
+                if(dataStore.charts.source) dataStore.charts.source.destroy();
+                const ctxSource = document.getElementById('sourceChart').getContext('2d');
+                dataStore.charts.source = new Chart(ctxSource, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['主动上门 (自来)', '老客转介绍 (推荐)', '家人共享 (借卡)'],
+                        datasets: [{
+                            data: [sourceCounts['自来'], sourceCounts['推荐'], sourceCounts['借卡']],
+                            backgroundColor: ['#e5e7eb', '#8b5cf6', '#64b5f6'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } } }
+                });
+
+                const dormantList = [];
+                for (const pid in dataStore.statsCache) {
+                    const stats = dataStore.statsCache[pid];
+                    if(stats.history.length === 0) continue;
+                    const p = dataStore.getPatient(pid);
+                    if(!p) continue;
+                    
+                    const lastDateStr = stats.history[0].date;
+                    const lastTime = new Date(lastDateStr).getTime();
+                    const daysSinceLast = Math.floor((today.getTime() - lastTime) / 86400000);
+                    
+                    let status = null, style = '';
+                    if (stats.remain > 0 && daysSinceLast > 15) {
+                        status = `停滞 ${daysSinceLast}天`; style = 'bg-orange-100 text-warning';
+                        dormantList.push({ p, remain: stats.remain, lastDateStr, daysSinceLast, status, style });
+                    }
+                    else if (stats.remain <= 0 && daysSinceLast > 30) {
+                        status = `流失风险`; style = 'bg-red-100 text-danger';
+                        dormantList.push({ p, remain: stats.remain, lastDateStr, daysSinceLast, status, style });
+                    }
+                }
+                
+                dormantList.sort((a,b) => b.daysSinceLast - a.daysSinceLast);
+                
+                document.getElementById('dash-dormant-count').innerText = dormantList.length;
+                const tbody = document.getElementById('dormant-list-body');
+                tbody.innerHTML = '';
+                
+                if(dormantList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-400 text-xs">太棒了！所有病人都处于活跃期，暂无流失风险。</td></tr>';
+                } else {
+                    const df = document.createDocumentFragment();
+                    dormantList.slice(0, 20).forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-50/50 transition-colors cursor-pointer';
+                        tr.onclick = (e) => { if(!e.target.closest('button')) app.showDetail(item.p.id); };
+                        tr.innerHTML = `
+                            <td class="py-3 pr-2"><div class="font-bold text-gray-800">${item.p.name}</div><div class="text-[10px] text-gray-400 mt-0.5">${item.p.phone || '无电话'}</div></td>
+                            <td class="py-3"><span class="font-bold ${item.remain > 0 ? 'text-success' : 'text-gray-400'}">${item.remain}</span> 次</td>
+                            <td class="py-3 text-[11px] text-gray-500">${item.lastDateStr}</td>
+                            <td class="py-3"><span class="text-[10px] px-1.5 py-0.5 rounded font-medium ${item.style}">${item.status}</span></td>
+                            <td class="py-3 text-right"><button onclick="app.openRecordUI('${item.p.id}')" class="btn btn-secondary !py-1 !px-2 text-[10px] shadow-sm"><i class="fa fa-paper-plane text-primary mr-1"></i>跟进</button></td>
+                        `;
+                        df.appendChild(tr);
+                    });
+                    tbody.appendChild(df);
+                }
             },
             
             executeMerge: async () => {
@@ -729,6 +1070,7 @@ layout: null
                     ui.showToast("合并完成", "success");
                     ui.closeModal('modal-merge');
                     app.renderList();
+                    if(app.state.currentPage === 'daily') app.renderDaily();
                 });
             },
 
@@ -749,21 +1091,33 @@ layout: null
                 
                 const minV = parseInt(app.state.filterMin), maxV = parseInt(app.state.filterMax);
                 if(!isNaN(minV) || !isNaN(maxV)) { res = res.filter(p => { const r = dataStore.calcStats(p.id).remain; return (isNaN(minV)||r>=minV) && (isNaN(maxV)||r<=maxV); }); }
-                res.sort((a,b) => dataStore.calcStats(a.id).remain - dataStore.calcStats(b.id).remain);
+                
+                res.sort((a,b) => {
+                    const getT = (id) => {
+                        const h = dataStore.calcStats(id).history;
+                        if(!h.length) return parseInt(id.split('_')[1] || 0);
+                        const match = h[0].id.match(/t_(\d+)/);
+                        return match ? parseInt(match[1]) : new Date(h[0].date).getTime();
+                    };
+                    return getT(b.id) - getT(a.id);
+                });
                 
                 const totalCountEl = document.getElementById('total-count');
                 if(totalCountEl) totalCountEl.innerText = res.length;
-                
-                const maxP = Math.max(1, Math.ceil(res.length/app.state.size)); if(app.state.page >= maxP) app.state.page = maxP - 1;
-                const pageIndEl = document.getElementById('page-indicator');
-                if(pageIndEl) pageIndEl.innerText = `${app.state.page + 1} / ${maxP}`;
 
-                const paged = res.slice(app.state.page * app.state.size, (app.state.page + 1) * app.state.size);
                 tbody.innerHTML = '';
-                if(paged.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">查无此人...</td></tr>`; return; }
+                if(res.length === 0) { 
+                    let btnHtml = '';
+                    if(app.state.search) {
+                        const safeSearch = app.state.search.replace(/'/g, "\\'");
+                        btnHtml = `<div class="mt-4"><button onclick="ui.openPatientModal(null, '${safeSearch}')" class="btn btn-primary mx-auto px-6 shadow-blue-500/30"><i class="fa fa-user-plus mr-2"></i>立即为 "${app.state.search}" 建档</button></div>`;
+                    }
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-16 text-center text-gray-400">系统查无此人... ${btnHtml}</td></tr>`; 
+                    return; 
+                }
 
                 const df = document.createDocumentFragment();
-                paged.forEach(p => {
+                res.forEach(p => {
                     const stats = dataStore.calcStats(p.id), rem = stats.remain, rec = stats.history.length>0 ? stats.history[0].date : '暂无记录';
                     let cCls = 'text-success bg-green-50 border-green-100', sTxt = '充沛';
                     if (rem<=0) { cCls = 'text-danger bg-red-50 border-red-100'; sTxt = '已耗尽'; } else if (rem===1) { cCls = 'text-warning bg-orange-50 border-orange-100'; sTxt = '需复购'; }
@@ -779,11 +1133,6 @@ layout: null
                     df.appendChild(tr);
                 });
                 tbody.appendChild(df);
-                
-                const prevBtn = document.getElementById('prev-page');
-                const nextBtn = document.getElementById('next-page');
-                if(prevBtn) prevBtn.disabled = app.state.page === 0; 
-                if(nextBtn) nextBtn.disabled = app.state.page >= maxP - 1;
             },
             
             showPage: (id) => {
@@ -803,6 +1152,7 @@ layout: null
                     } 
                 });
                 if(id === 'dashboard') app.renderDashboard();
+                if(id === 'daily') app.renderDaily();
             },
             
             savePatient: () => {
@@ -841,6 +1191,7 @@ layout: null
                 }
                 dataStore.save(); 
                 app.renderList(); 
+                if(app.state.currentPage === 'daily') app.renderDaily();
                 ui.closeModal('modal-patient');
             },
 
@@ -894,6 +1245,7 @@ layout: null
                 dataStore.save(); 
                 ui.showToast(borrowerName ? "已成功扣除主卡" : "录单成功", "success"); 
                 app.renderList(); 
+                if(app.state.currentPage === 'daily') app.renderDaily();
                 ui.closeModal('modal-record');
             },
             
@@ -940,25 +1292,27 @@ layout: null
 
                 dataStore.treatments[idx] = { ...t, date: newDate, count: newCount, amount: newAmount, income: newIncome, remark: newRemark };
                 
-                dataStore.save(); ui.showToast("记录修正成功", "success"); ui.closeModal('modal-edit-record'); app.renderList();
+                dataStore.save(); ui.showToast("记录修正成功", "success"); ui.closeModal('modal-edit-record'); 
+                app.renderList();
+                if(app.state.currentPage === 'daily') app.renderDaily();
                 if(app.state.currentDetailPid) app.showDetail(app.state.currentDetailPid);
             },
             deleteTreatment: (tid, pid) => {
                 ui.showConfirm("删除流水", "删除后将重新计算患者余额，是否确认？", true, () => {
                     dataStore.treatments = dataStore.treatments.filter(t => t.id !== tid);
-                    dataStore.save(); ui.showToast("流水已删除", "success"); app.renderList();
+                    dataStore.save(); ui.showToast("流水已删除", "success"); 
+                    app.renderList();
+                    if(app.state.currentPage === 'daily') app.renderDaily();
                     if(pid) app.showDetail(pid);
                 });
             },
             
-            // --- 滑动核心逻辑 ---
             ts: (e) => {
                 const touch = e.touches ? e.touches[0] : e;
                 app.swipe.startX = touch.clientX;
                 app.swipe.startY = touch.clientY;
                 app.swipe.ele = e.currentTarget;
                 app.swipe.isSwiping = false;
-                // 复位其他项
                 document.querySelectorAll('.swipe-content').forEach(el => {
                     if (el !== app.swipe.ele) el.style.transform = '';
                 });
@@ -969,7 +1323,6 @@ layout: null
                 const deltaX = touch.clientX - app.swipe.startX;
                 const deltaY = touch.clientY - app.swipe.startY;
                 
-                // 优先垂直滚动判定
                 if (Math.abs(deltaY) > Math.abs(deltaX) && !app.swipe.isSwiping) {
                     app.swipe.ele = null;
                     return;
@@ -977,12 +1330,11 @@ layout: null
                 
                 app.swipe.isSwiping = true;
                 
-                // 仅允许左滑，设置弹簧阻尼效果
                 if (deltaX < 0) {
-                    e.preventDefault(); // 阻止默认滚动和侧滑返回
+                    e.preventDefault(); 
                     let tx = deltaX;
                     if (tx < app.swipe.maxDistance) {
-                        tx = app.swipe.maxDistance + (tx - app.swipe.maxDistance) * 0.3; // 越界阻尼
+                        tx = app.swipe.maxDistance + (tx - app.swipe.maxDistance) * 0.3; 
                     }
                     app.swipe.ele.style.transition = 'none';
                     app.swipe.ele.style.transform = `translateX(${tx}px)`;
@@ -1000,9 +1352,9 @@ layout: null
                 
                 app.swipe.ele.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
                 if (deltaX < (app.swipe.maxDistance / 2)) {
-                    app.swipe.ele.style.transform = `translateX(${app.swipe.maxDistance}px)`; // 吸附打开
+                    app.swipe.ele.style.transform = `translateX(${app.swipe.maxDistance}px)`; 
                 } else {
-                    app.swipe.ele.style.transform = ''; // 弹回关闭
+                    app.swipe.ele.style.transform = ''; 
                 }
                 app.swipe.ele = null;
             },
@@ -1022,7 +1374,6 @@ layout: null
                 document.getElementById('det-p-phone').innerText = p.phone||'无电话'; 
                 document.getElementById('det-p-tags').innerHTML = (p.tags||[]).map(t=>`<span class="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">${t}</span>`).join('');
                 
-                // === 借卡人反向查询逻辑 ===
                 const borrowers = dataStore.patients.filter(x => x.source === '借卡' && x.lenderId === pid).map(x => x.name);
                 const borrowersEl = document.getElementById('det-borrowers');
                 if(borrowers.length > 0) {
@@ -1040,26 +1391,21 @@ layout: null
                 const delBtn = document.getElementById('btn-delete-patient-full');
                 delBtn.onclick = () => app.deletePatientFull(pid);
                 
-                // === 生成紧凑单行左滑流水 ===
                 const df = document.createDocumentFragment();
                 stats.history.forEach(h => {
-                    // 定义类型图标颜色和字
                     let iconBg = 'bg-green-100 text-green-600', iconText = '治', valColor = 'text-success';
                     let valStr = h.count ? `-${h.count}` : '';
                     if(h.type === 'purchase') { iconBg = 'bg-blue-100 text-blue-600'; iconText = '充'; valColor = 'text-primary'; valStr = h.count ? `+${h.count}` : (h.amount ? `¥${h.amount}` : ''); }
                     else if(h.type === 'medicine') { iconBg = 'bg-purple-100 text-purple-600'; iconText = '药'; valColor = 'text-purple-600'; valStr = h.amount ? `¥${h.amount}` : ''; }
 
                     const d = document.createElement('div');
-                    // 必须加 touch-action: pan-y 防止浏览器全局前进后退手势冲突
                     d.className = "relative overflow-hidden swipe-item bg-gray-50 touch-action-pan-y";
                     d.innerHTML = `
-                        <!-- 底层滑块操作区 (两个按钮总宽 128px) -->
                         <div class="absolute inset-y-0 right-0 flex text-sm text-white font-medium z-0 w-32">
                             <button onclick="app.editTreatment('${h.id}');" class="flex-1 bg-yellow-500 hover:bg-yellow-600 flex items-center justify-center transition-colors"><i class="fa fa-pencil text-lg"></i></button>
                             <button onclick="app.deleteTreatment('${h.id}', '${pid}');" class="flex-1 bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors"><i class="fa fa-trash text-lg"></i></button>
                         </div>
                         
-                        <!-- 顶层单行内容区 -->
                         <div class="swipe-content relative z-10 bg-white flex items-center justify-between px-3 md:px-5 py-3 transition-transform duration-200 shadow-[2px_0_5px_rgba(0,0,0,0.02)]" 
                              ontouchstart="app.ts(event)" ontouchmove="app.tm(event)" ontouchend="app.te(event)">
                             <div class="flex items-center gap-2.5 overflow-hidden flex-1 pr-2">
@@ -1090,25 +1436,26 @@ layout: null
             },
             bindEvents: () => {
                 document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(b => b.onclick = () => app.showPage(b.dataset.page));
+                
+                // 日期选择器变化时，重新渲染每日对账
+                document.getElementById('daily-date-picker').addEventListener('change', (e) => {
+                    app.renderDaily(e.target.value);
+                });
+
                 let to; 
                 const searchInput = document.getElementById('search-input');
                 if(searchInput) {
-                    searchInput.oninput = (e) => { clearTimeout(to); to = setTimeout(() => { app.state.search = e.target.value.trim(); app.state.page = 0; document.getElementById('clear-search').classList.toggle('hidden', !app.state.search); app.renderList(); }, 300); };
+                    searchInput.oninput = (e) => { clearTimeout(to); to = setTimeout(() => { app.state.search = e.target.value.trim(); document.getElementById('clear-search').classList.toggle('hidden', !app.state.search); app.renderList(); }, 300); };
                 }
                 const clearSearchBtn = document.getElementById('clear-search');
                 if(clearSearchBtn) {
-                    clearSearchBtn.onclick = () => { document.getElementById('search-input').value=''; app.state.search=''; app.state.page=0; document.getElementById('clear-search').classList.add('hidden'); app.renderList(); };
+                    clearSearchBtn.onclick = () => { document.getElementById('search-input').value=''; app.state.search=''; document.getElementById('clear-search').classList.add('hidden'); app.renderList(); };
                 }
-                const fTo = () => { clearTimeout(to); to = setTimeout(() => { app.state.filterMin = document.getElementById('filter-min').value; app.state.filterMax = document.getElementById('filter-max').value; app.state.page = 0; app.renderList(); }, 300); };
+                const fTo = () => { clearTimeout(to); to = setTimeout(() => { app.state.filterMin = document.getElementById('filter-min').value; app.state.filterMax = document.getElementById('filter-max').value; app.renderList(); }, 300); };
                 const filterMinEl = document.getElementById('filter-min');
                 const filterMaxEl = document.getElementById('filter-max');
                 if(filterMinEl) filterMinEl.oninput = fTo; 
                 if(filterMaxEl) filterMaxEl.oninput = fTo;
-                
-                const prevBtn = document.getElementById('prev-page');
-                const nextBtn = document.getElementById('next-page');
-                if(prevBtn) prevBtn.onclick = () => { app.state.page--; app.renderList(); }; 
-                if(nextBtn) nextBtn.onclick = () => { app.state.page++; app.renderList(); };
                 
                 const calc = () => { const pAmt=Number(document.getElementById('rec-p-amount').value)||0, pCntStr=document.getElementById('rec-p-count').value, mAmt=Number(document.getElementById('rec-m-amount').value)||0; document.getElementById('record-income-val').innerText = ((pAmt>0 ? (pCntStr===''?pAmt*0.4:pAmt*0.6) : 0) + (mAmt*0.2)).toFixed(2); };
                 ['rec-p-count','rec-p-amount','rec-m-amount'].forEach(id => {
