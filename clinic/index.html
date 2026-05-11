@@ -128,43 +128,79 @@ layout: null
             <section id="daily-page" class="page-section hidden animate-fade-in">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3 md:gap-4">
                     <div><h2 class="text-xl md:text-2xl font-bold text-gray-800">每日经营对账</h2><p class="text-xs md:text-sm text-gray-500 mt-1">核对当天流水情况，区分现金流与实际利润</p></div>
-                    <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
-                        <i class="fa fa-calendar text-primary text-sm"></i>
-                        <input type="date" id="daily-date-picker" class="border-none bg-transparent text-xs md:text-sm font-bold text-gray-700 outline-none cursor-pointer">
+                    <div class="flex items-center gap-2">
+                        <!-- 新增：全库未耗总计 -->
+                        <div class="text-[10px] md:text-xs bg-red-50 text-danger border border-red-100 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-red-100 active:scale-95 transition-colors shadow-sm font-medium flex items-center" onclick="app.showPeriodDetail('global_remain')">
+                            全库未耗 <span id="global-total-remain" class="font-bold ml-1 text-sm">0</span> 次
+                        </div>
+                        <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden shrink-0">
+                            <button onclick="app.changeDate(-1)" class="px-3 py-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 transition-colors border-r border-gray-100"><i class="fa fa-chevron-left text-xs"></i></button>
+                            <div class="flex items-center gap-1.5 px-3 py-1.5">
+                                <i class="fa fa-calendar text-primary text-sm"></i>
+                                <input type="date" id="daily-date-picker" class="border-none bg-transparent text-xs md:text-sm font-bold text-gray-700 outline-none cursor-pointer p-0 w-[5.5rem] md:w-24 text-center">
+                            </div>
+                            <button onclick="app.changeDate(1)" class="px-3 py-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 transition-colors border-l border-gray-100"><i class="fa fa-chevron-right text-xs"></i></button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 当日总览 (更小的内边距和字号) -->
+                <!-- 当日总览 (增加点击下钻交互) -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-3">
-                    <div class="card p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-100">
+                    <div onclick="app.showPeriodDetail('rev', 'daily')" class="card p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-100 cursor-pointer hover:shadow-md hover:border-blue-300 active:scale-95 transition-all relative">
+                        <i class="fa fa-search-plus absolute right-2 top-2 text-[10px] text-blue-400 opacity-60"></i>
                         <p class="text-[11px] text-blue-600 font-medium mb-0.5">当日总实收(¥)</p>
                         <h3 id="daily-total-rev" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">0</h3>
+                        <p class="text-[9px] text-gray-500 mt-1 font-mono leading-tight">充¥<span id="daily-pur-rev">0</span> <span class="mx-0.5 text-gray-300">|</span> 药¥<span id="daily-med-rev-split">0</span></p>
                     </div>
-                    <div class="card p-3 bg-purple-50/50 border border-purple-100">
+                    <div onclick="app.showPeriodDetail('inc', 'daily')" class="card p-3 bg-purple-50/50 border border-purple-100 cursor-pointer hover:shadow-md hover:border-purple-300 active:scale-95 transition-all relative">
+                        <i class="fa fa-search-plus absolute right-2 top-2 text-[10px] text-purple-400 opacity-60"></i>
                         <p class="text-[11px] text-purple-700 font-medium mb-0.5">当日收入额(¥)</p>
                         <h3 id="daily-total-income" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">0</h3>
                     </div>
-                    <div class="card p-3 bg-gray-50 border border-gray-100">
+                    <div onclick="app.showPeriodDetail('pur', 'daily')" class="card p-3 bg-gray-50 border border-gray-100 cursor-pointer hover:shadow-md hover:border-gray-300 active:scale-95 transition-all relative">
+                        <i class="fa fa-search-plus absolute right-2 top-2 text-[10px] text-gray-400 opacity-60"></i>
                         <p class="text-[11px] text-gray-500 font-medium mb-0.5">新充总次</p>
                         <h3 id="daily-pur-count" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">0</h3>
                     </div>
-                    <div class="card p-3 bg-green-50/50 border border-green-100">
+                    <div onclick="app.showPeriodDetail('con', 'daily')" class="card p-3 bg-green-50/50 border border-green-100 cursor-pointer hover:shadow-md hover:border-green-300 active:scale-95 transition-all relative">
+                        <i class="fa fa-search-plus absolute right-2 top-2 text-[10px] text-green-400 opacity-60"></i>
                         <p class="text-[11px] text-green-700 font-medium mb-0.5">消耗总次(体力)</p>
                         <h3 id="daily-consume-count" class="text-xl md:text-2xl font-black text-gray-800 tracking-tight">0</h3>
                     </div>
                 </div>
 
-                <!-- 新增：多时间框微型面板 (周/月) -->
+                <!-- 新增：多时间框微型面板 (周/月) 全下钻版 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
                     <!-- 本周 -->
                     <div class="card p-2 md:p-3 bg-white border border-gray-100">
                         <div class="flex justify-between items-center mb-2 px-1">
                             <span class="font-bold text-gray-700 text-xs">所在周累计 <span class="font-normal text-gray-400 ml-1 text-[10px]" id="week-date-range"></span></span>
                         </div>
-                        <div class="grid grid-cols-3 gap-1.5 text-center">
-                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">实收 | 收入(¥)</p><p class="text-xs font-bold text-gray-800"><span id="wk-rev">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="wk-inc" class="text-purple-600">0</span></p></div>
-                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">新充 | 扣次</p><p class="text-xs font-bold text-gray-800"><span id="wk-pur">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="wk-con" class="text-green-600">0</span></p></div>
-                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">接诊 (新/老)</p><p class="text-xs font-bold text-gray-800"><span id="wk-new" class="text-red-500">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="wk-old">0</span></p></div>
+                        <div class="space-y-1.5">
+                            <div class="grid grid-cols-3 gap-1 text-center">
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-blue-50 active:scale-95 transition-transform" onclick="app.showPeriodDetail('rev', 'wk')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">实收(充/药) <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold"><span id="wk-pur-rev" class="text-blue-600">0</span><span class="text-gray-300 mx-0.5">/</span><span id="wk-med-rev" class="text-purple-500">0</span></p>
+                                </div>
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-purple-50 active:scale-95 transition-transform" onclick="app.showPeriodDetail('inc', 'wk')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">总利润(¥) <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold text-purple-600" id="wk-inc">0</p>
+                                </div>
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-red-50 active:scale-95 transition-transform" onclick="app.showPeriodDetail('patients', 'wk')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">接诊(新/老) <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold"><span id="wk-new" class="text-red-500">0</span><span class="text-gray-300 mx-0.5">/</span><span id="wk-old" class="text-gray-700">0</span></p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-center">
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-gray-100 active:scale-95 transition-transform" onclick="app.showPeriodDetail('pur', 'wk')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">新充总次 <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold text-gray-800" id="wk-pur">0</p>
+                                </div>
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-green-50 active:scale-95 transition-transform" onclick="app.showPeriodDetail('con', 'wk')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">消耗总次 <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold text-green-600" id="wk-con">0</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <!-- 本月 -->
@@ -172,10 +208,31 @@ layout: null
                         <div class="flex justify-between items-center mb-2 px-1">
                             <span class="font-bold text-gray-700 text-xs">所在月累计 <span class="font-normal text-gray-400 ml-1 text-[10px]" id="month-date-range"></span></span>
                         </div>
-                        <div class="grid grid-cols-3 gap-1.5 text-center">
-                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">实收 | 收入(¥)</p><p class="text-xs font-bold text-gray-800"><span id="mo-rev">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="mo-inc" class="text-purple-600">0</span></p></div>
-                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">新充 | 扣次</p><p class="text-xs font-bold text-gray-800"><span id="mo-pur">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="mo-con" class="text-green-600">0</span></p></div>
-                            <div class="bg-gray-50 rounded p-1"><p class="text-[9px] text-gray-500 mb-0.5">接诊 (新/老)</p><p class="text-xs font-bold text-gray-800"><span id="mo-new" class="text-red-500">0</span><span class="text-gray-300 font-normal mx-0.5">/</span><span id="mo-old">0</span></p></div>
+                        <div class="space-y-1.5">
+                            <div class="grid grid-cols-3 gap-1 text-center">
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-blue-50 active:scale-95 transition-transform" onclick="app.showPeriodDetail('rev', 'mo')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">实收(充/药) <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold"><span id="mo-pur-rev" class="text-blue-600">0</span><span class="text-gray-300 mx-0.5">/</span><span id="mo-med-rev" class="text-purple-500">0</span></p>
+                                </div>
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-purple-50 active:scale-95 transition-transform" onclick="app.showPeriodDetail('inc', 'mo')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">总利润(¥) <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold text-purple-600" id="mo-inc">0</p>
+                                </div>
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-red-50 active:scale-95 transition-transform" onclick="app.showPeriodDetail('patients', 'mo')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">接诊(新/老) <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold"><span id="mo-new" class="text-red-500">0</span><span class="text-gray-300 mx-0.5">/</span><span id="mo-old" class="text-gray-700">0</span></p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-center">
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-gray-100 active:scale-95 transition-transform" onclick="app.showPeriodDetail('pur', 'mo')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">新充总次 <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold text-gray-800" id="mo-pur">0</p>
+                                </div>
+                                <div class="bg-gray-50 rounded p-1 cursor-pointer hover:bg-green-50 active:scale-95 transition-transform" onclick="app.showPeriodDetail('con', 'mo')">
+                                    <p class="text-[8px] text-gray-500 mb-0.5">消耗总次 <i class="fa fa-search text-gray-300 ml-0.5 text-[7px]"></i></p>
+                                    <p class="text-[10px] font-bold text-green-600" id="mo-con">0</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -462,6 +519,7 @@ layout: null
 
         <!-- 详情弹窗 -->
         <div id="modal-detail" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-detail')">
+            <!-- 现有的患者详情内容 -->
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col transform scale-95 transition-transform h-[85vh] md:h-[75vh]" id="modal-detail-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-100 shrink-0">
                     <div class="flex items-center gap-3">
@@ -491,6 +549,23 @@ layout: null
             </div>
         </div>
         
+        <!-- 新增：每日核心指标下钻明细弹窗 -->
+        <div id="modal-daily-detail" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-daily-detail')">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform flex flex-col max-h-[80vh]" onclick="event.stopPropagation()" id="modal-daily-detail-content">
+                <div class="flex justify-between items-center px-4 py-3 border-b border-gray-100 shrink-0">
+                    <h3 class="font-bold text-gray-800 text-sm md:text-base" id="daily-det-title">明细</h3>
+                    <button class="text-gray-400 hover:text-gray-700" onclick="ui.closeModal('modal-daily-detail')"><i class="fa fa-times text-lg"></i></button>
+                </div>
+                <div class="bg-gray-50 px-5 py-4 shrink-0 flex justify-between items-center border-b border-gray-100">
+                    <span class="text-xs text-gray-500 font-medium">指标合计</span>
+                    <span class="font-black text-2xl" id="daily-det-total">0</span>
+                </div>
+                <div class="p-0 overflow-y-auto no-scrollbar flex-grow">
+                    <ul class="divide-y divide-gray-50 text-sm" id="daily-det-list"></ul>
+                </div>
+            </div>
+        </div>
+
         <!-- 合并档案弹窗 -->
         <div id="modal-merge" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-merge')">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform" id="modal-merge-content" onclick="event.stopPropagation()">
@@ -678,6 +753,17 @@ layout: null
             state: { search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
             swipe: { startX: 0, startY: 0, ele: null, isSwiping: false, maxDistance: -128 },
             
+            // 新增：箭头切换日期快捷方法
+            changeDate: (offset) => {
+                const picker = document.getElementById('daily-date-picker');
+                const currentDate = new Date(picker.value || new Date().toISOString().split('T')[0]);
+                currentDate.setDate(currentDate.getDate() + offset);
+                // 修正时区差异
+                const newDateStr = new Date(currentDate.getTime() - (currentDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                picker.value = newDateStr;
+                app.renderDaily(newDateStr);
+            },
+            
             verifyAuth: () => {
                 const pwd = document.getElementById('login-pwd').value;
                 if (pwd === 'mhtxyc' || sessionStorage.getItem('clinic_auth') === 'true') {
@@ -789,9 +875,17 @@ layout: null
                     document.getElementById('daily-date-picker').value = targetDate;
                 }
 
+                // --- 0. 计算全局未消耗总次 ---
+                let globalRem = 0;
+                for(let pid in dataStore.statsCache) {
+                    if(dataStore.statsCache[pid].remain > 0) globalRem += dataStore.statsCache[pid].remain;
+                }
+                document.getElementById('global-total-remain').innerText = globalRem;
+
                 // 1. 当日数据计算
                 const ts = dataStore.treatments.filter(t => t.date === targetDate);
                 let totalRev = 0, totalIncome = 0, totalPurCount = 0, totalConsume = 0;
+                let purRev = 0, medRev = 0;
                 const pMap = {};
 
                 ts.forEach(t => {
@@ -804,16 +898,19 @@ layout: null
                     totalIncome += inc;
 
                     if (t.type === 'purchase') {
-                        totalRev += amt; totalPurCount += cnt;
+                        totalRev += amt; purRev += amt; totalPurCount += cnt;
                         pMap[t.pid].purchases += cnt; pMap[t.pid].pAmt += amt;
                     } else if (t.type === 'medicine') {
-                        totalRev += amt; pMap[t.pid].mAmt += amt;
+                        totalRev += amt; medRev += amt; pMap[t.pid].mAmt += amt;
                     } else if (t.type === 'consume') {
                         totalConsume += cnt; pMap[t.pid].consumes += cnt;
                     }
                 });
 
                 document.getElementById('daily-total-rev').innerText = totalRev.toFixed(0);
+                document.getElementById('daily-pur-rev').innerText = purRev.toFixed(0);
+                document.getElementById('daily-med-rev-split').innerText = medRev.toFixed(0);
+                
                 document.getElementById('daily-total-income').innerText = totalIncome.toFixed(0);
                 document.getElementById('daily-pur-count').innerText = totalPurCount;
                 document.getElementById('daily-consume-count').innerText = totalConsume;
@@ -840,13 +937,13 @@ layout: null
 
                 const calcPeriod = (startStr, endStr) => {
                     const trs = dataStore.treatments.filter(t => t.date >= startStr && t.date <= endStr);
-                    let rev = 0, inc = 0, pur = 0, con = 0;
+                    let rev = 0, inc = 0, pur = 0, con = 0, pRev = 0, mRev = 0;
                     const activePids = new Set();
                     trs.forEach(t => {
                         const amt = Number(t.amount)||0, c = Number(t.count)||0, i = Number(t.income)||0;
                         activePids.add(t.pid); inc += i;
-                        if (t.type === 'purchase') { rev += amt; pur += c; }
-                        else if (t.type === 'medicine') { rev += amt; }
+                        if (t.type === 'purchase') { rev += amt; pRev += amt; pur += c; }
+                        else if (t.type === 'medicine') { rev += amt; mRev += amt; }
                         else if (t.type === 'consume') { con += c; }
                     });
 
@@ -858,17 +955,18 @@ layout: null
                         if (firstVisitDate >= startStr && firstVisitDate <= endStr) newP++;
                         else oldP++;
                     });
-                    return { rev, inc, pur, con, newP, oldP };
+                    return { rev, pRev, mRev, inc, pur, con, newP, oldP };
                 };
 
                 const wkData = calcPeriod(wkStartStr, wkEndStr);
                 const moData = calcPeriod(moStartStr, moEndStr);
 
                 const renderPeriod = (prefix, data) => {
-                    document.getElementById(`${prefix}-rev`).innerText = data.rev.toFixed(0);
+                    document.getElementById(`${prefix}-pur-rev`).innerText = data.pRev.toFixed(0);
+                    document.getElementById(`${prefix}-med-rev`).innerText = data.mRev.toFixed(0);
                     document.getElementById(`${prefix}-inc`).innerText = data.inc.toFixed(0);
-                    document.getElementById(`${prefix}-pur`).innerText = data.pur;
                     document.getElementById(`${prefix}-con`).innerText = data.con;
+                    document.getElementById(`${prefix}-pur`).innerText = data.pur;
                     document.getElementById(`${prefix}-new`).innerText = data.newP;
                     document.getElementById(`${prefix}-old`).innerText = data.oldP;
                 };
@@ -917,6 +1015,145 @@ layout: null
                     df.appendChild(tr);
                 });
                 tbody.appendChild(df);
+            },
+
+            // 更新：全维度明细下钻弹窗
+            showPeriodDetail: (type, period = 'daily') => {
+                let targetDate = document.getElementById('daily-date-picker').value || new Date().toISOString().split('T')[0];
+                
+                let startStr = targetDate, endStr = targetDate, periodName = '当日';
+                
+                if (type !== 'global_remain') {
+                    if (period === 'wk') {
+                        const [ty, tm, tdd] = targetDate.split('-').map(Number);
+                        const tdObj = new Date(ty, tm - 1, tdd);
+                        const day = tdObj.getDay() || 7;
+                        const wkStart = new Date(tdObj.getTime() - (day - 1) * 86400000);
+                        const wkEnd = new Date(wkStart.getTime() + 6 * 86400000);
+                        const formatD = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                        startStr = formatD(wkStart); endStr = formatD(wkEnd);
+                        periodName = '本周';
+                    } else if (period === 'mo') {
+                        const [ty, tm] = targetDate.split('-').map(Number);
+                        startStr = `${ty}-${String(tm).padStart(2, '0')}-01`;
+                        const nextMo = new Date(ty, tm, 0);
+                        endStr = `${ty}-${String(tm).padStart(2, '0')}-${String(nextMo.getDate()).padStart(2, '0')}`;
+                        periodName = '本月';
+                    }
+                }
+
+                let title = '', total = 0, listHtml = '', colorCls = '', suffix = '', prefix = '';
+
+                // 规则分支：全库未消耗名单
+                if (type === 'global_remain') {
+                    title = '全库未消耗名单 (由远及近)';
+                    colorCls = 'text-danger'; suffix = ' 次';
+                    
+                    const remainList = [];
+                    for(let pid in dataStore.statsCache) {
+                        if(dataStore.statsCache[pid].remain > 0) {
+                            const p = dataStore.getPatient(pid);
+                            if(p) {
+                                const hist = dataStore.statsCache[pid].history;
+                                const lastDate = hist.length > 0 ? hist[0].date : '1970-01-01';
+                                const lastDateDisplay = hist.length > 0 ? hist[0].date : '从未消耗';
+                                remainList.push({ p, remain: dataStore.statsCache[pid].remain, lastDate, lastDateDisplay });
+                            }
+                        }
+                    }
+                    
+                    // 升序排列 (最久没来的在前)
+                    remainList.sort((a,b) => new Date(a.lastDate) - new Date(b.lastDate));
+                    
+                    remainList.forEach(item => {
+                        total += item.remain;
+                        listHtml += `
+                            <li class="px-4 py-3.5 flex justify-between items-center hover:bg-red-50 cursor-pointer transition-colors" onclick="ui.closeModal('modal-daily-detail'); app.showDetail('${item.p.id}')">
+                                <div class="flex flex-col min-w-0 pr-4">
+                                    <span class="font-bold text-gray-800 text-[13px] truncate">${item.p.name} <span class="text-[9px] bg-red-100 text-red-600 px-1 py-0.5 rounded font-normal ml-1.5">未耗</span></span>
+                                    <span class="text-[11px] text-gray-400 mt-1 truncate">最后活动: ${item.lastDateDisplay}</span>
+                                </div>
+                                <span class="font-black text-danger text-base shrink-0">${item.remain}次</span>
+                            </li>
+                        `;
+                    });
+                } 
+                // 规则分支：常规周期明细
+                else {
+                    const ts = dataStore.treatments.filter(t => t.date >= startStr && t.date <= endStr);
+                    
+                    const renderItem = (t, val, label, isAmt) => {
+                        const p = dataStore.getPatient(t.pid);
+                        return `
+                            <li class="px-4 py-3.5 flex justify-between items-center hover:bg-blue-50 cursor-pointer transition-colors" onclick="ui.closeModal('modal-daily-detail'); app.showDetail('${t.pid}')">
+                                <div class="flex flex-col min-w-0 pr-4">
+                                    <span class="font-bold text-gray-800 text-[13px] truncate">${p ? p.name : '未知患者'} <span class="text-[9px] bg-gray-100 text-gray-500 px-1 py-0.5 rounded font-normal ml-1.5">${label}</span></span>
+                                    <span class="text-[11px] text-gray-400 mt-1 truncate">${t.date.substring(5)} | ${t.remark || '无备注'}</span>
+                                </div>
+                                <span class="font-black ${colorCls} text-base shrink-0">${isAmt?'¥':''}${val}${isAmt?'':'次'}</span>
+                            </li>
+                        `;
+                    };
+
+                    if (type === 'rev') {
+                        title = `${periodName}实收明细`; colorCls = 'text-blue-600'; prefix = '¥';
+                        ts.forEach(t => {
+                            if (t.type === 'purchase' && t.amount > 0) { total += t.amount; listHtml += renderItem(t, t.amount, '充次收现', true); }
+                            if (t.type === 'medicine' && t.amount > 0) { total += t.amount; listHtml += renderItem(t, t.amount, '开药收现', true); }
+                        });
+                    } else if (type === 'inc') {
+                        title = `${periodName}利润明细`; colorCls = 'text-purple-600'; prefix = '¥';
+                        ts.forEach(t => {
+                            if (t.type === 'purchase' && t.income > 0) { total += t.income; listHtml += renderItem(t, t.income, '充次利润', true); }
+                            if (t.type === 'medicine' && t.income > 0) { total += t.income; listHtml += renderItem(t, t.income, '开药利润', true); }
+                        });
+                    } else if (type === 'pur') {
+                        title = `${periodName}新充次数明细`; colorCls = 'text-gray-800'; suffix = ' 次';
+                        ts.forEach(t => {
+                            if (t.type === 'purchase' && t.count > 0) { total += t.count; listHtml += renderItem(t, t.count, '新增充次', false); }
+                        });
+                    } else if (type === 'con') {
+                        title = `${periodName}体力消耗明细`; colorCls = 'text-green-600'; suffix = ' 次';
+                        ts.forEach(t => {
+                            if (t.type === 'consume' && t.count > 0) { total += t.count; listHtml += renderItem(t, t.count, '治疗消耗', false); }
+                        });
+                    } else if (type === 'patients') {
+                        title = `${periodName}接诊明细 (新/老客)`; colorCls = 'text-red-500'; suffix = ' 人';
+                        const pMap = {}; 
+                        ts.forEach(t => { pMap[t.pid] = true; });
+                        
+                        Object.keys(pMap).forEach(pid => {
+                            const p = dataStore.getPatient(pid);
+                            if(!p) return;
+                            const stats = dataStore.calcStats(pid);
+                            if(stats.history.length === 0) return;
+                            const firstVisitDate = stats.history[stats.history.length - 1].date;
+                            const isNew = firstVisitDate >= startStr && firstVisitDate <= endStr;
+                            
+                            total++;
+                            listHtml += `
+                                <li class="px-4 py-3.5 flex justify-between items-center hover:bg-red-50 cursor-pointer transition-colors" onclick="ui.closeModal('modal-daily-detail'); app.showDetail('${pid}')">
+                                    <div class="flex flex-col min-w-0 pr-4">
+                                        <span class="font-bold text-gray-800 text-[13px] truncate">${p.name} 
+                                            <span class="text-[9px] px-1 py-0.5 rounded font-bold ml-1.5 ${isNew ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}">${isNew ? '新客' : '老客'}</span>
+                                        </span>
+                                        <span class="text-[11px] text-gray-400 mt-1 truncate">首次建档: ${firstVisitDate}</span>
+                                    </div>
+                                    <span class="font-black ${isNew ? 'text-red-500' : 'text-gray-700'} text-base shrink-0"><i class="fa fa-user"></i></span>
+                                </li>
+                            `;
+                        });
+                    }
+                }
+
+                if (!listHtml) listHtml = '<li class="px-4 py-10 text-center text-gray-400 text-xs">该指标在此周期无产生任何明细</li>';
+
+                document.getElementById('daily-det-title').innerText = title;
+                document.getElementById('daily-det-total').className = `font-black text-2xl ${colorCls}`;
+                document.getElementById('daily-det-total').innerText = `${prefix}${type==='patients'?total:(total.toFixed(type === 'pur' || type === 'con' || type === 'global_remain' ? 0 : 2))}${suffix}`;
+                document.getElementById('daily-det-list').innerHTML = listHtml;
+                
+                ui.openModal('modal-daily-detail');
             },
 
             renderDashboard: () => {
