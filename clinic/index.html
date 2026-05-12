@@ -1044,23 +1044,26 @@ layout: null
                     `;
                     df.appendChild(tr);
 
-                    // 导出用的表格行
-                    const displayCount = d.pAmt > 0 ? d.purchases : d.consumes; 
-                    let dailyInc = 0;
-                    dataStore.treatments.filter(t => t.date === targetDate && t.pid === pid).forEach(t => dailyInc += (t.income||0));
+                    // 导出用的表格行 (过滤掉纯消耗，仅保留有开单或开药的记录)
+                    if (d.pAmt > 0 || d.mAmt > 0) {
+                        // 次数仅指代开单买的次数 (如果有开单金额则显示对应充次，否则为空)
+                        const displayCount = d.pAmt > 0 ? d.purchases : ''; 
+                        let dailyInc = 0;
+                        dataStore.treatments.filter(t => t.date === targetDate && t.pid === pid).forEach(t => dailyInc += (t.income||0));
 
-                    const exportTr = document.createElement('tr');
-                    exportTr.className = "hover:bg-gray-50 transition-colors";
-                    exportTr.innerHTML = `
-                        <td class="px-4 py-2 border-r border-gray-50 text-center">${p.name}</td>
-                        <td class="px-4 py-2 border-r border-gray-50 text-center">${p.age || ''}</td>
-                        <td class="px-4 py-2 border-r border-gray-50 text-center">${dateStrCn}</td>
-                        <td class="px-4 py-2 border-r border-gray-50 text-center">${displayCount || ''}</td>
-                        <td class="px-4 py-2 border-r border-gray-50 text-center">${d.pAmt || ''}</td>
-                        <td class="px-4 py-2 border-r border-gray-50 text-center">${d.mAmt || ''}</td>
-                        <td class="px-4 py-2 text-center">${dailyInc ? dailyInc.toFixed(2) : ''}</td>
-                    `;
-                    exportDf.appendChild(exportTr);
+                        const exportTr = document.createElement('tr');
+                        exportTr.className = "hover:bg-gray-50 transition-colors";
+                        exportTr.innerHTML = `
+                            <td class="px-4 py-2 border-r border-gray-50 text-center">${p.name}</td>
+                            <td class="px-4 py-2 border-r border-gray-50 text-center">${p.age || ''}</td>
+                            <td class="px-4 py-2 border-r border-gray-50 text-center">${dateStrCn}</td>
+                            <td class="px-4 py-2 border-r border-gray-50 text-center">${displayCount !== '' ? displayCount : ''}</td>
+                            <td class="px-4 py-2 border-r border-gray-50 text-center">${d.pAmt || ''}</td>
+                            <td class="px-4 py-2 border-r border-gray-50 text-center">${d.mAmt || ''}</td>
+                            <td class="px-4 py-2 text-center">${dailyInc ? dailyInc.toFixed(2) : ''}</td>
+                        `;
+                        exportDf.appendChild(exportTr);
+                    }
                 });
                 tbody.appendChild(df);
                 exportBody.appendChild(exportDf);
