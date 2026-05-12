@@ -124,15 +124,16 @@ layout: null
                 </div>
             </section>
 
-            <!-- ================= 2. 每日对账页面 (重构：含周月面板) ================= -->
+            <!-- ================= 2. 每日对账页面 (重构：含周月面板 + 无滚动明细 + 复制表) ================= -->
             <section id="daily-page" class="page-section hidden animate-fade-in">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 gap-3 md:gap-4">
                     <div><h2 class="text-xl md:text-2xl font-bold text-gray-800">每日经营对账</h2><p class="text-xs md:text-sm text-gray-500 mt-1">核对当天流水情况，区分现金流与实际利润</p></div>
                     <div class="flex items-center gap-2">
-                        <!-- 新增：全库未耗总计 -->
+                        <!-- 全库未耗总计 -->
                         <div class="text-[10px] md:text-xs bg-red-50 text-danger border border-red-100 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-red-100 active:scale-95 transition-colors shadow-sm font-medium flex items-center" onclick="app.showPeriodDetail('global_remain')">
                             全库未耗 <span id="global-total-remain" class="font-bold ml-1 text-sm">0</span> 次
                         </div>
+                        <!-- 日期选择器与翻页箭头 -->
                         <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden shrink-0">
                             <button onclick="app.changeDate(-1)" class="px-3 py-1.5 text-gray-400 hover:text-primary hover:bg-gray-50 transition-colors border-r border-gray-100"><i class="fa fa-chevron-left text-xs"></i></button>
                             <div class="flex items-center gap-1.5 px-3 py-1.5">
@@ -169,7 +170,7 @@ layout: null
                     </div>
                 </div>
 
-                <!-- 新增：多时间框微型面板 (周/月) 全下钻版 -->
+                <!-- 多时间框微型面板 (周/月) 全下钻版 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 mb-4 md:mb-6">
                     <!-- 本周 -->
                     <div class="card p-2 md:p-3 bg-white border border-gray-100">
@@ -237,14 +238,14 @@ layout: null
                     </div>
                 </div>
 
-                <!-- 当日纵向明细表 -->
-                <div class="card flex flex-col h-[40vh] max-h-[500px]">
-                    <div class="bg-gray-50 border-b border-gray-100 px-3 md:px-4 py-2.5 shrink-0 flex justify-between items-center">
+                <!-- 当日纵向明细表 (平铺展示无滚动) -->
+                <div class="card flex flex-col mb-4">
+                    <div class="bg-gray-50 border-b border-gray-100 px-3 md:px-4 py-2.5 flex justify-between items-center">
                         <h3 class="font-bold text-gray-700 text-[13px] md:text-sm"><i class="fa fa-list-ul mr-1.5 text-primary"></i>接诊明细 (<span id="daily-patient-count" class="text-primary">0</span>人)</h3>
                     </div>
-                    <div class="overflow-y-auto no-scrollbar flex-grow p-0">
+                    <div class="p-0">
                         <table class="w-full text-left border-collapse">
-                            <thead class="bg-white border-b border-gray-50 text-[10px] md:text-[11px] text-gray-400 sticky top-0">
+                            <thead class="bg-white border-b border-gray-50 text-[10px] md:text-[11px] text-gray-400">
                                 <tr>
                                     <th class="px-3 md:px-4 py-2 font-medium">患者姓名</th>
                                     <th class="px-2 py-2 font-medium">发生活动</th>
@@ -253,6 +254,32 @@ layout: null
                                 </tr>
                             </thead>
                             <tbody id="daily-list-body" class="text-sm divide-y divide-gray-50">
+                                <!-- JS Render -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 财务对账复制专用表 -->
+                <div class="card flex flex-col mb-6">
+                    <div class="bg-gray-50 border-b border-gray-100 px-3 md:px-4 py-2.5 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-700 text-[13px] md:text-sm"><i class="fa fa-table mr-1.5 text-primary"></i>财务明细表 (复制专用)</h3>
+                        <button onclick="app.copyDailyTable()" class="btn btn-primary !py-1 !px-3 text-xs shadow-sm"><i class="fa fa-copy mr-1"></i>一键复制</button>
+                    </div>
+                    <div class="overflow-x-auto no-scrollbar p-0">
+                        <table id="daily-export-table" class="w-full text-left border-collapse whitespace-nowrap">
+                            <thead class="bg-white border-b border-gray-50 text-[12px] text-gray-600">
+                                <tr>
+                                    <th class="px-4 py-2 font-medium border-r border-gray-50">姓名</th>
+                                    <th class="px-4 py-2 font-medium border-r border-gray-50">年龄</th>
+                                    <th class="px-4 py-2 font-medium border-r border-gray-50">日期</th>
+                                    <th class="px-4 py-2 font-medium border-r border-gray-50 text-center">次数</th>
+                                    <th class="px-4 py-2 font-medium border-r border-gray-50 text-right">开单</th>
+                                    <th class="px-4 py-2 font-medium border-r border-gray-50 text-right">开药</th>
+                                    <th class="px-4 py-2 font-medium text-right">实际收入</th>
+                                </tr>
+                            </thead>
+                            <tbody id="daily-export-body" class="text-sm divide-y divide-gray-50 text-gray-700">
                                 <!-- JS Render -->
                             </tbody>
                         </table>
@@ -348,7 +375,7 @@ layout: null
             </section>
         </main>
 
-        <!-- 移动端底部导航 (更新为4个) -->
+        <!-- 移动端底部导航 -->
         <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-100 flex justify-between items-center h-[60px] pb-safe z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
             <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-primary" data-page="patients"><i class="fa fa-users text-lg mb-0.5"></i><span class="text-[10px] font-medium">档案</span></button>
             <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-1 pb-1 text-gray-400" data-page="daily"><i class="fa fa-calculator text-lg mb-0.5"></i><span class="text-[10px] font-medium">对账</span></button>
@@ -519,7 +546,6 @@ layout: null
 
         <!-- 详情弹窗 -->
         <div id="modal-detail" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-detail')">
-            <!-- 现有的患者详情内容 -->
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col transform scale-95 transition-transform h-[85vh] md:h-[75vh]" id="modal-detail-content" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center px-4 md:px-6 py-4 border-b border-gray-100 shrink-0">
                     <div class="flex items-center gap-3">
@@ -549,7 +575,7 @@ layout: null
             </div>
         </div>
         
-        <!-- 新增：每日核心指标下钻明细弹窗 -->
+        <!-- 下钻明细弹窗 -->
         <div id="modal-daily-detail" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden items-center justify-center z-[70] p-4 opacity-0 transition-opacity" onclick="ui.closeModal('modal-daily-detail')">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-md transform scale-95 transition-transform flex flex-col max-h-[80vh]" onclick="event.stopPropagation()" id="modal-daily-detail-content">
                 <div class="flex justify-between items-center px-4 py-3 border-b border-gray-100 shrink-0">
@@ -753,12 +779,10 @@ layout: null
             state: { search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
             swipe: { startX: 0, startY: 0, ele: null, isSwiping: false, maxDistance: -128 },
             
-            // 新增：箭头切换日期快捷方法
             changeDate: (offset) => {
                 const picker = document.getElementById('daily-date-picker');
                 const currentDate = new Date(picker.value || new Date().toISOString().split('T')[0]);
                 currentDate.setDate(currentDate.getDate() + offset);
-                // 修正时区差异
                 const newDateStr = new Date(currentDate.getTime() - (currentDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
                 picker.value = newDateStr;
                 app.renderDaily(newDateStr);
@@ -920,14 +944,12 @@ layout: null
                 const [ty, tm, tdd] = targetDate.split('-').map(Number);
                 const tdObj = new Date(ty, tm - 1, tdd);
                 
-                // 本周起止
                 const day = tdObj.getDay() || 7;
                 const wkStart = new Date(tdObj.getTime() - (day - 1) * 86400000);
                 const wkEnd = new Date(wkStart.getTime() + 6 * 86400000);
                 const wkStartStr = formatD(wkStart);
                 const wkEndStr = formatD(wkEnd);
                 
-                // 本月起止
                 const moStartStr = `${ty}-${String(tm).padStart(2, '0')}-01`;
                 const nextMo = new Date(ty, tm, 0);
                 const moEndStr = `${ty}-${String(tm).padStart(2, '0')}-${String(nextMo.getDate()).padStart(2, '0')}`;
@@ -973,15 +995,23 @@ layout: null
                 renderPeriod('wk', wkData);
                 renderPeriod('mo', moData);
 
-                // --- 3. 渲染当日明细列表 ---
+                // --- 3. 渲染当日明细列表 & 导出列表 ---
                 const pids = Object.keys(pMap);
                 document.getElementById('daily-patient-count').innerText = pids.length;
 
                 const tbody = document.getElementById('daily-list-body');
                 tbody.innerHTML = '';
+                
+                const exportBody = document.getElementById('daily-export-body');
+                exportBody.innerHTML = '';
+                const exportDf = document.createDocumentFragment();
+
+                const [yy, mm, dd] = targetDate.split('-');
+                const dateStrCn = `${yy}年${parseInt(mm, 10)}月${parseInt(dd, 10)}日`;
 
                 if (pids.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="4" class="py-12 text-center text-gray-400 text-xs">选择的日期 (${targetDate}) 无任何业务流水</td></tr>`;
+                    exportBody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-gray-400 text-xs">无数据</td></tr>`;
                     return;
                 }
 
@@ -1013,11 +1043,29 @@ layout: null
                         <td class="py-2.5 px-3 md:px-4 text-right w-[10%]"><i class="fa fa-angle-right text-gray-300 text-lg"></i></td>
                     `;
                     df.appendChild(tr);
+
+                    // 导出用的表格行
+                    const displayCount = d.pAmt > 0 ? d.purchases : d.consumes; 
+                    let dailyInc = 0;
+                    dataStore.treatments.filter(t => t.date === targetDate && t.pid === pid).forEach(t => dailyInc += (t.income||0));
+
+                    const exportTr = document.createElement('tr');
+                    exportTr.className = "hover:bg-gray-50 transition-colors";
+                    exportTr.innerHTML = `
+                        <td class="px-4 py-2 border-r border-gray-50 text-center">${p.name}</td>
+                        <td class="px-4 py-2 border-r border-gray-50 text-center">${p.age || ''}</td>
+                        <td class="px-4 py-2 border-r border-gray-50 text-center">${dateStrCn}</td>
+                        <td class="px-4 py-2 border-r border-gray-50 text-center">${displayCount || ''}</td>
+                        <td class="px-4 py-2 border-r border-gray-50 text-center">${d.pAmt || ''}</td>
+                        <td class="px-4 py-2 border-r border-gray-50 text-center">${d.mAmt || ''}</td>
+                        <td class="px-4 py-2 text-center">${dailyInc ? dailyInc.toFixed(2) : ''}</td>
+                    `;
+                    exportDf.appendChild(exportTr);
                 });
                 tbody.appendChild(df);
+                exportBody.appendChild(exportDf);
             },
 
-            // 更新：全维度明细下钻弹窗
             showPeriodDetail: (type, period = 'daily') => {
                 let targetDate = document.getElementById('daily-date-picker').value || new Date().toISOString().split('T')[0];
                 
@@ -1081,6 +1129,8 @@ layout: null
                 // 规则分支：常规周期明细
                 else {
                     const ts = dataStore.treatments.filter(t => t.date >= startStr && t.date <= endStr);
+                    // 核心修改：日期由远及近排列 (升序)
+                    ts.sort((a, b) => new Date(a.date) - new Date(b.date) || a.id.localeCompare(b.id));
                     
                     const renderItem = (t, val, label, isAmt) => {
                         const p = dataStore.getPatient(t.pid);
@@ -1122,6 +1172,7 @@ layout: null
                         const pMap = {}; 
                         ts.forEach(t => { pMap[t.pid] = true; });
                         
+                        const pList = [];
                         Object.keys(pMap).forEach(pid => {
                             const p = dataStore.getPatient(pid);
                             if(!p) return;
@@ -1130,16 +1181,24 @@ layout: null
                             const firstVisitDate = stats.history[stats.history.length - 1].date;
                             const isNew = firstVisitDate >= startStr && firstVisitDate <= endStr;
                             
+                            const tInPeriod = stats.history.filter(h => h.date >= startStr && h.date <= endStr);
+                            const sortDate = tInPeriod.length > 0 ? tInPeriod[tInPeriod.length - 1].date : firstVisitDate;
+                            pList.push({ pid, p, firstVisitDate, isNew, sortDate });
+                        });
+
+                        pList.sort((a, b) => new Date(a.sortDate) - new Date(b.sortDate));
+
+                        pList.forEach(item => {
                             total++;
                             listHtml += `
-                                <li class="px-4 py-3.5 flex justify-between items-center hover:bg-red-50 cursor-pointer transition-colors" onclick="ui.closeModal('modal-daily-detail'); app.showDetail('${pid}')">
+                                <li class="px-4 py-3.5 flex justify-between items-center hover:bg-red-50 cursor-pointer transition-colors" onclick="ui.closeModal('modal-daily-detail'); app.showDetail('${item.pid}')">
                                     <div class="flex flex-col min-w-0 pr-4">
-                                        <span class="font-bold text-gray-800 text-[13px] truncate">${p.name} 
-                                            <span class="text-[9px] px-1 py-0.5 rounded font-bold ml-1.5 ${isNew ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}">${isNew ? '新客' : '老客'}</span>
+                                        <span class="font-bold text-gray-800 text-[13px] truncate">${item.p.name} 
+                                            <span class="text-[9px] px-1 py-0.5 rounded font-bold ml-1.5 ${item.isNew ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}">${item.isNew ? '新客' : '老客'}</span>
                                         </span>
-                                        <span class="text-[11px] text-gray-400 mt-1 truncate">首次建档: ${firstVisitDate}</span>
+                                        <span class="text-[11px] text-gray-400 mt-1 truncate">首次建档: ${item.firstVisitDate}</span>
                                     </div>
-                                    <span class="font-black ${isNew ? 'text-red-500' : 'text-gray-700'} text-base shrink-0"><i class="fa fa-user"></i></span>
+                                    <span class="font-black ${item.isNew ? 'text-red-500' : 'text-gray-700'} text-base shrink-0"><i class="fa fa-user"></i></span>
                                 </li>
                             `;
                         });
@@ -1154,6 +1213,23 @@ layout: null
                 document.getElementById('daily-det-list').innerHTML = listHtml;
                 
                 ui.openModal('modal-daily-detail');
+            },
+
+            copyDailyTable: () => {
+                const table = document.getElementById('daily-export-table');
+                if(!table) return;
+                const range = document.createRange();
+                range.selectNode(table);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                try {
+                    document.execCommand('copy');
+                    ui.showToast("表格已复制，可去微信/Excel粘贴", "success");
+                } catch(e) {
+                    ui.showToast("复制失败，请尝试手动框选", "error");
+                }
+                selection.removeAllRanges();
             },
 
             renderDashboard: () => {
@@ -1674,7 +1750,6 @@ layout: null
             bindEvents: () => {
                 document.querySelectorAll('.nav-link, .mobile-nav-btn').forEach(b => b.onclick = () => app.showPage(b.dataset.page));
                 
-                // 日期选择器变化时，重新渲染每日对账
                 document.getElementById('daily-date-picker').addEventListener('change', (e) => {
                     app.renderDaily(e.target.value);
                 });
