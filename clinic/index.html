@@ -76,8 +76,8 @@
       #patients-page > .card:first-of-type { padding: .75rem !important; margin-bottom: .75rem !important; gap: .65rem !important; }
       #search-input { padding-top: .7rem !important; padding-bottom: .7rem !important; font-size: .88rem !important; border-radius: .82rem !important; }
       #search-input + button { top: .72rem !important; }
-      #patient-card-list > :not([hidden]) ~ :not([hidden]) { margin-top: .58rem !important; }
-      .patient-mobile-card { padding: .76rem !important; border-radius: 1rem !important; box-shadow: 0 1px 4px rgba(15, 23, 42, .055) !important; }
+      #patient-card-list > :not([hidden]) ~ :not([hidden]) { margin-top: .42rem !important; }
+      .patient-mobile-card { padding: .52rem .62rem !important; border-radius: .86rem !important; box-shadow: 0 1px 4px rgba(15, 23, 42, .045) !important; }
       .patient-mobile-card .fa-phone,
       .patient-mobile-card .fa-venus,
       .patient-mobile-card .fa-mars { font-size: .82rem !important; }
@@ -156,7 +156,7 @@
 
     <main class="container mx-auto px-3 md:px-4 py-3 md:py-6 mb-24 md:mb-10">
       <section id="patients-page" class="page-section animate-fade-in">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-5 gap-3 md:gap-4">
+        <div class="hidden md:flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-5 gap-3 md:gap-4">
           <div>
             <h2 class="text-xl md:text-2xl font-black text-slate-800">患者档案</h2>
           </div>
@@ -456,10 +456,16 @@
             <input type="hidden" id="field-p-source" value="自来">
           </div>
           <div id="lender-select-box" class="hidden bg-blue-50/50 border border-blue-100 p-4 rounded-2xl relative">
-            <label class="block text-[11px] font-bold text-blue-700 mb-1.5"><i class="fa-solid fa-link mr-1"></i>绑定实际扣卡出借人</label>
-            <input type="text" id="lender-search" placeholder="姓名 / 拼音" class="input-field !py-2 text-sm bg-white" autocomplete="off">
+            <label class="block text-[11px] font-bold text-blue-700 mb-1.5"><i class="fa-solid fa-link mr-1"></i>绑定实际用卡人</label>
+            <input type="text" id="lender-search" placeholder="实际治疗人姓名 / 拼音" class="input-field !py-2 text-sm bg-white" autocomplete="off">
             <input type="hidden" id="field-p-lender-id">
             <div id="lender-dropdown" class="absolute z-10 w-[calc(100%-2rem)] bg-white border border-slate-200 rounded-b-xl mt-0.5 max-h-40 overflow-y-auto hidden shadow-xl divide-y divide-slate-100"></div>
+          </div>
+          <div id="referrer-select-box" class="hidden bg-emerald-50/50 border border-emerald-100 p-4 rounded-2xl relative">
+            <label class="block text-[11px] font-bold text-emerald-700 mb-1.5"><i class="fa-solid fa-user-group mr-1"></i>绑定推荐人（可选）</label>
+            <input type="text" id="referrer-search" placeholder="推荐人姓名 / 拼音" class="input-field !py-2 text-sm bg-white" autocomplete="off">
+            <input type="hidden" id="field-p-referrer-id">
+            <div id="referrer-dropdown" class="absolute z-10 w-[calc(100%-2rem)] bg-white border border-slate-200 rounded-b-xl mt-0.5 max-h-40 overflow-y-auto hidden shadow-xl divide-y divide-slate-100"></div>
           </div>
           <div id="init-options" class="mt-4">
             <label class="block text-xs font-bold text-slate-700 mb-2"><i class="fa-solid fa-money-check-dollar text-primary mr-1"></i>首诊开单</label>
@@ -510,6 +516,7 @@
         </div>
         <form id="form-record" class="space-y-3">
           <input type="hidden" id="record-p-id">
+          <input type="hidden" id="record-borrower-id">
           <input type="hidden" id="record-borrower-name">
           <div class="flex gap-3 items-end">
             <div class="w-[60%]">
@@ -900,17 +907,18 @@
           cache[p.id] = { purchased: 0, consumed: 0, remain: 0, mTotal: 0, history: [] };
         });
         dataStore.treatments.forEach(t => {
-          if (!cache[t.pid]) return;
-          cache[t.pid].history.push(t);
+          const billingPid = app.getTreatmentBillingPid(t);
+          if (!cache[billingPid]) return;
+          cache[billingPid].history.push(t);
           const cnt = Number(t.count) || 0;
           const amt = Number(t.amount) || 0;
           if (t.type === 'purchase') {
-            cache[t.pid].purchased += cnt;
-            cache[t.pid].mTotal += amt;
+            cache[billingPid].purchased += cnt;
+            cache[billingPid].mTotal += amt;
           } else if (t.type === 'consume') {
-            cache[t.pid].consumed += cnt;
+            cache[billingPid].consumed += cnt;
           } else if (t.type === 'medicine') {
-            cache[t.pid].mTotal += amt;
+            cache[billingPid].mTotal += amt;
           }
         });
         Object.keys(cache).forEach(pid => {
@@ -989,7 +997,8 @@
             '性别': p.gender,
             '年龄': p.age,
             '渠道': p.source || '自来',
-            '出借人ID': p.lenderId || '',
+            '关联用卡人ID': p.lenderId || '',
+            '推荐人ID': p.referrerId || '',
             '标签': p.tags ? p.tags.join(',') : '',
             '剩余可用次': s.remain,
             '累计充次': s.purchased,
@@ -1000,12 +1009,15 @@
         }));
         XLSX.utils.book_append_sheet(wb, wsP, '患者主档');
         const wsT = XLSX.utils.json_to_sheet(dataStore.treatments.map(t => {
-          const p = dataStore.getPatient(t.pid);
+          const p = dataStore.getPatient(app.getTreatmentBillingPid(t));
+          const borrower = app.getTreatmentBorrower(t);
           return {
             '记录ID(勿动)': t.id,
             '患者ID(勿动)': t.pid,
+            '实际用卡人ID': borrower?.id || '',
             '日期': t.date,
             '患者': p ? p.name : '未知',
+            '实际用卡人': borrower ? borrower.name : '',
             '类型': t.type === 'purchase' ? '充次' : t.type === 'medicine' ? '开药' : '扣次',
             '变动次': t.count || 0,
             '金额': t.amount || 0,
@@ -1028,6 +1040,7 @@
         app.initSearchDropdown('merge-p1-search', 'merge-p1-dropdown', 'merge-p1-id');
         app.initSearchDropdown('merge-p2-search', 'merge-p2-dropdown', 'merge-p2-id');
         app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id');
+        app.initSearchDropdown('referrer-search', 'referrer-dropdown', 'field-p-referrer-id');
         app.updateBadge();
         app.showPage('patients');
       },
@@ -1090,6 +1103,9 @@
         $('lender-select-box').classList.add('hidden');
         $('field-p-lender-id').value = '';
         $('lender-search').value = '';
+        $('referrer-select-box').classList.add('hidden');
+        $('field-p-referrer-id').value = '';
+        $('referrer-search').value = '';
 
         if (pid) {
           const p = dataStore.getPatient(pid);
@@ -1109,6 +1125,11 @@
             $('field-p-lender-id').value = p.lenderId || '';
             const lender = dataStore.getPatient(p.lenderId);
             $('lender-search').value = lender ? `${lender.name}${lender.phone ? ` (${lender.phone})` : ''}` : '';
+          } else if (p.source === '推荐') {
+            $('referrer-select-box').classList.remove('hidden');
+            $('field-p-referrer-id').value = p.referrerId || '';
+            const referrer = dataStore.getPatient(p.referrerId);
+            $('referrer-search').value = referrer ? `${referrer.name}${referrer.phone ? ` (${referrer.phone})` : ''}` : '';
           }
         } else {
           setText('modal-patient-title', '新建档案');
@@ -1126,16 +1147,129 @@
       getBillingTarget(pid) {
         const patient = dataStore.getPatient(pid);
         if (!patient) return null;
-        const isBorrower = patient.source === '借卡' && patient.lenderId;
-        const targetPid = isBorrower ? patient.lenderId : patient.id;
-        const targetPatient = dataStore.getPatient(targetPid);
+        const linkedActual = patient.source === '借卡' && patient.lenderId ? dataStore.getPatient(patient.lenderId) : null;
         return {
           patient,
-          isBorrower,
-          targetPid,
-          targetPatient,
-          borrowerName: isBorrower ? patient.name : '',
-          stats: dataStore.calcStats(targetPid)
+          isBorrower: Boolean(linkedActual),
+          targetPid: patient.id,
+          targetPatient: patient,
+          borrowerId: linkedActual ? linkedActual.id : '',
+          borrowerName: linkedActual ? linkedActual.name : '',
+          stats: dataStore.calcStats(patient.id)
+        };
+      },
+
+      getBorrowerNameFromRemark(remark = '') {
+        const match = String(remark).match(/【(?:实治受体|出借扣划给新客):\s*([^】]+)】/);
+        return match ? match[1].trim() : '';
+      },
+
+      stripBorrowerRemark(remark = '') {
+        return String(remark).replace(/^【(?:实治受体|出借扣划给新客):\s*[^】]+】\s*/, '');
+      },
+
+      getLinkedBorrowCardParties(t) {
+        if (!t) return null;
+        const recordPatient = dataStore.getPatient(t.pid);
+        const linkedPatient = t.borrowerId ? dataStore.getPatient(t.borrowerId) : null;
+        const remarkName = app.getBorrowerNameFromRemark(t.remark);
+        if (recordPatient?.source === '借卡' && recordPatient.lenderId) {
+          const actualPatient = dataStore.getPatient(recordPatient.lenderId);
+          return {
+            billingPid: recordPatient.id,
+            actualPid: actualPatient?.id || recordPatient.id
+          };
+        }
+        if (recordPatient && linkedPatient?.source === '借卡' && linkedPatient.lenderId === recordPatient.id) {
+          return {
+            billingPid: linkedPatient.id,
+            actualPid: recordPatient.id
+          };
+        }
+        if (recordPatient && remarkName) {
+          const remarkBorrowCard = dataStore.patients.find(p => p.source === '借卡' && p.lenderId === recordPatient.id && p.name === remarkName);
+          if (remarkBorrowCard) {
+            return {
+              billingPid: remarkBorrowCard.id,
+              actualPid: recordPatient.id
+            };
+          }
+        }
+        return null;
+      },
+
+      getTreatmentBillingPid(t) {
+        if (!t) return '';
+        const parties = app.getLinkedBorrowCardParties(t);
+        if (parties) return parties.billingPid;
+        return t.pid;
+      },
+
+      getTreatmentBorrower(t) {
+        if (!t) return null;
+        const linkedParties = app.getLinkedBorrowCardParties(t);
+        if (linkedParties && linkedParties.actualPid !== linkedParties.billingPid) {
+          return dataStore.getPatient(linkedParties.actualPid);
+        }
+        const billingPid = app.getTreatmentBillingPid(t);
+        if (t.borrowerId && t.borrowerId !== billingPid) {
+          const borrower = dataStore.getPatient(t.borrowerId);
+          if (borrower) return borrower;
+        }
+        const borrowerName = app.getBorrowerNameFromRemark(t.remark);
+        if (!borrowerName) return null;
+        return dataStore.patients.find(p => p.id !== billingPid && p.name === borrowerName)
+          || null;
+      },
+
+      getTreatmentActualPid(t) {
+        const actual = app.getTreatmentBorrower(t);
+        return actual?.id || app.getTreatmentBillingPid(t);
+      },
+
+      getTreatmentParties(t) {
+        const billingPid = app.getTreatmentBillingPid(t);
+        const actualPid = app.getTreatmentActualPid(t);
+        return {
+          billingPid,
+          actualPid,
+          billingPatient: dataStore.getPatient(billingPid),
+          actualPatient: dataStore.getPatient(actualPid)
+        };
+      },
+
+      isBorrowedTreatmentForPatient(t, pid) {
+        return app.getTreatmentActualPid(t) === pid && app.getTreatmentBillingPid(t) !== pid;
+      },
+
+      getVisibleStats(pid) {
+        const p = dataStore.getPatient(pid);
+        const base = dataStore.calcStats(pid);
+        if (!p) return base;
+
+        const stats = { ...base, history: [...base.history] };
+        dataStore.treatments.forEach(t => {
+          if (app.getTreatmentBillingPid(t) === pid || !app.isBorrowedTreatmentForPatient(t, pid)) return;
+          stats.history.push(t);
+          if (t.type === 'consume') stats.consumed += Number(t.count) || 0;
+        });
+        stats.history.sort((a, b) => {
+          const dt = utils.parseDateToLocalMidnight(b.date) - utils.parseDateToLocalMidnight(a.date);
+          return dt || String(b.id).localeCompare(String(a.id));
+        });
+        return stats;
+      },
+
+      getBorrowCardSummary(pid) {
+        const ownRemain = dataStore.calcStats(pid).remain;
+        const cards = dataStore.patients
+          .filter(p => p.source === '借卡' && p.lenderId === pid)
+          .map(p => ({ patient: p, stats: dataStore.calcStats(p.id) }));
+        const cardRemain = cards.reduce((sum, item) => sum + (Number(item.stats.remain) || 0), 0);
+        return {
+          cards,
+          ownRemain,
+          totalRemain: ownRemain + cardRemain
         };
       },
 
@@ -1146,13 +1280,8 @@
       getPatientDaySummary(pid, date = getLocalDateString()) {
         const target = app.getBillingTarget(pid);
         if (!target) return { consumes: 0, purchases: 0, paid: 0, medicines: 0, records: 0 };
-        const belongsToVisiblePatient = (record) => {
-          if (!target.isBorrower) return true;
-          const remark = String(record.remark || '');
-          return remark.includes(`实治受体:${target.borrowerName}`) || remark.includes(`出借扣划给新客: ${target.borrowerName}`);
-        };
         return dataStore.treatments
-          .filter(t => t.pid === target.targetPid && t.date === date && belongsToVisiblePatient(t))
+          .filter(t => t.date === date && (app.getTreatmentBillingPid(t) === pid || app.isBorrowedTreatmentForPatient(t, pid)))
           .reduce((sum, t) => {
             const count = Number(t.count) || 0;
             const amount = Number(t.amount) || 0;
@@ -1213,7 +1342,7 @@
       },
 
       hasConsumeOnDate(pid, date) {
-        return dataStore.treatments.some(t => t.pid === pid && t.date === date && t.type === 'consume' && Number(t.count) > 0);
+        return dataStore.treatments.some(t => app.getTreatmentBillingPid(t) === pid && t.date === date && t.type === 'consume' && Number(t.count) > 0);
       },
 
       confirmConsumeIfNeeded({ pid, date, count, patientName, remain, run }) {
@@ -1226,23 +1355,23 @@
         ui.showConfirm('请确认本次扣次', `${warnings.join('；')}。仍要继续扣 ${count} 次吗？`, true, run);
       },
 
-      renderCloseout({ targetDate, pMap, dayTreatments }) {
+      renderCloseout({ targetDate, pMap, dayTreatments, actualVisitCount = null }) {
         const pids = Object.keys(pMap);
         const consumePids = pids.filter(pid => pMap[pid].consumes > 0);
         const paidPids = pids.filter(pid => pMap[pid].pAmt > 0 || pMap[pid].mAmt > 0);
         const duplicateConsumePids = consumePids.filter(pid => {
-          const consumeRows = dayTreatments.filter(t => t.pid === pid && t.type === 'consume' && Number(t.count) > 0);
+          const consumeRows = dayTreatments.filter(t => app.getTreatmentBillingPid(t) === pid && t.type === 'consume' && Number(t.count) > 0);
           return consumeRows.length > 1 || consumeRows.reduce((sum, t) => sum + (Number(t.count) || 0), 0) > 1;
         });
         const consumeNoChargePids = consumePids.filter(pid => pMap[pid].pAmt <= 0 && pMap[pid].mAmt <= 0);
         const chargeNoConsumePids = paidPids.filter(pid => pMap[pid].consumes <= 0);
 
-        setText('today-visited-count', pids.length);
+        setText('today-visited-count', actualVisitCount ?? pids.length);
         setText('today-consumed-patient-count', consumePids.length);
         setText('today-paid-patient-count', paidPids.length);
 
         const checks = [
-          { ok: pids.length > 0, label: pids.length ? `已记 ${pids.length} 人` : '无流水', tone: pids.length ? 'good' : 'warn' },
+          { ok: pids.length > 0, label: pids.length ? `已记 ${actualVisitCount ?? pids.length} 人` : '无流水', tone: pids.length ? 'good' : 'warn' },
           { ok: duplicateConsumePids.length === 0, label: duplicateConsumePids.length ? `重复扣次 ${duplicateConsumePids.length} 人` : '无重复', tone: duplicateConsumePids.length ? 'danger' : 'good' },
           { ok: paidPids.length > 0 || consumePids.length === 0, label: paidPids.length ? `收费 ${paidPids.length} 人` : '无收费', tone: paidPids.length ? 'good' : 'warn' },
           { ok: chargeNoConsumePids.length === 0, label: chargeNoConsumePids.length ? `收未扣 ${chargeNoConsumePids.length} 人` : '收扣正常', tone: chargeNoConsumePids.length ? 'warn' : 'good' },
@@ -1269,7 +1398,10 @@
         if (!name) return ui.showToast('请填入患者姓名', 'warning');
         const source = $('field-p-source').value;
         const lenderId = $('field-p-lender-id').value;
-        if (source === '借卡' && !lenderId) return ui.showToast('出借人主体必须检索绑定', 'warning');
+        const referrerId = $('field-p-referrer-id').value;
+        if (source === '借卡' && !lenderId) return ui.showToast('借卡主卡必须绑定实际治疗人', 'warning');
+        if (source === '借卡' && lenderId === ($('field-p-id').value || '')) return ui.showToast('借卡主卡不能绑定自己', 'warning');
+        if (source === '推荐' && referrerId === ($('field-p-id').value || '')) return ui.showToast('推荐人不能绑定自己', 'warning');
 
         const existingId = $('field-p-id').value;
         const finalId = existingId || uid('p');
@@ -1281,6 +1413,7 @@
           age: $('field-p-age').value,
           source,
           lenderId: source === '借卡' ? lenderId : null,
+          referrerId: source === '推荐' ? (referrerId || null) : null,
           tags: $('field-p-tags').value.split(/[\s,，]+/).filter(Boolean),
           remark: $('field-p-remark').value
         };
@@ -1291,8 +1424,7 @@
           ui.showToast('患者资料修改成功', 'success');
         } else {
           dataStore.patients.push(patient);
-          const targetPid = source === '借卡' ? lenderId : finalId;
-          const remarkPrefix = source === '借卡' ? `【出借扣划给新客: ${name}】 ` : '';
+          const targetPid = finalId;
           const dStr = app.getEntryDate();
           const cCount = Number($('field-p-init-consume').value) || 0;
           const pCntStr = $('field-p-init-count').value;
@@ -1301,17 +1433,17 @@
           const mAmt = Number($('field-p-init-med').value) || 0;
           const createdIds = [];
           if (pCntStr !== '' || pAmt > 0) {
-            const record = { id: uid('t'), pid: targetPid, type: 'purchase', date: dStr, count: pCount, amount: pAmt, income: pCount === 0 ? pAmt * 0.45 : pAmt * 0.65, remark: `${remarkPrefix}首诊预缴扣划行为` };
+            const record = { id: uid('t'), pid: targetPid, borrowerId: source === '借卡' ? lenderId : null, type: 'purchase', date: dStr, count: pCount, amount: pAmt, income: pCount === 0 ? pAmt * 0.45 : pAmt * 0.65, remark: '首诊预缴扣划行为' };
             dataStore.treatments.push(record);
             createdIds.push(record.id);
           }
           if (mAmt > 0) {
-            const record = { id: uid('t'), pid: targetPid, type: 'medicine', date: dStr, count: 0, amount: mAmt, income: mAmt * 0.2, remark: `${remarkPrefix}首诊开中草药处方` };
+            const record = { id: uid('t'), pid: targetPid, borrowerId: source === '借卡' ? lenderId : null, type: 'medicine', date: dStr, count: 0, amount: mAmt, income: mAmt * 0.2, remark: '首诊开中草药处方' };
             dataStore.treatments.push(record);
             createdIds.push(record.id);
           }
           if (cCount > 0) {
-            const record = { id: uid('t'), pid: targetPid, type: 'consume', date: dStr, count: cCount, amount: 0, income: 0, remark: `${remarkPrefix}首诊针灸施术` };
+            const record = { id: uid('t'), pid: targetPid, borrowerId: source === '借卡' ? lenderId : null, type: 'consume', date: dStr, count: cCount, amount: 0, income: 0, remark: '首诊针灸施术' };
             dataStore.treatments.push(record);
             createdIds.push(record.id);
           }
@@ -1327,16 +1459,15 @@
       openRecordUI(pid) {
         const p = dataStore.getPatient(pid);
         if (!p) return;
-        const isBorrower = p.source === '借卡' && p.lenderId;
-        const actualTargetId = isBorrower ? p.lenderId : p.id;
-        const actualPatient = isBorrower ? dataStore.getPatient(actualTargetId) : p;
-        const stats = dataStore.calcStats(actualTargetId);
+        const stats = dataStore.calcStats(pid);
+        const target = app.getBillingTarget(pid);
 
-        $('record-p-id').value = actualTargetId;
-        $('record-borrower-name').value = isBorrower ? p.name : '';
-        $('record-patient-name').innerHTML = isBorrower
-          ? `${escapeHtml(p.name)} <span class="text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-lg text-[10px] font-bold ml-1.5">代扣主卡: ${escapeHtml(actualPatient?.name || '未知')}</span>`
-          : escapeHtml(p.name);
+        $('record-p-id').value = pid;
+        $('record-borrower-id').value = target?.borrowerId || '';
+        $('record-borrower-name').value = target?.borrowerName || '';
+        $('record-patient-name').innerHTML = target?.borrowerName
+          ? `${escapeHtml(p.name)} <span class="text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-lg text-[10px] font-bold ml-1.5">实治: ${escapeHtml(target.borrowerName)}</span>`
+          : `${escapeHtml(p.name)}${p.source === '借卡' ? '<span class="text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-lg text-[10px] font-bold ml-1.5">主卡</span>' : ''}`;
         setText('record-patient-rem', stats.remain);
         $('record-patient-rem').className = stats.remain <= 0 ? 'font-black text-base text-danger leading-none' : 'font-black text-base text-success leading-none';
         setText('record-patient-consumed', stats.consumed);
@@ -1350,11 +1481,12 @@
 
       saveRecord() {
         const pid = $('record-p-id').value;
-        const borrowerName = $('record-borrower-name').value;
+        let borrowerId = $('record-borrower-id').value;
+        if (borrowerId === pid) borrowerId = '';
+        const borrowerName = borrowerId ? (dataStore.getPatient(borrowerId)?.name || $('record-borrower-name').value) : '';
         const date = $('record-date').value;
         if (!date) return ui.showToast('请录入日期', 'warning');
-        let remark = $('record-remark').value;
-        if (borrowerName) remark = `【实治受体:${borrowerName}】 ${remark}`;
+        const remark = $('record-remark').value;
         const cCount = Number($('rec-c-count').value) || 0;
         const pCntStr = $('rec-p-count').value;
         const pCount = pCntStr === '' ? 0 : Number(pCntStr);
@@ -1362,30 +1494,30 @@
         const mAmount = Number($('rec-m-amount').value) || 0;
         const pendingRecords = [];
         if (cCount > 0) {
-          const record = { id: uid('t'), pid, type: 'consume', date, count: cCount, amount: 0, income: 0, remark };
+          const record = { id: uid('t'), pid, borrowerId: borrowerId || null, type: 'consume', date, count: cCount, amount: 0, income: 0, remark };
           pendingRecords.push(record);
         }
         if (pCntStr !== '' || pAmount > 0) {
-          const record = { id: uid('t'), pid, type: 'purchase', date, count: pCount, amount: pAmount, income: pCount === 0 ? pAmount * 0.45 : pAmount * 0.65, remark };
+          const record = { id: uid('t'), pid, borrowerId: borrowerId || null, type: 'purchase', date, count: pCount, amount: pAmount, income: pCount === 0 ? pAmount * 0.45 : pAmount * 0.65, remark };
           pendingRecords.push(record);
         }
         if (mAmount > 0) {
-          const record = { id: uid('t'), pid, type: 'medicine', date, count: 0, amount: mAmount, income: mAmount * 0.2, remark };
+          const record = { id: uid('t'), pid, borrowerId: borrowerId || null, type: 'medicine', date, count: 0, amount: mAmount, income: mAmount * 0.2, remark };
           pendingRecords.push(record);
         }
         if (!pendingRecords.length) return ui.showToast('记账明细未填写', 'warning');
         const commit = () => {
           dataStore.treatments.push(...pendingRecords);
           const createdIds = pendingRecords.map(record => record.id);
-          app.rememberUndo(createdIds, borrowerName ? `撤销 ${borrowerName} 代扣流水` : '撤销最近诊疗流水');
+          app.rememberUndo(createdIds, borrowerName ? `撤销 ${dataStore.getPatient(pid)?.name || '主卡'} 代扣流水` : '撤销最近诊疗流水');
           dataStore.save();
-          app.showUndoToast(borrowerName ? '已通过主卡代扣治疗费' : '诊疗业务记账成功');
+          app.showUndoToast(borrowerName ? `已登记 ${borrowerName} 使用主卡` : '诊疗业务记账成功');
           app.renderList();
           if (app.state.currentPage === 'daily') app.renderDaily();
           ui.closeModal('modal-record');
         };
         if (cCount > 0) {
-          const patientName = borrowerName || dataStore.getPatient(pid)?.name || '该患者';
+          const patientName = dataStore.getPatient(pid)?.name || borrowerName || '该患者';
           const remain = dataStore.calcStats(pid).remain;
           app.confirmConsumeIfNeeded({ pid, date, count: cCount, patientName, remain, run: commit });
         } else {
@@ -1397,19 +1529,18 @@
         const target = app.getBillingTarget(pid);
         if (!target || !target.targetPatient) return ui.showToast('未找到可扣次的患者档案', 'error');
         const run = () => {
-          const remark = target.isBorrower ? `【实治受体:${target.borrowerName}】 一键扣1次` : '一键扣1次';
-          const record = { id: uid('t'), pid: target.targetPid, type: 'consume', date: getLocalDateString(), count: 1, amount: 0, income: 0, remark };
+          const record = { id: uid('t'), pid: target.targetPid, borrowerId: target.borrowerId || null, type: 'consume', date: getLocalDateString(), count: 1, amount: 0, income: 0, remark: '一键扣1次' };
           dataStore.treatments.push(record);
-          app.rememberUndo([record.id], `撤销 ${target.patient.name} 一键扣次`);
+          app.rememberUndo([record.id], `撤销 ${target.targetPatient.name} 一键扣次`);
           dataStore.save();
           app.refreshViews(target.targetPid);
-          app.showUndoToast(`${target.patient.name} 已扣 1 次`);
+          app.showUndoToast(`${target.targetPatient.name} 已扣 1 次`);
         };
         app.confirmConsumeIfNeeded({
           pid: target.targetPid,
           date: getLocalDateString(),
           count: 1,
-          patientName: target.patient.name,
+          patientName: target.targetPatient.name,
           remain: target.stats.remain,
           run
         });
@@ -1448,8 +1579,8 @@
 
       deletePatientFull(pid) {
         ui.showConfirm('永久删除患者档案', '这会删除该患者的全部到诊流水，确认执行吗？', true, () => {
+          dataStore.treatments = dataStore.treatments.filter(t => app.getTreatmentBillingPid(t) !== pid);
           dataStore.patients = dataStore.patients.filter(p => p.id !== pid);
-          dataStore.treatments = dataStore.treatments.filter(t => t.pid !== pid);
           dataStore.save();
           ui.closeModal('modal-detail');
           app.renderList();
@@ -1514,7 +1645,7 @@
         };
         dataStore.save();
         ui.closeModal('modal-edit-record');
-        app.refreshViews(current.pid);
+        app.refreshViews(app.state.currentDetailPid || app.getTreatmentBillingPid(dataStore.treatments[idx]));
         ui.showToast('流水已修改', 'success');
       },
 
@@ -1536,13 +1667,13 @@
         const maxV = parseInt(app.state.filterMax, 10);
         if (!Number.isNaN(minV) || !Number.isNaN(maxV)) {
           rows = rows.filter(p => {
-            const r = dataStore.calcStats(p.id).remain;
+            const r = app.getVisibleStats(p.id).remain;
             return (Number.isNaN(minV) || r >= minV) && (Number.isNaN(maxV) || r <= maxV);
           });
         }
         rows.sort((a, b) => {
-          const ah = dataStore.calcStats(a.id).history;
-          const bh = dataStore.calcStats(b.id).history;
+          const ah = app.getVisibleStats(a.id).history;
+          const bh = app.getVisibleStats(b.id).history;
           const at = ah.length ? utils.parseDateToLocalMidnight(ah[0].date) : 0;
           const bt = bh.length ? utils.parseDateToLocalMidnight(bh[0].date) : 0;
           return bt - at || String(b.id).localeCompare(String(a.id));
@@ -1572,8 +1703,13 @@
         const mobileFragment = document.createDocumentFragment();
         const todayStr = getLocalDateString();
         rows.forEach(p => {
-          const stats = dataStore.calcStats(p.id);
+          const stats = app.getVisibleStats(p.id);
           const rem = stats.remain;
+          const borrowSummary = app.getBorrowCardSummary(p.id);
+          const hasBorrowCards = borrowSummary.cards.length > 0;
+          const mobileRemainHtml = hasBorrowCards
+            ? `<span class="block text-xl font-black leading-none">${borrowSummary.ownRemain}</span><span class="mt-0.5 block text-[9px] font-black leading-tight">总${borrowSummary.totalRemain}</span>`
+            : `<span class="block text-xl font-black leading-none">${rem}</span>`;
           const rec = stats.history.length ? stats.history[0].date : '无流水';
           const todaySummary = app.getPatientDaySummary(p.id, todayStr);
           const todayBadges = app.renderTodayBadges(todaySummary);
@@ -1604,21 +1740,20 @@
           const card = document.createElement('div');
           card.className = 'patient-mobile-card';
           card.innerHTML = `
-            <div class="flex items-start gap-3">
-              <button class="w-14 min-h-14 shrink-0 rounded-2xl border ${cCls} px-1.5 py-2 text-center active:scale-95" data-action="quick-consume" data-id="${p.id}" aria-label="扣1次">
-                <span class="block text-2xl font-black leading-none">${rem}</span>
-                <span class="mt-1 block text-[10px] font-bold">${quickLabel}</span>
+            <div class="flex items-center gap-2">
+              <button class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${cCls} px-1 text-center active:scale-95" data-action="quick-consume" data-id="${p.id}" aria-label="扣1次">
+                ${mobileRemainHtml}
               </button>
-              <button class="min-w-0 flex-1 text-left" data-action="detail" data-id="${p.id}">
-                <div class="flex items-center min-w-0">
-                  <span class="truncate text-base font-black text-slate-800">${escapeHtml(p.name)}</span>
-                  ${p.gender === '女' ? '<i class="fa-solid fa-venus ml-1.5 text-pink-400 text-xs shrink-0"></i>' : '<i class="fa-solid fa-mars ml-1.5 text-blue-400 text-xs shrink-0"></i>'}
-                  ${p.age ? `<span class="ml-1.5 shrink-0 text-xs text-slate-500">${escapeHtml(p.age)}岁</span>` : ''}
+              <button class="flex min-w-0 flex-1 items-center text-left" data-action="detail" data-id="${p.id}">
+                <div class="flex min-w-0 flex-1 items-center gap-1.5">
+                  <span class="min-w-0 truncate text-[15px] font-black leading-tight text-slate-800">${escapeHtml(p.name)}</span>
+                  ${p.gender === '女' ? '<i class="fa-solid fa-venus text-pink-400 text-xs shrink-0"></i>' : '<i class="fa-solid fa-mars text-blue-400 text-xs shrink-0"></i>'}
+                  ${p.age ? `<span class="shrink-0 text-[11px] font-semibold text-slate-500">${escapeHtml(p.age)}岁</span>` : ''}
+                  <span class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">${todayBadges}${tags}</span>
                 </div>
-                <div class="mt-1.5 flex flex-wrap gap-1">${todayBadges}${tags}</div>
               </button>
-              <div class="flex shrink-0 flex-col gap-1.5">
-                <button data-action="record" data-id="${p.id}" class="w-11 h-11 rounded-2xl bg-primary text-white shadow-sm active:scale-95" aria-label="诊疗记账">
+              <div class="flex shrink-0 flex-col">
+                <button data-action="record" data-id="${p.id}" class="h-10 w-10 rounded-xl bg-primary text-white shadow-sm active:scale-95" aria-label="诊疗记账">
                   <i class="fa-solid fa-file-invoice"></i>
                 </button>
               </div>
@@ -1640,19 +1775,22 @@
         let totalRev = 0, totalIncome = 0, totalPurCount = 0, totalConsume = 0, purRev = 0, medRev = 0;
         const pMap = {};
         ts.forEach(t => {
+          const billingPid = app.getTreatmentBillingPid(t);
+          const actualPid = app.getTreatmentActualPid(t);
           const amt = Number(t.amount) || 0;
           const cnt = Number(t.count) || 0;
           const inc = Number(t.income) || 0;
-          if (!pMap[t.pid]) pMap[t.pid] = { consumes: 0, purchases: 0, pAmt: 0, mAmt: 0, income: 0 };
+          if (!pMap[billingPid]) pMap[billingPid] = { consumes: 0, purchases: 0, pAmt: 0, mAmt: 0, income: 0, actualPids: new Set() };
+          if (actualPid && actualPid !== billingPid) pMap[billingPid].actualPids.add(actualPid);
           totalIncome += inc;
-          pMap[t.pid].income += inc;
+          pMap[billingPid].income += inc;
           if (t.type === 'purchase') {
             totalRev += amt; purRev += amt; totalPurCount += cnt;
-            pMap[t.pid].purchases += cnt; pMap[t.pid].pAmt += amt;
+            pMap[billingPid].purchases += cnt; pMap[billingPid].pAmt += amt;
           } else if (t.type === 'medicine') {
-            totalRev += amt; medRev += amt; pMap[t.pid].mAmt += amt;
+            totalRev += amt; medRev += amt; pMap[billingPid].mAmt += amt;
           } else if (t.type === 'consume') {
-            totalConsume += cnt; pMap[t.pid].consumes += cnt;
+            totalConsume += cnt; pMap[billingPid].consumes += cnt;
           }
         });
         setText('daily-total-rev', money(totalRev));
@@ -1670,11 +1808,12 @@
         app.renderPeriod('mo', app.calcPeriod(mo.start, mo.end));
 
         const pids = Object.keys(pMap);
+        const actualVisitPids = new Set(ts.map(t => app.getTreatmentActualPid(t)).filter(Boolean));
         setText('daily-patient-count', pids.length);
-        setText('daily-visit-cell', pids.length);
+        setText('daily-visit-cell', actualVisitPids.size);
         $('daily-list-body').innerHTML = '';
         $('daily-export-body').innerHTML = '';
-        app.renderCloseout({ targetDate, pMap, dayTreatments: ts });
+        app.renderCloseout({ targetDate, pMap, dayTreatments: ts, actualVisitCount: actualVisitPids.size });
         if (!pids.length) {
           $('daily-list-body').innerHTML = `<tr><td colspan="4" class="py-12 text-center text-slate-400 text-xs">无流水</td></tr>`;
           $('daily-export-body').innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400 text-xs">无</td></tr>';
@@ -1694,11 +1833,16 @@
           if (d.consumes > 0) actionHtml += `<span class="inline-block text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded-lg font-bold mr-1 mb-1">扣 ${d.consumes} 次</span>`;
           if (d.purchases > 0) actionHtml += `<span class="inline-block text-[10px] bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded-lg font-bold mr-1 mb-1">充 ${d.purchases} 次</span>`;
           if (d.pAmt > 0 || d.mAmt > 0) actionHtml += `<span class="inline-block text-[10px] bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded-lg font-bold mr-1 mb-1">收 ¥${money(d.pAmt + d.mAmt)}</span>`;
+          const actualPatients = [...(d.actualPids || [])].map(id => dataStore.getPatient(id)).filter(Boolean);
+          const actualNames = actualPatients.map(x => x.name);
+          const identityText = actualNames.length
+            ? `<div class="text-[10px] text-slate-400 mt-1 truncate">实治: ${escapeHtml(actualNames.join('、'))}</div>`
+            : '';
           const tr = document.createElement('tr');
           tr.className = 'hover:bg-slate-50 border-b border-slate-50 cursor-pointer transition-colors';
           tr.dataset.pid = pid;
           tr.innerHTML = `
-            <td class="py-3.5 px-4 w-[35%]"><div class="font-bold text-slate-800 text-[13px] flex items-center truncate">${escapeHtml(p.name)}</div></td>
+            <td class="py-3.5 px-4 w-[35%]"><div class="font-bold text-slate-800 text-[13px] flex items-center truncate">${escapeHtml(p.name)}</div>${identityText}</td>
             <td class="py-3.5 px-2 w-[40%]">${actionHtml}</td>
             <td class="py-3.5 px-2 text-center w-[15%]"><span class="font-black text-[13px] ${stats.remain > 0 ? 'text-success' : 'text-danger'}">${stats.remain}</span></td>
             <td class="py-3.5 px-4 text-right w-[10%] text-slate-400"><i class="fa-solid fa-angle-right text-base"></i></td>
@@ -1730,7 +1874,7 @@
         trs.forEach(t => {
           const amt = Number(t.amount) || 0;
           const c = Number(t.count) || 0;
-          activePids.add(t.pid);
+          activePids.add(app.getTreatmentActualPid(t));
           inc += Number(t.income) || 0;
           if (t.type === 'purchase') { pRev += amt; pur += c; }
           else if (t.type === 'medicine') mRev += amt;
@@ -1792,8 +1936,12 @@
         } else {
           const ts = dataStore.treatments.filter(t => t.date >= startStr && t.date <= endStr).sort((a, b) => utils.parseDateToLocalMidnight(a.date) - utils.parseDateToLocalMidnight(b.date));
           const renderItem = (t, val, label, isAmt) => {
-            const p = dataStore.getPatient(t.pid);
-            return `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${t.pid}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(p ? p.name : '匿名')} <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold ml-1.5">${label}</span></span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(t.date.substring(5))}${t.remark ? ` | ${escapeHtml(t.remark)}` : ''}</span></div><span class="font-black ${colorCls} text-base shrink-0">${isAmt ? '¥' : ''}${val}${isAmt ? '' : '次'}</span></li>`;
+            const parties = app.getTreatmentParties(t);
+            const actual = parties.actualPatient;
+            const billing = parties.billingPatient;
+            const partyText = actual && billing && actual.id !== billing.id ? `实治: ${actual.name} / 实缴: ${billing.name}` : (actual?.name || billing?.name || '匿名');
+            const cleanRemark = app.stripBorrowerRemark(t.remark);
+            return `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${actual?.id || parties.actualPid}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(partyText)} <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold ml-1.5">${label}</span></span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(t.date.substring(5))}${cleanRemark ? ` | ${escapeHtml(cleanRemark)}` : ''}</span></div><span class="font-black ${colorCls} text-base shrink-0">${isAmt ? '¥' : ''}${val}${isAmt ? '' : '次'}</span></li>`;
           };
           if (type === 'rev') {
             title = `${periodName}实收`; colorCls = 'text-blue-600'; prefix = '¥';
@@ -1809,7 +1957,7 @@
             ts.forEach(t => { if (t.type === 'consume' && Number(t.count) > 0) { total += Number(t.count); html += renderItem(t, t.count, '治疗扣减', false); } });
           } else if (type === 'patients') {
             title = `${periodName}接诊`; colorCls = 'text-red-500'; suffix = ' 人';
-            const pids = [...new Set(ts.map(t => t.pid))];
+            const pids = [...new Set(ts.map(t => app.getTreatmentActualPid(t)))];
             pids.forEach(pid => {
               const p = dataStore.getPatient(pid);
               if (!p) return;
@@ -2002,15 +2150,26 @@
         const p = dataStore.getPatient(pid);
         if (!p) return;
         app.state.currentDetailPid = pid;
-        const stats = dataStore.calcStats(pid);
+        const stats = app.getVisibleStats(pid);
         setText('det-avatar', (p.name || '名').charAt(0));
         setText('det-p-name', p.name);
         setText('det-p-source', p.source || '未知');
         setText('det-p-phone', p.phone || '未录手机');
         $('det-p-tags').innerHTML = (p.tags || []).map(t => `<span class="bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-lg text-[10px]">${escapeHtml(t)}</span>`).join('');
-        const borrowers = dataStore.patients.filter(x => x.source === '借卡' && x.lenderId === pid).map(x => x.name);
-        if (borrowers.length) {
-          $('det-borrowers').innerHTML = `<i class="fa-solid fa-people-arrows mr-1.5"></i>${escapeHtml(borrowers.join('、'))}`;
+        const relationTexts = [];
+        const referrer = p.source === '推荐' && p.referrerId ? dataStore.getPatient(p.referrerId) : null;
+        if (referrer) relationTexts.push(`<i class="fa-solid fa-user-group mr-1.5"></i>推荐人: ${escapeHtml(referrer.name)}`);
+        const linkedActual = p.source === '借卡' && p.lenderId ? dataStore.getPatient(p.lenderId) : null;
+        if (linkedActual) relationTexts.push(`<i class="fa-solid fa-people-arrows mr-1.5"></i>实治人: ${escapeHtml(linkedActual.name)}`);
+        if (!linkedActual) {
+          const usingCardNames = [...new Set(dataStore.treatments
+            .filter(t => app.isBorrowedTreatmentForPatient(t, pid))
+            .map(t => dataStore.getPatient(app.getTreatmentBillingPid(t))?.name)
+            .filter(Boolean))];
+          if (usingCardNames.length) relationTexts.push(`<i class="fa-solid fa-people-arrows mr-1.5"></i>使用过: ${escapeHtml(usingCardNames.join('、'))}`);
+        }
+        if (relationTexts.length) {
+          $('det-borrowers').innerHTML = relationTexts.join('<span class="mx-2 text-indigo-300">|</span>');
           $('det-borrowers').classList.remove('hidden');
         } else {
           $('det-borrowers').classList.add('hidden');
@@ -2039,6 +2198,16 @@
             if (h.type === 'purchase') { iconBg = 'bg-blue-50 text-blue-600 border border-blue-100'; iconText = '充'; valColor = 'text-primary'; valStr = h.count ? `+${h.count}` : (h.amount ? `¥${h.amount}` : ''); }
             else if (h.type === 'medicine') { iconBg = 'bg-purple-50 text-purple-600 border border-purple-100'; iconText = '药'; valColor = 'text-purple-600'; valStr = h.amount ? `¥${h.amount}` : ''; }
             const createdTimeText = app.getRecordCreatedTimeText(h);
+            const parties = app.getTreatmentParties(h);
+            const linkedActual = p.source === '借卡' && p.lenderId ? dataStore.getPatient(p.lenderId) : null;
+            const partyBadge = linkedActual
+              ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实治 ${escapeHtml(linkedActual.name)}</span>`
+              : parties.actualPid !== parties.billingPid && parties.actualPid === pid
+                ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ${escapeHtml(parties.billingPatient?.name || '主卡')}</span>`
+                : parties.actualPid !== parties.billingPid
+                  ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实治 ${escapeHtml(parties.actualPatient?.name || '未知')}</span>`
+                  : '';
+            const displayRemark = app.stripBorrowerRemark(h.remark);
             const div = document.createElement('div');
             div.className = 'bg-white flex items-center justify-between px-4 py-3 border-b border-slate-100';
             div.innerHTML = `
@@ -2048,8 +2217,9 @@
                   <div class="flex items-center gap-2">
                     <span class="text-[13px] font-black text-slate-800">${escapeHtml(h.date)}</span>
                     ${h.amount && h.count ? `<span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ¥${escapeHtml(h.amount)}</span>` : ''}
+                    ${partyBadge}
                   </div>
-                  ${h.remark ? `<span class="text-xs text-slate-400 truncate mt-1">${escapeHtml(h.remark)}</span>` : ''}
+                  ${displayRemark ? `<span class="text-xs text-slate-400 truncate mt-1">${escapeHtml(displayRemark)}</span>` : ''}
                   <span class="text-[10px] text-slate-300 truncate mt-0.5">${escapeHtml(createdTimeText)}</span>
                 </div>
               </div>
@@ -2108,7 +2278,14 @@
         if (!p1Id || !p2Id) return ui.showToast('归并对象和主档均须明确指定', 'warning');
         if (p1Id === p2Id) return ui.showToast('无法合并同一个档案', 'error');
         ui.showConfirm('归集及删除警告', '冗余档案的全部流水会迁移至主档，随后删除冗余档案。继续吗？', true, () => {
-          dataStore.treatments.forEach(t => { if (t.pid === p2Id) t.pid = p1Id; });
+          dataStore.treatments.forEach(t => {
+            if (t.pid === p2Id) t.pid = p1Id;
+            if (t.borrowerId === p2Id) t.borrowerId = p1Id;
+          });
+          dataStore.patients.forEach(p => {
+            if (p.lenderId === p2Id) p.lenderId = p1Id;
+            if (p.referrerId === p2Id) p.referrerId = p1Id;
+          });
           dataStore.patients = dataStore.patients.filter(p => p.id !== p2Id);
           dataStore.save();
           ui.closeModal('modal-merge');
@@ -2185,7 +2362,8 @@
                 gender: row['性别'] || '男',
                 age: row['年龄'] || '',
                 source: row['渠道'] || '自来',
-                lenderId: row['出借人ID'] || null,
+                lenderId: row['关联用卡人ID'] || row['出借人ID'] || null,
+                referrerId: row['推荐人ID'] || null,
                 tags: row['标签'] ? String(row['标签']).split(',').filter(Boolean) : [],
                 remark: row['备注'] || ''
               }));
@@ -2197,6 +2375,7 @@
                 return {
                   id: row['记录ID(勿动)'] || uid(`t_${index}`),
                   pid,
+                  borrowerId: row['实际用卡人ID'] || null,
                   date: utils.parseExcelDate(row['日期']),
                   type: row['类型'] === '充次' ? 'purchase' : row['类型'] === '开药' ? 'medicine' : 'consume',
                   count: Number(row['变动次']) || 0,
@@ -2280,9 +2459,14 @@
             app.setPillValue(isSource ? '.pill-source' : '.pill-gender', isSource ? 'field-p-source' : 'field-p-gender', btn.dataset.val);
             if (isSource) {
               $('lender-select-box').classList.toggle('hidden', btn.dataset.val !== '借卡');
+              $('referrer-select-box').classList.toggle('hidden', btn.dataset.val !== '推荐');
               if (btn.dataset.val !== '借卡') {
                 $('lender-search').value = '';
                 $('field-p-lender-id').value = '';
+              }
+              if (btn.dataset.val !== '推荐') {
+                $('referrer-search').value = '';
+                $('field-p-referrer-id').value = '';
               }
             }
           });
