@@ -119,6 +119,7 @@
       #det-p-name { font-size: 1rem !important; }
       #det-history-list .bg-white { padding: .75rem .85rem !important; }
       #det-history-list .w-7 { width: 1.75rem !important; height: 1.75rem !important; border-radius: .72rem !important; }
+      .detail-party-badge { max-width: 9.5rem; white-space: normal !important; line-height: 1.05rem; }
     }
   </style>
 </head>
@@ -142,6 +143,7 @@
         <nav class="hidden md:flex gap-1">
           <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="patients"><i class="fa-solid fa-address-card mr-2"></i>患者档案</button>
           <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="daily"><i class="fa-solid fa-clipboard-check mr-2"></i>今日</button>
+          <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="notebook"><i class="fa-solid fa-book-medical mr-2"></i>待登记 <span id="notebook-count-desktop" class="hidden ml-1 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px]">0</span></button>
           <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="dashboard"><i class="fa-solid fa-chart-line mr-2"></i>经营简报</button>
           <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="settings"><i class="fa-solid fa-sliders mr-2"></i>数据维护</button>
         </nav>
@@ -163,17 +165,11 @@
           <button id="add-patient" class="hidden md:flex btn btn-primary"><i class="fa-solid fa-user-plus mr-2"></i>初诊建档</button>
         </div>
 
-        <div class="card p-3 md:p-4 mb-4 md:mb-5 flex flex-col md:flex-row gap-3 md:gap-4">
+        <div class="card p-3 md:p-4 mb-4 md:mb-5">
           <div class="relative flex-grow">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
             <input type="text" id="search-input" placeholder="姓名 / 拼音 / 手机 / 标签" class="w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none transition-all">
             <button id="clear-search" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 hidden"><i class="fa-solid fa-circle-xmark"></i></button>
-          </div>
-          <div class="flex items-center bg-slate-50 rounded-xl border border-slate-200 px-3 py-2 shrink-0">
-            <span class="text-xs md:text-sm text-slate-500 whitespace-nowrap"><i class="fa-solid fa-filter text-primary mr-1.5"></i>余次：</span>
-            <input type="number" id="filter-min" placeholder="最小" class="w-12 bg-transparent border-none text-center text-sm focus:ring-0 outline-none text-slate-800">
-            <span class="text-slate-300 mx-1">~</span>
-            <input type="number" id="filter-max" placeholder="最大" class="w-12 bg-transparent border-none text-center text-sm focus:ring-0 outline-none text-slate-800">
           </div>
         </div>
 
@@ -318,6 +314,14 @@
         </div>
       </section>
 
+      <section id="notebook-page" class="page-section hidden animate-fade-in">
+        <div class="flex items-center justify-between mb-4 px-1">
+          <h2 class="text-xl md:text-2xl font-black text-slate-800">待登记</h2>
+          <span class="text-sm text-slate-500"><strong id="notebook-count" class="text-xl text-primary">0</strong> 条</span>
+        </div>
+        <div id="notebook-list" class="space-y-4"></div>
+      </section>
+
       <section id="dashboard-page" class="page-section hidden animate-fade-in">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <div>
@@ -399,10 +403,11 @@
     </main>
 
     <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-slate-100 flex justify-between items-center h-[68px] pb-[env(safe-area-inset-bottom)] z-40 shadow-[0_-4px_16px_rgba(0,0,0,.03)]">
-          <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-2" data-page="patients"><i class="fa-solid fa-address-book text-lg mb-0.5"></i><span class="text-[10px] font-bold">档案</span></button>
-      <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-2" data-page="daily"><i class="fa-solid fa-clipboard-check text-lg mb-0.5"></i><span class="text-[10px] font-bold">今日</span></button>
-      <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-2" data-page="dashboard"><i class="fa-solid fa-chart-line text-lg mb-0.5"></i><span class="text-[10px] font-bold">简报</span></button>
-      <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-2" data-page="settings"><i class="fa-solid fa-sliders text-lg mb-0.5"></i><span class="text-[10px] font-bold">维护</span></button>
+      <button class="mobile-nav-btn flex flex-col items-center w-1/5 pt-2" data-page="patients"><i class="fa-solid fa-address-book text-lg mb-0.5"></i><span class="text-[10px] font-bold">档案</span></button>
+      <button class="mobile-nav-btn flex flex-col items-center w-1/5 pt-2" data-page="daily"><i class="fa-solid fa-clipboard-check text-lg mb-0.5"></i><span class="text-[10px] font-bold">今日</span></button>
+      <button class="mobile-nav-btn relative flex flex-col items-center w-1/5 pt-2" data-page="notebook"><i class="fa-solid fa-book-medical text-lg mb-0.5"></i><span class="text-[10px] font-bold">待登记</span><span id="notebook-count-mobile" class="hidden absolute top-0 right-[22%] min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black leading-4">0</span></button>
+      <button class="mobile-nav-btn flex flex-col items-center w-1/5 pt-2" data-page="dashboard"><i class="fa-solid fa-chart-line text-lg mb-0.5"></i><span class="text-[10px] font-bold">简报</span></button>
+      <button class="mobile-nav-btn flex flex-col items-center w-1/5 pt-2" data-page="settings"><i class="fa-solid fa-sliders text-lg mb-0.5"></i><span class="text-[10px] font-bold">维护</span></button>
     </footer>
   </div>
 
@@ -470,6 +475,7 @@
           <div id="init-options" class="mt-4">
             <label class="block text-xs font-bold text-slate-700 mb-2"><i class="fa-solid fa-money-check-dollar text-primary mr-1"></i>首诊开单</label>
             <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <label class="block text-[10px] font-bold text-blue-700">编号<input type="text" id="field-p-init-course-no" inputmode="numeric" pattern="[0-9]*" class="input-field !py-2 text-sm bg-white border-blue-200 mt-1 font-mono tracking-wider"></label>
               <div class="grid grid-cols-2 gap-3">
                 <label class="block text-[10px] font-bold text-emerald-700">治疗扣次<input type="number" id="field-p-init-consume" class="input-field !py-2 text-xs bg-white border-emerald-200 mt-1"></label>
                 <label class="block text-[10px] font-bold text-purple-700">中药金额<input type="number" id="field-p-init-med" class="input-field !py-2 text-xs bg-white border-purple-200 mt-1"></label>
@@ -477,6 +483,16 @@
               <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
                 <label class="block text-[10px] font-bold text-blue-700">新购疗程<input type="number" id="field-p-init-count" class="input-field !py-2 text-xs bg-white border-blue-200 mt-1"></label>
                 <label class="block text-[10px] font-bold text-blue-700">收值金额<input type="number" id="field-p-init-amount" class="input-field !py-2 text-xs bg-white border-blue-200 mt-1"></label>
+              </div>
+              <div class="pt-2 border-t border-slate-200">
+                <button type="button" id="field-p-init-moxa-toggle" class="text-xs font-bold text-amber-700 py-1">＋艾灸</button>
+                <div id="field-p-init-moxa-box" class="hidden mt-1">
+                  <label class="text-[10px] font-bold text-amber-700">艾灸次数<input type="number" id="field-p-init-moxa" min="0" class="input-field !py-2 text-xs bg-white border-amber-200 mt-1"></label>
+                  <button type="button" id="field-p-init-moxa-use" class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-200 bg-white text-amber-700 items-center justify-between text-xs font-bold">
+                    <span>本次艾灸</span><i id="field-p-init-moxa-check" class="fa-regular fa-circle"></i>
+                  </button>
+                  <input type="hidden" id="field-p-init-moxa-value" value="0">
+                </div>
               </div>
             </div>
           </div>
@@ -531,10 +547,16 @@
             <label class="w-[40%] block text-[10px] font-bold text-emerald-700">治疗扣减次数<input type="number" id="rec-c-count" class="input-field !py-2.5 !px-3 text-sm bg-emerald-50/50 border-emerald-200 mt-1"></label>
           </div>
           <div class="p-3 bg-blue-50/40 border border-blue-100/50 rounded-2xl text-xs">
-            <label class="block text-[10px] font-bold text-blue-700 mb-1.5">充次</label>
+            <div class="grid grid-cols-[1.25fr_.75fr] gap-2 mb-2">
+              <label class="text-[10px] font-bold text-blue-700">编号<input type="text" id="rec-p-course-no" inputmode="numeric" pattern="[0-9]*" class="input-field !py-1.5 !px-2 text-sm bg-white border-blue-200 mt-0.5 font-mono tracking-wider"></label>
+              <label class="text-[10px] font-bold text-blue-700">次数<input type="number" id="rec-p-count" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
+            </div>
             <div class="grid grid-cols-2 gap-2">
-              <label class="text-[9px] text-slate-400">次数<input type="number" id="rec-p-count" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
-              <label class="text-[9px] text-slate-400">金额<input type="number" id="rec-p-amount" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
+              <label class="text-[9px] text-slate-400 col-span-2">金额<input type="number" id="rec-p-amount" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
+            </div>
+            <div class="pt-2 mt-2 border-t border-blue-100">
+              <button type="button" id="rec-p-moxa-toggle" class="text-xs font-bold text-amber-700 py-1">＋艾灸</button>
+              <label id="rec-p-moxa-box" class="hidden text-[10px] font-bold text-amber-700 mt-1">艾灸次数<input type="number" id="rec-p-moxa" min="0" class="input-field !py-1.5 !px-2 text-xs bg-white border-amber-200 mt-1"></label>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2">
@@ -544,6 +566,11 @@
               <span class="text-base font-black text-white leading-none mt-1.5">¥<span id="record-income-val">0.00</span></span>
             </div>
           </div>
+          <button type="button" id="rec-moxa-use" class="hidden w-full p-3 rounded-2xl border border-amber-200 bg-amber-50 text-amber-800 items-center justify-between text-sm font-bold">
+            <span>本次艾灸</span>
+            <span class="flex items-center gap-2"><span id="rec-moxa-remain" class="text-xs font-semibold text-amber-600"></span><i id="rec-moxa-check" class="fa-regular fa-circle text-lg"></i></span>
+          </button>
+          <input type="hidden" id="rec-moxa-value" value="0">
           <div>
             <input type="text" id="record-remark" placeholder="备注" class="input-field !py-2 text-[11px]">
             <div id="quick-treatments" class="flex flex-wrap gap-1.5 mt-2">
@@ -560,6 +587,19 @@
         <button class="modal-close btn btn-secondary !py-1.5 !px-4 text-xs">取消</button>
         <button id="save-record" class="btn btn-primary !py-1.5 !px-6 text-xs">保存</button>
       </div>
+    </div>
+  </div>
+
+  <div id="modal-quick-card-picker" class="modal fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[65] p-4 opacity-0 transition-opacity">
+    <div class="modal-content bg-white rounded-3xl shadow-2xl w-full max-w-sm scale-95 transition-transform overflow-hidden">
+      <div class="flex justify-between items-center px-5 py-4 border-b border-slate-50">
+        <div>
+          <h3 class="font-black text-base text-slate-800" id="quick-card-title">选择扣次账户</h3>
+          <p class="text-[11px] text-slate-400 font-semibold mt-1">本次仍然是快捷扣 1 次</p>
+        </div>
+        <button class="modal-close w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 space-y-2 bg-slate-50" id="quick-card-options"></div>
     </div>
   </div>
 
@@ -610,6 +650,9 @@
           <input type="hidden" id="edit-t-type">
           <div id="edit-t-type-display" class="p-2.5 rounded-xl text-center text-sm font-bold bg-slate-100 text-slate-600">流水</div>
           <label class="block text-xs font-bold text-slate-400">日期<input type="date" id="edit-t-date" class="input-field mt-1"></label>
+          <label id="edit-box-course-no" class="hidden text-xs font-bold text-slate-400">编号<input type="text" id="edit-t-course-no" inputmode="numeric" pattern="[0-9]*" class="input-field mt-1 font-mono tracking-wider"></label>
+          <label id="edit-box-moxa-total" class="hidden text-xs font-bold text-amber-700">艾灸次数<input type="number" id="edit-t-moxa-total" class="input-field mt-1 border-amber-200" min="0"></label>
+          <label id="edit-box-moxa-use" class="hidden items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700"><span>本次艾灸</span><input type="checkbox" id="edit-t-moxa-use" class="w-5 h-5 accent-amber-500"></label>
           <label id="edit-box-count" class="block text-xs font-bold text-slate-400">次数<input type="number" id="edit-t-count" class="input-field mt-1" min="0"></label>
           <label id="edit-box-amount" class="block text-xs font-bold text-slate-400">金额<input type="number" id="edit-t-amount" class="input-field mt-1" min="0" step="0.01"></label>
           <label class="block text-xs font-bold text-slate-400">备注<input type="text" id="edit-t-remark" class="input-field mt-1"></label>
@@ -826,6 +869,7 @@
       treatments: [],
       charts: {},
       statsCache: {},
+      visibleStatsCache: {},
       saveTimer: null,
 
       async fetchWithRetry(url, options = {}, retries = 3, delay = 700) {
@@ -867,6 +911,7 @@
       save({ sync = true } = {}) {
         dataStore.persistLocal();
         dataStore.rebuildStatsCache();
+        app.updateNotebookBadge?.();
         if (!sync) return true;
 
         const badge = $('data-status-badge');
@@ -904,7 +949,15 @@
       rebuildStatsCache() {
         const cache = {};
         dataStore.patients.forEach(p => {
-          cache[p.id] = { purchased: 0, consumed: 0, remain: 0, mTotal: 0, history: [] };
+          cache[p.id] = {
+            purchased: 0,
+            consumed: 0,
+            remain: 0,
+            mTotal: 0,
+            history: [],
+            courses: {},
+            currentCourseNo: ''
+          };
         });
         dataStore.treatments.forEach(t => {
           const billingPid = app.getTreatmentBillingPid(t);
@@ -920,6 +973,31 @@
           } else if (t.type === 'medicine') {
             cache[billingPid].mTotal += amt;
           }
+          const courseNo = String(t.courseNo || '');
+          if (courseNo) {
+            if (!cache[billingPid].courses[courseNo]) {
+              cache[billingPid].courses[courseNo] = {
+                courseNo,
+                purchaseDate: '',
+                purchaseId: '',
+                moxaTotal: 0,
+                moxaUsed: 0,
+                moxaRemain: 0
+              };
+            }
+            const course = cache[billingPid].courses[courseNo];
+            if (t.type === 'purchase') {
+              course.moxaTotal += Number(t.moxaTotal) || 0;
+              const order = String(t.date || '').localeCompare(course.purchaseDate)
+                || String(t.id || '').localeCompare(course.purchaseId);
+              if (order >= 0) {
+                course.purchaseDate = t.date || '';
+                course.purchaseId = t.id || '';
+              }
+            } else if (t.type === 'consume') {
+              course.moxaUsed += Number(t.moxaCount) || 0;
+            }
+          }
         });
         Object.keys(cache).forEach(pid => {
           cache[pid].remain = cache[pid].purchased - cache[pid].consumed;
@@ -927,12 +1005,43 @@
             const dt = utils.parseDateToLocalMidnight(b.date) - utils.parseDateToLocalMidnight(a.date);
             return dt || String(b.id).localeCompare(String(a.id));
           });
+          const courses = Object.values(cache[pid].courses);
+          courses.forEach(course => { course.moxaRemain = course.moxaTotal - course.moxaUsed; });
+          courses.sort((a, b) => String(b.purchaseDate).localeCompare(String(a.purchaseDate)) || String(b.purchaseId).localeCompare(String(a.purchaseId)));
+          cache[pid].currentCourseNo = courses[0]?.courseNo || '';
         });
         dataStore.statsCache = cache;
+        const visible = {};
+        dataStore.patients.forEach(patient => {
+          const base = cache[patient.id];
+          visible[patient.id] = { ...base, history: [...base.history] };
+        });
+        dataStore.treatments.forEach(record => {
+          const billingPid = app.getTreatmentBillingPid(record);
+          const actualPid = app.getTreatmentActualPid(record);
+          if (!actualPid || actualPid === billingPid || !visible[actualPid]) return;
+          visible[actualPid].history.push(record);
+          if (record.type === 'consume') visible[actualPid].consumed += Number(record.count) || 0;
+        });
+        Object.values(visible).forEach(stats => {
+          stats.history.sort((a, b) => {
+            const dt = utils.parseDateToLocalMidnight(b.date) - utils.parseDateToLocalMidnight(a.date);
+            return dt || String(b.id).localeCompare(String(a.id));
+          });
+        });
+        dataStore.visibleStatsCache = visible;
       },
 
       calcStats(pid) {
-        return dataStore.statsCache[pid] || { purchased: 0, consumed: 0, remain: 0, mTotal: 0, history: [] };
+        return dataStore.statsCache[pid] || {
+          purchased: 0,
+          consumed: 0,
+          remain: 0,
+          mTotal: 0,
+          history: [],
+          courses: {},
+          currentCourseNo: ''
+        };
       },
 
       getLocalBackups() {
@@ -1019,6 +1128,13 @@
             '患者': p ? p.name : '未知',
             '实际用卡人': borrower ? borrower.name : '',
             '类型': t.type === 'purchase' ? '充次' : t.type === 'medicine' ? '开药' : '扣次',
+            '编号': t.courseNo || '',
+            '艾灸总次': t.moxaTotal || '',
+            '本次艾灸': t.moxaCount ? '是' : '',
+            '开始时间': t.startTime || '',
+            '结束时间': t.endTime || '',
+            '本子待登记': t.notebookPending === true ? '是' : '',
+            '本子已登记时间': t.notebookCopiedAt || '',
             '变动次': t.count || 0,
             '金额': t.amount || 0,
             '预计收入': t.income || 0,
@@ -1031,7 +1147,7 @@
     };
 
     const app = {
-      state: { search: '', filterMin: '', filterMax: '', currentPage: 'patients', currentDetailPid: null },
+      state: { search: '', currentPage: 'patients', currentDetailPid: null },
 
       async initSystem() {
         await dataStore.init();
@@ -1042,6 +1158,7 @@
         app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id');
         app.initSearchDropdown('referrer-search', 'referrer-dropdown', 'field-p-referrer-id');
         app.updateBadge();
+        app.updateNotebookBadge();
         app.showPage('patients');
       },
 
@@ -1091,6 +1208,7 @@
         });
         if (id === 'patients') app.renderList();
         if (id === 'daily') app.renderDaily();
+        if (id === 'notebook') app.renderNotebook();
         if (id === 'dashboard') app.renderDashboard();
         if (id === 'settings') app.updateBackupStatus();
       },
@@ -1106,6 +1224,11 @@
         $('referrer-select-box').classList.add('hidden');
         $('field-p-referrer-id').value = '';
         $('referrer-search').value = '';
+        $('field-p-init-moxa-box').classList.add('hidden');
+        $('field-p-init-moxa-toggle').textContent = '＋艾灸';
+        $('field-p-init-moxa-use').classList.add('hidden');
+        $('field-p-init-moxa-use').classList.remove('flex');
+        app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', false);
 
         if (pid) {
           const p = dataStore.getPatient(pid);
@@ -1135,8 +1258,88 @@
           setText('modal-patient-title', '新建档案');
           $('init-options').classList.remove('hidden');
           $('field-p-name').value = defaultName;
+          $('field-p-init-course-no').value = app.getNextCourseNo();
         }
         ui.openModal('modal-patient');
+      },
+
+      getNextCourseNo() {
+        const previous = [...dataStore.treatments].reverse().find(t => t.type === 'purchase' && /^\d+$/.test(String(t.courseNo || '')));
+        if (!previous) return '';
+        const current = String(previous.courseNo);
+        return (BigInt(current) + 1n).toString().padStart(current.length, '0');
+      },
+
+      getCourseNo(inputId) {
+        return String($(inputId)?.value || '').replace(/\D/g, '');
+      },
+
+      hasCourseNo(courseNo, exceptId = '') {
+        return Boolean(courseNo) && dataStore.treatments.some(t => t.id !== exceptId && t.type === 'purchase' && String(t.courseNo || '') === courseNo);
+      },
+
+      getLatestCourseNo(pid, date = null) {
+        if (!date) return dataStore.calcStats(pid).currentCourseNo || '';
+        const purchases = dataStore.treatments
+          .filter(t => app.getTreatmentBillingPid(t) === pid && t.type === 'purchase' && t.courseNo && t.date <= date)
+          .sort((a, b) => {
+            const byDate = String(b.date).localeCompare(String(a.date));
+            return byDate || String(b.id).localeCompare(String(a.id));
+          });
+        return purchases[0]?.courseNo || '';
+      },
+
+      getTreatmentTimes(date, minutes = 50) {
+        const now = new Date();
+        const [year, month, day] = String(date || getLocalDateString()).split('-').map(Number);
+        const end = new Date(year, month - 1, day, now.getHours(), now.getMinutes());
+        const start = new Date(end.getTime() - minutes * 60000);
+        const format = value => `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
+        return { startTime: format(start), endTime: format(end), durationMinutes: minutes };
+      },
+
+      isOpeningDayFirstTreatment(pid, courseNo, date) {
+        if (!courseNo) return false;
+        const hasOpening = dataStore.treatments.some(t =>
+          t.type === 'purchase'
+          && app.getTreatmentBillingPid(t) === pid
+          && t.courseNo === courseNo
+          && t.date === date
+        );
+        if (!hasOpening) return false;
+        return !dataStore.treatments.some(t =>
+          t.type === 'consume'
+          && app.getTreatmentBillingPid(t) === pid
+          && t.courseNo === courseNo
+        );
+      },
+
+      getMoxaStats(pid, courseNo = '') {
+        if (!pid || !courseNo) return { total: 0, used: 0, remain: 0 };
+        const course = dataStore.calcStats(pid).courses?.[courseNo];
+        if (!course) return { total: 0, used: 0, remain: 0 };
+        return { total: course.moxaTotal, used: course.moxaUsed, remain: course.moxaRemain };
+      },
+
+      setMoxaUseButton(buttonId, valueId, checkId, active) {
+        const button = $(buttonId);
+        $(valueId).value = active ? '1' : '0';
+        button.classList.remove('bg-white', 'bg-amber-50', 'bg-amber-500', 'text-amber-700', 'text-amber-800', 'text-white');
+        button.classList.add(active ? 'bg-amber-500' : 'bg-amber-50', active ? 'text-white' : 'text-amber-800');
+        $(checkId).className = `${active ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'} text-lg`;
+      },
+
+      updateRecordMoxaOption(pid, courseNo = '') {
+        const isNewCourse = $('rec-p-count').value !== '' || Number($('rec-p-amount').value) > 0;
+        const newTotal = Number($('rec-p-moxa').value) || 0;
+        const stats = isNewCourse
+          ? { remain: newTotal }
+          : app.getMoxaStats(pid, courseNo || app.getLatestCourseNo(pid, $('record-date').value));
+        const show = stats.remain > 0;
+        $('rec-moxa-use').classList.toggle('hidden', !show);
+        $('rec-moxa-use').classList.toggle('flex', show);
+        setText('rec-moxa-remain', show ? `余 ${stats.remain}` : '');
+        if (!show) app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', false);
       },
 
       setPillValue(selector, hiddenId, value) {
@@ -1173,6 +1376,12 @@
         const recordPatient = dataStore.getPatient(t.pid);
         const linkedPatient = t.borrowerId ? dataStore.getPatient(t.borrowerId) : null;
         const remarkName = app.getBorrowerNameFromRemark(t.remark);
+        if (recordPatient?.source === '借卡' && linkedPatient && linkedPatient.id !== recordPatient.id) {
+          return {
+            billingPid: recordPatient.id,
+            actualPid: linkedPatient.id
+          };
+        }
         if (recordPatient?.source === '借卡' && recordPatient.lenderId) {
           const actualPatient = dataStore.getPatient(recordPatient.lenderId);
           return {
@@ -1243,21 +1452,7 @@
       },
 
       getVisibleStats(pid) {
-        const p = dataStore.getPatient(pid);
-        const base = dataStore.calcStats(pid);
-        if (!p) return base;
-
-        const stats = { ...base, history: [...base.history] };
-        dataStore.treatments.forEach(t => {
-          if (app.getTreatmentBillingPid(t) === pid || !app.isBorrowedTreatmentForPatient(t, pid)) return;
-          stats.history.push(t);
-          if (t.type === 'consume') stats.consumed += Number(t.count) || 0;
-        });
-        stats.history.sort((a, b) => {
-          const dt = utils.parseDateToLocalMidnight(b.date) - utils.parseDateToLocalMidnight(a.date);
-          return dt || String(b.id).localeCompare(String(a.id));
-        });
-        return stats;
+        return dataStore.visibleStatsCache[pid] || dataStore.calcStats(pid);
       },
 
       getBorrowCardSummary(pid) {
@@ -1328,13 +1523,138 @@
         return `登记 ${date} ${time}`;
       },
 
+      resetReceptionSearch({ focus = true } = {}) {
+        app.state.search = '';
+        const input = $('search-input');
+        const clearBtn = $('clear-search');
+        if (input) input.value = '';
+        clearBtn?.classList.add('hidden');
+        app.renderList();
+        if (focus && app.state.currentPage === 'patients' && input) {
+          requestAnimationFrame(() => input.focus({ preventScroll: true }));
+        }
+      },
+
       refreshViews(pid = null) {
         dataStore.rebuildStatsCache();
         app.renderList();
         if (app.state.currentPage === 'daily') app.renderDaily();
+        if (app.state.currentPage === 'notebook') app.renderNotebook();
         if (app.state.currentPage === 'dashboard') app.renderDashboard();
         if (app.state.currentPage === 'settings') app.updateBackupStatus();
         if (pid && app.state.currentDetailPid === pid) app.showDetail(pid);
+      },
+
+      getPendingNotebookRecords() {
+        return dataStore.treatments.filter(t => t.type === 'consume' && t.notebookPending === true && !t.notebookCopiedAt);
+      },
+
+      updateNotebookBadge() {
+        const count = app.getPendingNotebookRecords().length;
+        ['notebook-count-mobile', 'notebook-count-desktop'].forEach(id => {
+          const el = $(id);
+          if (!el) return;
+          el.textContent = count > 99 ? '99+' : count;
+          el.classList.toggle('hidden', count === 0);
+        });
+        setText('notebook-count', count);
+      },
+
+      getNotebookCourse(record) {
+        const billingPid = app.getTreatmentBillingPid(record);
+        const purchase = dataStore.treatments.find(t =>
+          t.type === 'purchase'
+          && app.getTreatmentBillingPid(t) === billingPid
+          && record.courseNo
+          && String(t.courseNo || '') === String(record.courseNo)
+        );
+        return {
+          billingPid,
+          patient: dataStore.getPatient(billingPid),
+          courseNo: record.courseNo || '',
+          bookMonth: String(purchase?.date || record.date || '').slice(0, 7)
+        };
+      },
+
+      renderNotebook() {
+        const pending = app.getPendingNotebookRecords();
+        app.updateNotebookBadge();
+        const list = $('notebook-list');
+        if (!pending.length) {
+          list.innerHTML = '<div class="card py-14 text-center text-sm text-slate-400">无待登记</div>';
+          return;
+        }
+
+        const groups = new Map();
+        pending.forEach(record => {
+          const course = app.getNotebookCourse(record);
+          const key = `${course.bookMonth}|${course.courseNo}|${course.billingPid}`;
+          if (!groups.has(key)) groups.set(key, { ...course, records: [] });
+          groups.get(key).records.push(record);
+        });
+
+        const rows = [...groups.values()].sort((a, b) => {
+          const byMonth = a.bookMonth.localeCompare(b.bookMonth);
+          if (byMonth) return byMonth;
+          return String(a.courseNo || '999999999').localeCompare(String(b.courseNo || '999999999'), undefined, { numeric: true });
+        });
+        const monthGroups = new Map();
+        rows.forEach(row => {
+          if (!monthGroups.has(row.bookMonth)) monthGroups.set(row.bookMonth, []);
+          monthGroups.get(row.bookMonth).push(row);
+        });
+
+        list.innerHTML = [...monthGroups.entries()].map(([month, courses]) => {
+          const [year, monthNo] = month.split('-');
+          const title = year && monthNo ? `${year}年${Number(monthNo)}月本` : '未分本';
+          return `
+            <div>
+              <h3 class="px-1 mb-2 text-sm font-black text-slate-600">${escapeHtml(title)}</h3>
+              <div class="space-y-2">
+                ${courses.map(course => {
+                  const sorted = [...course.records].sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
+                  const ids = sorted.map(record => record.id).join('|');
+                  return `
+                    <div class="card p-3">
+                      <div class="flex items-center justify-between gap-3 mb-2">
+                        <div class="min-w-0">
+                          <div class="flex items-center gap-2">
+                            <span class="font-mono text-base font-black text-primary">${escapeHtml(course.courseNo || '未编号')}</span>
+                            <span class="font-black text-slate-800 truncate">${escapeHtml(course.patient?.name || '未知')}</span>
+                          </div>
+                        </div>
+                        <button class="btn btn-primary !py-1.5 !px-3 text-xs shrink-0" data-action="notebook-done" data-ids="${escapeHtml(ids)}">已登记</button>
+                      </div>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        ${sorted.map(record => `
+                          <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 flex items-center justify-between">
+                            <span class="font-bold text-slate-700">${escapeHtml(String(record.date || '').slice(5).replace('-', '/'))}</span>
+                            <span class="font-mono font-black text-slate-600">${escapeHtml(record.startTime || '--:--')}–${escapeHtml(record.endTime || '--:--')}</span>
+                          </div>
+                        `).join('')}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      markNotebookCopied(ids) {
+        const idSet = new Set(ids);
+        const records = dataStore.treatments.filter(t => idSet.has(t.id) && !t.notebookCopiedAt);
+        if (!records.length) return;
+        const copiedAt = new Date().toISOString();
+        records.forEach(record => { record.notebookCopiedAt = copiedAt; });
+        dataStore.save();
+        app.renderNotebook();
+        ui.showActionToast(`已登记 ${records.length} 条`, '撤销', () => {
+          records.forEach(record => { record.notebookCopiedAt = ''; });
+          dataStore.save();
+          app.renderNotebook();
+        });
       },
 
       updateBackupStatus() {
@@ -1343,6 +1663,12 @@
 
       hasConsumeOnDate(pid, date) {
         return dataStore.treatments.some(t => app.getTreatmentBillingPid(t) === pid && t.date === date && t.type === 'consume' && Number(t.count) > 0);
+      },
+
+      isNewPatientOnDate(pid, date) {
+        const stats = dataStore.calcStats(pid);
+        if (!stats.history.length) return false;
+        return stats.history[stats.history.length - 1].date === date;
       },
 
       confirmConsumeIfNeeded({ pid, date, count, patientName, remain, run }) {
@@ -1423,7 +1749,6 @@
           if (idx >= 0) dataStore.patients[idx] = patient;
           ui.showToast('患者资料修改成功', 'success');
         } else {
-          dataStore.patients.push(patient);
           const targetPid = finalId;
           const dStr = app.getEntryDate();
           const cCount = Number($('field-p-init-consume').value) || 0;
@@ -1431,9 +1756,15 @@
           const pCount = pCntStr === '' ? 0 : Number(pCntStr);
           const pAmt = Number($('field-p-init-amount').value) || 0;
           const mAmt = Number($('field-p-init-med').value) || 0;
+          const moxaTotal = Number($('field-p-init-moxa').value) || 0;
+          const moxaCount = $('field-p-init-moxa-value').value === '1' ? 1 : 0;
+          const courseNo = app.getCourseNo('field-p-init-course-no');
+          if ((pCntStr !== '' || pAmt > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
+          if ((pCntStr !== '' || pAmt > 0) && app.hasCourseNo(courseNo)) return ui.showToast('编号已存在', 'warning');
+          dataStore.patients.push(patient);
           const createdIds = [];
           if (pCntStr !== '' || pAmt > 0) {
-            const record = { id: uid('t'), pid: targetPid, borrowerId: source === '借卡' ? lenderId : null, type: 'purchase', date: dStr, count: pCount, amount: pAmt, income: pCount === 0 ? pAmt * 0.45 : pAmt * 0.65, remark: '首诊预缴扣划行为' };
+            const record = { id: uid('t'), pid: targetPid, borrowerId: source === '借卡' ? lenderId : null, type: 'purchase', date: dStr, courseNo, moxaTotal, count: pCount, amount: pAmt, income: pCount === 0 ? pAmt * 0.45 : pAmt * 0.65, remark: '首诊预缴扣划行为' };
             dataStore.treatments.push(record);
             createdIds.push(record.id);
           }
@@ -1443,7 +1774,22 @@
             createdIds.push(record.id);
           }
           if (cCount > 0) {
-            const record = { id: uid('t'), pid: targetPid, borrowerId: source === '借卡' ? lenderId : null, type: 'consume', date: dStr, count: cCount, amount: 0, income: 0, remark: '首诊针灸施术' };
+            const record = {
+              id: uid('t'),
+              pid: targetPid,
+              borrowerId: source === '借卡' ? lenderId : null,
+              type: 'consume',
+              date: dStr,
+              courseNo,
+              moxaCount,
+              count: cCount,
+              amount: 0,
+              income: 0,
+              remark: '首诊针灸施术',
+              ...app.getTreatmentTimes(dStr),
+              notebookPending: false,
+              notebookCopiedAt: new Date().toISOString()
+            };
             dataStore.treatments.push(record);
             createdIds.push(record.id);
           }
@@ -1456,7 +1802,7 @@
         ui.closeModal('modal-patient');
       },
 
-      openRecordUI(pid) {
+      openRecordUI(pid, presetConsume = 0) {
         const p = dataStore.getPatient(pid);
         if (!p) return;
         const stats = dataStore.calcStats(pid);
@@ -1474,7 +1820,13 @@
         setText('record-patient-last', stats.history.length ? stats.history[0].date.substring(5) : '从未到诊');
         app.setPillValue('.pill-date', 'record-date', '0');
         $('record-date').value = app.getEntryDate();
-        ['rec-c-count', 'rec-p-count', 'rec-p-amount', 'rec-m-amount', 'record-remark'].forEach(id => { $(id).value = ''; });
+        ['rec-c-count', 'rec-p-count', 'rec-p-amount', 'rec-p-moxa', 'rec-m-amount', 'record-remark'].forEach(id => { $(id).value = ''; });
+        if (presetConsume) $('rec-c-count').value = presetConsume;
+        $('rec-p-course-no').value = app.getNextCourseNo();
+        $('rec-p-moxa-box').classList.add('hidden');
+        $('rec-p-moxa-toggle').textContent = '＋艾灸';
+        app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', false);
+        app.updateRecordMoxaOption(pid);
         setText('record-income-val', '0.00');
         ui.openModal('modal-record');
       },
@@ -1491,14 +1843,40 @@
         const pCntStr = $('rec-p-count').value;
         const pCount = pCntStr === '' ? 0 : Number(pCntStr);
         const pAmount = Number($('rec-p-amount').value) || 0;
+        const moxaTotal = Number($('rec-p-moxa').value) || 0;
+        const moxaCount = $('rec-moxa-value').value === '1' ? 1 : 0;
         const mAmount = Number($('rec-m-amount').value) || 0;
+        const courseNo = app.getCourseNo('rec-p-course-no');
+        if ((pCntStr !== '' || pAmount > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
+        if ((pCntStr !== '' || pAmount > 0) && app.hasCourseNo(courseNo)) return ui.showToast('编号已存在', 'warning');
+        const activeCourseNo = (pCntStr !== '' || pAmount > 0) ? courseNo : app.getLatestCourseNo(pid, date);
+        const availableMoxa = (pCntStr !== '' || pAmount > 0) ? moxaTotal : app.getMoxaStats(pid, activeCourseNo).remain;
+        if (moxaCount > availableMoxa) return ui.showToast('艾灸余次不足', 'warning');
         const pendingRecords = [];
         if (cCount > 0) {
-          const record = { id: uid('t'), pid, borrowerId: borrowerId || null, type: 'consume', date, count: cCount, amount: 0, income: 0, remark };
+          const isNewCourse = Boolean(pCntStr !== '' || pAmount > 0);
+          const consumeCourseNo = isNewCourse ? courseNo : app.getLatestCourseNo(pid, date);
+          const isOpeningTreatment = isNewCourse || app.isOpeningDayFirstTreatment(pid, consumeCourseNo, date);
+          const record = {
+            id: uid('t'),
+            pid,
+            borrowerId: borrowerId || null,
+            type: 'consume',
+            date,
+            courseNo: consumeCourseNo,
+            moxaCount,
+            count: cCount,
+            amount: 0,
+            income: 0,
+            remark,
+            ...app.getTreatmentTimes(date),
+            notebookPending: !isOpeningTreatment,
+            notebookCopiedAt: isOpeningTreatment ? new Date().toISOString() : ''
+          };
           pendingRecords.push(record);
         }
         if (pCntStr !== '' || pAmount > 0) {
-          const record = { id: uid('t'), pid, borrowerId: borrowerId || null, type: 'purchase', date, count: pCount, amount: pAmount, income: pCount === 0 ? pAmount * 0.45 : pAmount * 0.65, remark };
+          const record = { id: uid('t'), pid, borrowerId: borrowerId || null, type: 'purchase', date, courseNo, moxaTotal, count: pCount, amount: pAmount, income: pCount === 0 ? pAmount * 0.45 : pAmount * 0.65, remark };
           pendingRecords.push(record);
         }
         if (mAmount > 0) {
@@ -1515,6 +1893,7 @@
           app.renderList();
           if (app.state.currentPage === 'daily') app.renderDaily();
           ui.closeModal('modal-record');
+          app.resetReceptionSearch();
         };
         if (cCount > 0) {
           const patientName = dataStore.getPatient(pid)?.name || borrowerName || '该患者';
@@ -1525,25 +1904,94 @@
         }
       },
 
-      quickConsumeOne(pid) {
-        const target = app.getBillingTarget(pid);
+      openQuickConsumePicker(actualPid) {
+        const actualPatient = dataStore.getPatient(actualPid);
+        if (!actualPatient) return ui.showToast('未找到实际治疗人档案', 'error');
+        const summary = app.getBorrowCardSummary(actualPid);
+        if (!summary.cards.length) return app.commitQuickConsume(actualPid);
+
+        setText('quick-card-title', `${actualPatient.name} 扣哪张卡`);
+        const options = [
+          {
+            billingPid: actualPatient.id,
+            actualPid: actualPatient.id,
+            name: `${actualPatient.name} 本人`,
+            remain: summary.ownRemain,
+            note: '扣本人余额'
+          },
+          ...summary.cards.map(item => ({
+            billingPid: item.patient.id,
+            actualPid: actualPatient.id,
+            name: item.patient.name,
+            remain: item.stats.remain,
+            note: `实治: ${actualPatient.name}`
+          }))
+        ];
+        $('quick-card-options').innerHTML = options.map(item => {
+          const tone = item.remain > 0 ? 'text-success bg-emerald-50 border-emerald-100' : 'text-danger bg-red-50 border-red-100';
+          return `
+            <button class="w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between text-left shadow-sm active:scale-[0.99]" data-billing-id="${escapeHtml(item.billingPid)}" data-actual-id="${escapeHtml(item.actualPid)}">
+              <span class="min-w-0 pr-3">
+                <span class="block text-sm font-black text-slate-800 truncate">${escapeHtml(item.name)}</span>
+                <span class="block text-[11px] text-slate-400 font-semibold mt-0.5">${escapeHtml(item.note)}</span>
+              </span>
+              <span class="shrink-0 min-w-12 px-2 py-1 rounded-xl border text-center font-black ${tone}">${escapeHtml(item.remain)}</span>
+            </button>
+          `;
+        }).join('');
+        ui.openModal('modal-quick-card-picker');
+      },
+
+      commitQuickConsume(billingPid, actualPid = '') {
+        const target = app.getBillingTarget(billingPid);
         if (!target || !target.targetPatient) return ui.showToast('未找到可扣次的患者档案', 'error');
+        const actualPatient = actualPid && actualPid !== billingPid ? dataStore.getPatient(actualPid) : null;
+        const borrowerId = actualPatient ? actualPatient.id : (target.borrowerId || null);
+        const patientName = actualPatient ? `${actualPatient.name}（用${target.targetPatient.name}卡）` : target.targetPatient.name;
         const run = () => {
-          const record = { id: uid('t'), pid: target.targetPid, borrowerId: target.borrowerId || null, type: 'consume', date: getLocalDateString(), count: 1, amount: 0, income: 0, remark: '一键扣1次' };
+          const date = getLocalDateString();
+          const courseNo = app.getLatestCourseNo(target.targetPid, date);
+          const isOpeningTreatment = app.isOpeningDayFirstTreatment(target.targetPid, courseNo, date);
+          const record = {
+            id: uid('t'),
+            pid: target.targetPid,
+            borrowerId,
+            type: 'consume',
+            date,
+            courseNo,
+            count: 1,
+            amount: 0,
+            income: 0,
+            remark: '一键扣1次',
+            ...app.getTreatmentTimes(date),
+            notebookPending: !isOpeningTreatment,
+            notebookCopiedAt: isOpeningTreatment ? new Date().toISOString() : ''
+          };
           dataStore.treatments.push(record);
-          app.rememberUndo([record.id], `撤销 ${target.targetPatient.name} 一键扣次`);
+          app.rememberUndo([record.id], `撤销 ${patientName} 一键扣次`);
           dataStore.save();
-          app.refreshViews(target.targetPid);
-          app.showUndoToast(`${target.targetPatient.name} 已扣 1 次`);
+          app.refreshViews(app.state.currentDetailPid || actualPatient?.id || target.targetPid);
+          app.showUndoToast(`${patientName} 已扣 1 次`);
+          app.resetReceptionSearch();
         };
         app.confirmConsumeIfNeeded({
           pid: target.targetPid,
           date: getLocalDateString(),
           count: 1,
-          patientName: target.targetPatient.name,
+          patientName,
           remain: target.stats.remain,
           run
         });
+      },
+
+      quickConsumeOne(pid) {
+        const patient = dataStore.getPatient(pid);
+        if (!patient) return ui.showToast('未找到可扣次的患者档案', 'error');
+        const summary = app.getBorrowCardSummary(pid);
+        if (patient.source !== '借卡' && summary.cards.length) return app.openQuickConsumePicker(pid);
+        const courseNo = app.getLatestCourseNo(pid);
+        if (app.getMoxaStats(pid, courseNo).remain > 0) return app.openRecordUI(pid, 1);
+        return app.commitQuickConsume(pid);
       },
 
       undoLastTreatmentGroup() {
@@ -1606,6 +2054,9 @@
         $('edit-t-id').value = record.id;
         $('edit-t-type').value = record.type;
         $('edit-t-date').value = record.date || getLocalDateString();
+        $('edit-t-course-no').value = record.courseNo || '';
+        $('edit-t-moxa-total').value = Number(record.moxaTotal) || 0;
+        $('edit-t-moxa-use').checked = Number(record.moxaCount) > 0;
         $('edit-t-count').value = Number(record.count) || 0;
         $('edit-t-amount').value = Number(record.amount) || 0;
         $('edit-t-remark').value = record.remark || '';
@@ -1620,6 +2071,12 @@
         $('edit-t-type-display').className = `p-2.5 rounded-xl text-center text-sm font-bold ${meta.cls}`;
         $('edit-box-count').classList.toggle('hidden', record.type === 'medicine');
         $('edit-box-amount').classList.toggle('hidden', record.type === 'consume');
+        $('edit-box-course-no').classList.toggle('hidden', record.type !== 'purchase');
+        $('edit-box-course-no').classList.toggle('block', record.type === 'purchase');
+        $('edit-box-moxa-total').classList.toggle('hidden', record.type !== 'purchase');
+        $('edit-box-moxa-total').classList.toggle('block', record.type === 'purchase');
+        $('edit-box-moxa-use').classList.toggle('hidden', record.type !== 'consume' || !record.courseNo);
+        $('edit-box-moxa-use').classList.toggle('flex', record.type === 'consume' && Boolean(record.courseNo));
         ui.openModal('modal-edit-record');
       },
 
@@ -1632,17 +2089,40 @@
         if (!date) return ui.showToast('请填写发生日期', 'warning');
         const count = Number($('edit-t-count').value) || 0;
         const amount = Number($('edit-t-amount').value) || 0;
+        const courseNo = current.type === 'purchase' ? app.getCourseNo('edit-t-course-no') : '';
+        if (current.type === 'purchase' && !courseNo) return ui.showToast('请填编号', 'warning');
+        if (current.type === 'purchase' && app.hasCourseNo(courseNo, current.id)) return ui.showToast('编号已存在', 'warning');
+        const oldCourseNo = current.courseNo || '';
+        const billingPid = app.getTreatmentBillingPid(current);
+        if (current.type === 'purchase') {
+          const usedMoxa = app.getMoxaStats(billingPid, oldCourseNo).used;
+          if ((Number($('edit-t-moxa-total').value) || 0) < usedMoxa) return ui.showToast(`已用艾灸 ${usedMoxa} 次`, 'warning');
+        }
+        if (current.type === 'consume' && $('edit-t-moxa-use').checked && !current.moxaCount) {
+          const moxaRemain = app.getMoxaStats(billingPid, current.courseNo).remain;
+          if (moxaRemain <= 0) return ui.showToast('艾灸余次不足', 'warning');
+        }
         let income = 0;
         if (current.type === 'purchase') income = count === 0 ? amount * 0.45 : amount * 0.65;
         if (current.type === 'medicine') income = amount * 0.2;
         dataStore.treatments[idx] = {
           ...current,
           date,
+          courseNo: current.type === 'purchase' ? courseNo : (current.courseNo || ''),
+          moxaTotal: current.type === 'purchase' ? (Number($('edit-t-moxa-total').value) || 0) : (current.moxaTotal || 0),
+          moxaCount: current.type === 'consume' ? ($('edit-t-moxa-use').checked ? 1 : 0) : (current.moxaCount || 0),
           count: current.type === 'medicine' ? 0 : count,
           amount: current.type === 'consume' ? 0 : amount,
           income,
           remark: $('edit-t-remark').value
         };
+        if (current.type === 'purchase' && oldCourseNo && oldCourseNo !== courseNo) {
+          dataStore.treatments.forEach(record => {
+            if (record.type === 'consume' && app.getTreatmentBillingPid(record) === billingPid && record.courseNo === oldCourseNo) {
+              record.courseNo = courseNo;
+            }
+          });
+        }
         dataStore.save();
         ui.closeModal('modal-edit-record');
         app.refreshViews(app.state.currentDetailPid || app.getTreatmentBillingPid(dataStore.treatments[idx]));
@@ -1653,6 +2133,48 @@
         const tbody = $('patient-list-body');
         const mobileList = $('patient-card-list');
         let rows = [...dataStore.patients];
+        const visibleStatsCache = new Map();
+        const getStats = pid => {
+          if (!visibleStatsCache.has(pid)) visibleStatsCache.set(pid, app.getVisibleStats(pid));
+          return visibleStatsCache.get(pid);
+        };
+        const borrowCardsByPid = new Map();
+        dataStore.patients.forEach(patient => {
+          if (patient.source !== '借卡' || !patient.lenderId) return;
+          if (!borrowCardsByPid.has(patient.lenderId)) borrowCardsByPid.set(patient.lenderId, []);
+          borrowCardsByPid.get(patient.lenderId).push({ patient, stats: dataStore.calcStats(patient.id) });
+        });
+        const getBorrowSummary = pid => {
+          const cards = borrowCardsByPid.get(pid) || [];
+          const ownRemain = dataStore.calcStats(pid).remain;
+          return {
+            cards,
+            ownRemain,
+            totalRemain: ownRemain + cards.reduce((sum, item) => sum + (Number(item.stats.remain) || 0), 0)
+          };
+        };
+        const todayStr = getLocalDateString();
+        const todaySummaryByPid = new Map();
+        const addTodayRecord = (pid, record) => {
+          if (!pid) return;
+          if (!todaySummaryByPid.has(pid)) {
+            todaySummaryByPid.set(pid, { consumes: 0, purchases: 0, paid: 0, medicines: 0, records: 0 });
+          }
+          const sum = todaySummaryByPid.get(pid);
+          const count = Number(record.count) || 0;
+          const amount = Number(record.amount) || 0;
+          if (record.type === 'consume') sum.consumes += count;
+          if (record.type === 'purchase') { sum.purchases += count; sum.paid += amount; }
+          if (record.type === 'medicine') { sum.medicines += amount; sum.paid += amount; }
+          sum.records += 1;
+        };
+        dataStore.treatments.forEach(record => {
+          if (record.date !== todayStr) return;
+          const billingPid = app.getTreatmentBillingPid(record);
+          const actualPid = app.getTreatmentActualPid(record);
+          addTodayRecord(billingPid, record);
+          if (actualPid && actualPid !== billingPid) addTodayRecord(actualPid, record);
+        });
         if (app.state.search) {
           const terms = app.state.search.toLowerCase().split(/\s+/).filter(Boolean);
           rows = rows.filter(p => terms.every(term => {
@@ -1663,17 +2185,9 @@
               || (Array.isArray(p.tags) && p.tags.some(tag => String(tag).toLowerCase().includes(term) || getPinyinInitials(tag).includes(term)));
           }));
         }
-        const minV = parseInt(app.state.filterMin, 10);
-        const maxV = parseInt(app.state.filterMax, 10);
-        if (!Number.isNaN(minV) || !Number.isNaN(maxV)) {
-          rows = rows.filter(p => {
-            const r = app.getVisibleStats(p.id).remain;
-            return (Number.isNaN(minV) || r >= minV) && (Number.isNaN(maxV) || r <= maxV);
-          });
-        }
         rows.sort((a, b) => {
-          const ah = app.getVisibleStats(a.id).history;
-          const bh = app.getVisibleStats(b.id).history;
+          const ah = getStats(a.id).history;
+          const bh = getStats(b.id).history;
           const at = ah.length ? utils.parseDateToLocalMidnight(ah[0].date) : 0;
           const bt = bh.length ? utils.parseDateToLocalMidnight(bh[0].date) : 0;
           return bt - at || String(b.id).localeCompare(String(a.id));
@@ -1701,18 +2215,20 @@
 
         const fragment = document.createDocumentFragment();
         const mobileFragment = document.createDocumentFragment();
-        const todayStr = getLocalDateString();
         rows.forEach(p => {
-          const stats = app.getVisibleStats(p.id);
+          const stats = getStats(p.id);
           const rem = stats.remain;
-          const borrowSummary = app.getBorrowCardSummary(p.id);
+          const borrowSummary = getBorrowSummary(p.id);
           const hasBorrowCards = borrowSummary.cards.length > 0;
           const mobileRemainHtml = hasBorrowCards
             ? `<span class="block text-xl font-black leading-none">${borrowSummary.ownRemain}</span><span class="mt-0.5 block text-[9px] font-black leading-tight">总${borrowSummary.totalRemain}</span>`
             : `<span class="block text-xl font-black leading-none">${rem}</span>`;
           const rec = stats.history.length ? stats.history[0].date : '无流水';
-          const todaySummary = app.getPatientDaySummary(p.id, todayStr);
+          const todaySummary = todaySummaryByPid.get(p.id) || { consumes: 0, purchases: 0, paid: 0, medicines: 0, records: 0 };
           const todayBadges = app.renderTodayBadges(todaySummary);
+          const currentCourseNo = app.getLatestCourseNo(p.id);
+          const moxaStats = app.getMoxaStats(p.id, currentCourseNo);
+          const moxaBadge = moxaStats.total > 0 ? `<span class="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">灸${moxaStats.remain}</span>` : '';
           const quickLabel = todaySummary.consumes > 0 ? '已扣' : '扣1';
           let cCls = 'text-success bg-green-50 border-green-100';
           let sTxt = '额度充沛';
@@ -1723,7 +2239,7 @@
           tr.className = 'hover:bg-slate-50 transition-colors border-b border-slate-50';
           tr.innerHTML = `
             <td class="px-6 py-4 cursor-pointer text-center" data-action="detail" data-id="${p.id}"><div class="flex flex-col items-center justify-center"><span class="text-xl md:text-2xl font-black text-slate-800 leading-none">${rem}</span><span class="text-[9px] px-1.5 py-0.5 border rounded-lg font-bold ${cCls} mt-1.5">${sTxt}</span></div></td>
-            <td class="px-6 py-4 cursor-pointer" data-action="detail" data-id="${p.id}"><div class="font-black text-slate-800 text-sm md:text-base flex items-center">${escapeHtml(p.name)} ${p.gender === '女' ? '<i class="fa-solid fa-venus ml-1.5 text-pink-400 text-xs"></i>' : '<i class="fa-solid fa-mars ml-1.5 text-blue-400 text-xs"></i>'} ${p.age ? `<span class="text-xs text-slate-500 ml-1.5 font-normal">${escapeHtml(p.age)}岁</span>` : ''}</div><div class="text-[10px] md:text-xs text-slate-400 mt-1"><i class="fa-solid fa-phone mr-1"></i>${escapeHtml(p.phone || '未录手机')}</div><div class="flex flex-wrap gap-1 mt-1.5">${todayBadges}${tags}</div></td>
+            <td class="px-6 py-4 cursor-pointer" data-action="detail" data-id="${p.id}"><div class="font-black text-slate-800 text-sm md:text-base flex items-center">${escapeHtml(p.name)} ${p.gender === '女' ? '<i class="fa-solid fa-venus ml-1.5 text-pink-400 text-xs"></i>' : '<i class="fa-solid fa-mars ml-1.5 text-blue-400 text-xs"></i>'} ${p.age ? `<span class="text-xs text-slate-500 ml-1.5 font-normal">${escapeHtml(p.age)}岁</span>` : ''}</div><div class="text-[10px] md:text-xs text-slate-400 mt-1"><i class="fa-solid fa-phone mr-1"></i>${escapeHtml(p.phone || '未录手机')}</div><div class="flex flex-wrap gap-1 mt-1.5">${todayBadges}${moxaBadge}${tags}</div></td>
             <td class="px-6 py-4 whitespace-nowrap text-center">
               <div class="flex items-center justify-center gap-2">
                 <button data-action="quick-consume" data-id="${p.id}" class="btn bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 px-3 py-1.5 rounded-full text-xs md:text-[13px]">
@@ -1749,7 +2265,7 @@
                   <span class="min-w-0 truncate text-[15px] font-black leading-tight text-slate-800">${escapeHtml(p.name)}</span>
                   ${p.gender === '女' ? '<i class="fa-solid fa-venus text-pink-400 text-xs shrink-0"></i>' : '<i class="fa-solid fa-mars text-blue-400 text-xs shrink-0"></i>'}
                   ${p.age ? `<span class="shrink-0 text-[11px] font-semibold text-slate-500">${escapeHtml(p.age)}岁</span>` : ''}
-                  <span class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">${todayBadges}${tags}</span>
+                  <span class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">${todayBadges}${moxaBadge}${tags}</span>
                 </div>
               </button>
               <div class="flex shrink-0 flex-col">
@@ -1829,6 +2345,11 @@
           if (!p) return;
           const stats = dataStore.calcStats(pid);
           const d = pMap[pid];
+          const actualPids = new Set([pid, ...(d.actualPids || [])]);
+          const isNewToday = [...actualPids].some(actualPid => app.isNewPatientOnDate(actualPid, targetDate));
+          const newBadge = isNewToday
+            ? '<span class="ml-1.5 shrink-0 bg-red-50 text-red-500 border border-red-100 px-1.5 py-0.5 rounded-lg text-[9px] font-black">新</span>'
+            : '';
           let actionHtml = '';
           if (d.consumes > 0) actionHtml += `<span class="inline-block text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded-lg font-bold mr-1 mb-1">扣 ${d.consumes} 次</span>`;
           if (d.purchases > 0) actionHtml += `<span class="inline-block text-[10px] bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded-lg font-bold mr-1 mb-1">充 ${d.purchases} 次</span>`;
@@ -1842,7 +2363,7 @@
           tr.className = 'hover:bg-slate-50 border-b border-slate-50 cursor-pointer transition-colors';
           tr.dataset.pid = pid;
           tr.innerHTML = `
-            <td class="py-3.5 px-4 w-[35%]"><div class="font-bold text-slate-800 text-[13px] flex items-center truncate">${escapeHtml(p.name)}</div>${identityText}</td>
+            <td class="py-3.5 px-4 w-[35%]"><div class="font-bold text-slate-800 text-[13px] flex items-center truncate">${escapeHtml(p.name)}${newBadge}</div>${identityText}</td>
             <td class="py-3.5 px-2 w-[40%]">${actionHtml}</td>
             <td class="py-3.5 px-2 text-center w-[15%]"><span class="font-black text-[13px] ${stats.remain > 0 ? 'text-success' : 'text-danger'}">${stats.remain}</span></td>
             <td class="py-3.5 px-4 text-right w-[10%] text-slate-400"><i class="fa-solid fa-angle-right text-base"></i></td>
@@ -2174,6 +2695,11 @@
         } else {
           $('det-borrowers').classList.add('hidden');
         }
+        const detailCourseNo = app.getLatestCourseNo(pid);
+        const detailMoxa = app.getMoxaStats(pid, detailCourseNo);
+        if (detailMoxa.total > 0) {
+          $('det-p-tags').insertAdjacentHTML('beforeend', `<span class="bg-amber-50 text-amber-700 border border-amber-100 font-bold px-2 py-0.5 rounded-lg text-[10px]">艾灸 ${detailMoxa.remain}/${detailMoxa.total}</span>`);
+        }
         setText('det-stat-money', money(stats.mTotal));
         setText('det-stat-p', stats.purchased);
         setText('det-stat-c', stats.consumed);
@@ -2199,23 +2725,24 @@
             else if (h.type === 'medicine') { iconBg = 'bg-purple-50 text-purple-600 border border-purple-100'; iconText = '药'; valColor = 'text-purple-600'; valStr = h.amount ? `¥${h.amount}` : ''; }
             const createdTimeText = app.getRecordCreatedTimeText(h);
             const parties = app.getTreatmentParties(h);
-            const linkedActual = p.source === '借卡' && p.lenderId ? dataStore.getPatient(p.lenderId) : null;
-            const partyBadge = linkedActual
-              ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实治 ${escapeHtml(linkedActual.name)}</span>`
-              : parties.actualPid !== parties.billingPid && parties.actualPid === pid
-                ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ${escapeHtml(parties.billingPatient?.name || '主卡')}</span>`
-                : parties.actualPid !== parties.billingPid
-                  ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实治 ${escapeHtml(parties.actualPatient?.name || '未知')}</span>`
-                  : '';
+            let partyBadge = '';
+            if (parties.actualPid !== parties.billingPid && parties.actualPid === pid) {
+              partyBadge = `<span class="detail-party-badge text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ${escapeHtml(parties.billingPatient?.name || '主卡')}</span>`;
+            } else if (h.type === 'consume' && parties.actualPid !== parties.billingPid && parties.billingPid === pid) {
+              partyBadge = `<span class="detail-party-badge text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实治 ${escapeHtml(parties.actualPatient?.name || '未知')}</span>`;
+            }
             const displayRemark = app.stripBorrowerRemark(h.remark);
             const div = document.createElement('div');
             div.className = 'bg-white flex items-center justify-between px-4 py-3 border-b border-slate-100';
             div.innerHTML = `
               <div class="flex items-center gap-3 overflow-hidden flex-1 pr-2">
                 <span class="shrink-0 text-xs w-7 h-7 flex items-center justify-center rounded-xl ${iconBg} font-bold shadow-sm">${iconText}</span>
-                <div class="flex flex-col truncate min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-[13px] font-black text-slate-800">${escapeHtml(h.date)}</span>
+	                <div class="flex flex-col min-w-0 flex-1">
+	                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[13px] font-black text-slate-800 shrink-0">${escapeHtml(h.date)}</span>
+                    ${h.type === 'purchase' && h.courseNo ? `<span class="text-[9px] bg-blue-50 text-blue-600 border border-blue-100 px-1.5 py-0.5 rounded font-mono font-bold shrink-0">${escapeHtml(h.courseNo)}</span>` : ''}
+                    ${h.type === 'purchase' && Number(h.moxaTotal) > 0 ? `<span class="text-[9px] bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 rounded font-bold shrink-0">艾灸 +${escapeHtml(h.moxaTotal)}</span>` : ''}
+                    ${h.type === 'consume' && Number(h.moxaCount) > 0 ? '<span class="text-[9px] bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 rounded font-bold shrink-0">艾灸</span>' : ''}
                     ${h.amount && h.count ? `<span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ¥${escapeHtml(h.amount)}</span>` : ''}
                     ${partyBadge}
                   </div>
@@ -2378,6 +2905,13 @@
                   borrowerId: row['实际用卡人ID'] || null,
                   date: utils.parseExcelDate(row['日期']),
                   type: row['类型'] === '充次' ? 'purchase' : row['类型'] === '开药' ? 'medicine' : 'consume',
+                  courseNo: row['编号'] ? String(row['编号']).trim() : '',
+                  moxaTotal: Number(row['艾灸总次']) || 0,
+                  moxaCount: row['本次艾灸'] === '是' ? 1 : 0,
+                  startTime: row['开始时间'] ? String(row['开始时间']).trim() : '',
+                  endTime: row['结束时间'] ? String(row['结束时间']).trim() : '',
+                  notebookPending: row['本子待登记'] === '是',
+                  notebookCopiedAt: row['本子已登记时间'] ? String(row['本子已登记时间']).trim() : '',
                   count: Number(row['变动次']) || 0,
                   amount: Number(row['金额']) || 0,
                   income: Number(row['预计收入']) || 0,
@@ -2445,14 +2979,6 @@
           $('clear-search').classList.add('hidden');
           app.renderList();
         });
-        const filterHandler = debounce(() => {
-          app.state.filterMin = $('filter-min').value;
-          app.state.filterMax = $('filter-max').value;
-          app.renderList();
-        }, 250);
-        $('filter-min').addEventListener('input', filterHandler);
-        $('filter-max').addEventListener('input', filterHandler);
-
         document.querySelectorAll('.pill-gender, .pill-source').forEach(btn => {
           btn.addEventListener('click', () => {
             const isSource = btn.classList.contains('pill-source');
@@ -2476,9 +3002,13 @@
             document.querySelectorAll('.pill-date').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             $('record-date').value = utils.addDays(getLocalDateString(), Number(btn.dataset.offset));
+            app.updateRecordMoxaOption($('record-p-id').value);
           });
         });
-        $('record-date').addEventListener('change', () => document.querySelectorAll('.pill-date').forEach(btn => btn.classList.remove('active')));
+        $('record-date').addEventListener('change', () => {
+          document.querySelectorAll('.pill-date').forEach(btn => btn.classList.remove('active'));
+          app.updateRecordMoxaOption($('record-p-id').value);
+        });
         $('quick-tags').addEventListener('click', e => {
           const btn = e.target.closest('[data-tag]');
           if (!btn) return;
@@ -2491,6 +3021,52 @@
           $('record-remark').value = btn.dataset.remark;
           $('rec-c-count').value = btn.dataset.count;
         });
+        $('quick-card-options').addEventListener('click', e => {
+          const btn = e.target.closest('[data-billing-id]');
+          if (!btn) return;
+          ui.closeModal('modal-quick-card-picker');
+          const courseNo = app.getLatestCourseNo(btn.dataset.billingId);
+          if (app.getMoxaStats(btn.dataset.billingId, courseNo).remain > 0) {
+            return app.openRecordUI(btn.dataset.billingId, 1);
+          }
+          app.commitQuickConsume(btn.dataset.billingId, btn.dataset.actualId);
+        });
+        $('field-p-init-moxa-toggle').addEventListener('click', () => {
+          const box = $('field-p-init-moxa-box');
+          const opening = box.classList.contains('hidden');
+          box.classList.toggle('hidden', !opening);
+          $('field-p-init-moxa-toggle').textContent = opening ? '－艾灸' : '＋艾灸';
+          if (!opening) {
+            $('field-p-init-moxa').value = '';
+            $('field-p-init-moxa-use').classList.add('hidden');
+            $('field-p-init-moxa-use').classList.remove('flex');
+            app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', false);
+          }
+        });
+        $('field-p-init-moxa').addEventListener('input', () => {
+          const show = Number($('field-p-init-moxa').value) > 0 && Number($('field-p-init-consume').value) > 0;
+          $('field-p-init-moxa-use').classList.toggle('hidden', !show);
+          $('field-p-init-moxa-use').classList.toggle('flex', show);
+          if (!show) app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', false);
+        });
+        $('field-p-init-consume').addEventListener('input', () => $('field-p-init-moxa').dispatchEvent(new Event('input')));
+        $('field-p-init-moxa-use').addEventListener('click', () => {
+          app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', $('field-p-init-moxa-value').value !== '1');
+        });
+        $('rec-p-moxa-toggle').addEventListener('click', () => {
+          const box = $('rec-p-moxa-box');
+          const opening = box.classList.contains('hidden');
+          box.classList.toggle('hidden', !opening);
+          $('rec-p-moxa-toggle').textContent = opening ? '－艾灸' : '＋艾灸';
+          if (!opening) $('rec-p-moxa').value = '';
+          app.updateRecordMoxaOption($('record-p-id').value);
+        });
+        $('rec-moxa-use').addEventListener('click', () => {
+          app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', $('rec-moxa-value').value !== '1');
+        });
+        ['rec-p-count', 'rec-p-amount', 'rec-p-moxa'].forEach(id => {
+          $(id).addEventListener('input', () => app.updateRecordMoxaOption($('record-p-id').value));
+        });
         const calcIncome = () => {
           const pAmt = Number($('rec-p-amount').value) || 0;
           const pCntStr = $('rec-p-count').value;
@@ -2499,6 +3075,13 @@
           setText('record-income-val', ((pAmt > 0 ? (pCount === 0 ? pAmt * 0.45 : pAmt * 0.65) : 0) + mAmt * 0.2).toFixed(2));
         };
         ['rec-p-count', 'rec-p-amount', 'rec-m-amount'].forEach(id => $(id).addEventListener('input', calcIncome));
+        ['field-p-init-course-no', 'rec-p-course-no', 'edit-t-course-no'].forEach(id => {
+          $(id).addEventListener('input', e => {
+            const start = e.target.selectionStart;
+            e.target.value = e.target.value.replace(/\D/g, '');
+            e.target.setSelectionRange(start, start);
+          });
+        });
 
         $('patient-list-body').addEventListener('click', e => {
           const target = e.target.closest('[data-action]');
@@ -2527,6 +3110,11 @@
           if (!li) return;
           ui.closeModal('modal-daily-detail');
           app.showDetail(li.dataset.pid);
+        });
+        $('notebook-list').addEventListener('click', e => {
+          const btn = e.target.closest('[data-action="notebook-done"]');
+          if (!btn) return;
+          app.markNotebookCopied(String(btn.dataset.ids || '').split('|').filter(Boolean));
         });
         $('dormant-list-body').addEventListener('click', e => {
           const recordBtn = e.target.closest('[data-action="record"]');
