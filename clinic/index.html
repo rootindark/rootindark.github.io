@@ -52,6 +52,8 @@
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       .patient-mobile-card { @apply bg-white rounded-2xl border border-slate-100 shadow-sm p-3 active:scale-[0.99] transition-transform; }
+      .notebook-done-btn { @apply h-8 px-3 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-sm transition-all active:scale-95 hover:bg-blue-700 shrink-0; }
+      .notebook-batch-btn { @apply h-7 px-2.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 text-[11px] font-bold transition-all active:scale-95 hover:bg-blue-100; }
     }
 
     @media (max-width: 767px) {
@@ -96,6 +98,9 @@
       #closeout-list > div { padding: .54rem .65rem !important; border-radius: .78rem !important; font-size: .75rem !important; }
       #daily-list-body td,
       #daily-export-body td { padding-top: .62rem !important; padding-bottom: .62rem !important; font-size: .8rem !important; }
+      #notebook-page > div:first-child { margin-bottom: .65rem !important; }
+      #notebook-page .notebook-done-btn { height: 1.9rem; padding: 0 .65rem; border-radius: .55rem; font-size: .7rem; }
+      #notebook-page .notebook-batch-btn { height: 1.75rem; padding: 0 .55rem; border-radius: .5rem; font-size: .68rem; }
       footer { height: 3.85rem !important; }
       footer i { font-size: 1.05rem !important; margin-bottom: .12rem !important; }
       footer span { font-size: .68rem !important; }
@@ -315,11 +320,11 @@
       </section>
 
       <section id="notebook-page" class="page-section hidden animate-fade-in">
-        <div class="flex items-center justify-between mb-4 px-1">
+        <div class="flex items-center justify-between mb-3 px-1">
           <h2 class="text-xl md:text-2xl font-black text-slate-800">待登记</h2>
-          <span class="text-sm text-slate-500"><strong id="notebook-count" class="text-xl text-primary">0</strong> 条</span>
+          <span class="text-xs text-slate-400"><strong id="notebook-count" class="text-base font-black text-primary">0</strong> 条</span>
         </div>
-        <div id="notebook-list" class="space-y-4"></div>
+        <div id="notebook-list" class="space-y-3"></div>
       </section>
 
       <section id="dashboard-page" class="page-section hidden animate-fade-in">
@@ -1562,16 +1567,31 @@
 
       getNotebookCourse(record) {
         const billingPid = app.getTreatmentBillingPid(record);
-        const purchase = dataStore.treatments.find(t =>
-          t.type === 'purchase'
-          && app.getTreatmentBillingPid(t) === billingPid
-          && record.courseNo
-          && String(t.courseNo || '') === String(record.courseNo)
-        );
+        const courseNo = String(record.courseNo || '');
+        const purchases = dataStore.treatments
+          .filter(t =>
+            t.type === 'purchase'
+            && app.getTreatmentBillingPid(t) === billingPid
+            && (courseNo
+              ? String(t.courseNo || '') === courseNo
+              : String(t.date || '') <= String(record.date || ''))
+          )
+          .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.id || '').localeCompare(String(a.id || '')));
+        const purchase = purchases[0];
+        const courseRemain = courseNo
+          ? dataStore.treatments.reduce((remain, t) => {
+              if (app.getTreatmentBillingPid(t) !== billingPid || String(t.courseNo || '') !== courseNo) return remain;
+              if (t.type === 'purchase') return remain + (Number(t.count) || 0);
+              if (t.type === 'consume') return remain - (Number(t.count) || 0);
+              return remain;
+            }, 0)
+          : dataStore.calcStats(billingPid).remain;
         return {
           billingPid,
           patient: dataStore.getPatient(billingPid),
-          courseNo: record.courseNo || '',
+          courseNo,
+          purchaseDate: purchase?.date || '',
+          remain: courseRemain,
           bookMonth: String(purchase?.date || record.date || '').slice(0, 7)
         };
       },
@@ -1607,29 +1627,35 @@
         list.innerHTML = [...monthGroups.entries()].map(([month, courses]) => {
           const [year, monthNo] = month.split('-');
           const title = year && monthNo ? `${year}年${Number(monthNo)}月本` : '未分本';
+          const monthIds = courses.flatMap(course => course.records.map(record => record.id)).join('|');
           return `
             <div>
-              <h3 class="px-1 mb-2 text-sm font-black text-slate-600">${escapeHtml(title)}</h3>
-              <div class="space-y-2">
+              <div class="flex items-center justify-between gap-3 px-1 mb-1.5">
+                <h3 class="text-xs font-bold text-slate-500">${escapeHtml(title)}</h3>
+                <button class="notebook-batch-btn" data-action="notebook-done" data-ids="${escapeHtml(monthIds)}">全部登记</button>
+              </div>
+              <div class="space-y-1.5">
                 ${courses.map(course => {
                   const sorted = [...course.records].sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
                   const ids = sorted.map(record => record.id).join('|');
+                  const purchaseDate = String(course.purchaseDate || '').slice(5).replace('-', '/');
                   return `
-                    <div class="card p-3">
-                      <div class="flex items-center justify-between gap-3 mb-2">
-                        <div class="min-w-0">
-                          <div class="flex items-center gap-2">
-                            <span class="font-mono text-base font-black text-primary">${escapeHtml(course.courseNo || '未编号')}</span>
-                            <span class="font-black text-slate-800 truncate">${escapeHtml(course.patient?.name || '未知')}</span>
+                    <div class="card px-2.5 py-2.5">
+                      <div class="flex items-center justify-between gap-2.5 mb-2">
+                        <div class="min-w-0 flex-1">
+                          <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <span class="font-mono text-xs font-bold text-primary">${escapeHtml(course.courseNo || '未编号')}</span>
+                            <span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(course.patient?.name || '未知')}</span>
+                            <span class="text-[10px] text-slate-400 whitespace-nowrap">${escapeHtml(purchaseDate || '--/--')}开 · 余${course.remain}</span>
                           </div>
                         </div>
-                        <button class="btn btn-primary !py-1.5 !px-3 text-xs shrink-0" data-action="notebook-done" data-ids="${escapeHtml(ids)}">已登记</button>
+                        <button class="notebook-done-btn" data-action="notebook-done" data-ids="${escapeHtml(ids)}">已登记</button>
                       </div>
-                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
                         ${sorted.map(record => `
-                          <div class="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 flex items-center justify-between">
-                            <span class="font-bold text-slate-700">${escapeHtml(String(record.date || '').slice(5).replace('-', '/'))}</span>
-                            <span class="font-mono font-black text-slate-600">${escapeHtml(record.startTime || '--:--')}–${escapeHtml(record.endTime || '--:--')}</span>
+                          <div class="rounded-lg bg-slate-50 border border-slate-100 px-2.5 py-1.5 flex items-center justify-between text-xs">
+                            <span class="font-semibold text-slate-600">${escapeHtml(String(record.date || '').slice(5).replace('-', '/'))}</span>
+                            <span class="font-mono font-semibold text-slate-500">${escapeHtml(record.startTime || '--:--')}–${escapeHtml(record.endTime || '--:--')}</span>
                           </div>
                         `).join('')}
                       </div>
