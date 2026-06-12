@@ -491,7 +491,7 @@
             <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
               <label class="block text-[10px] font-bold text-blue-700">编号<input type="text" id="field-p-init-course-no" inputmode="numeric" pattern="[0-9]*" class="input-field !py-2 text-sm bg-white border-blue-200 mt-1 font-mono tracking-wider"></label>
               <div class="grid grid-cols-2 gap-3">
-                <label class="block text-[10px] font-bold text-emerald-700">治疗扣次<input type="number" id="field-p-init-consume" class="input-field !py-2 text-xs bg-white border-emerald-200 mt-1"></label>
+                <label class="block text-[10px] font-bold text-emerald-700">本次扣次（选填）<input type="number" id="field-p-init-consume" min="0" inputmode="numeric" placeholder="不填不扣" class="input-field !py-2 text-xs bg-white border-emerald-200 mt-1"></label>
                 <label class="block text-[10px] font-bold text-purple-700">中药金额<input type="number" id="field-p-init-med" class="input-field !py-2 text-xs bg-white border-purple-200 mt-1"></label>
               </div>
               <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
@@ -559,7 +559,7 @@
               </div>
               <input type="date" id="record-date" class="input-field !py-1.5 !px-2.5 text-xs">
             </div>
-            <label class="w-[40%] block text-[10px] font-bold text-emerald-700">治疗扣减次数<input type="number" id="rec-c-count" class="input-field !py-2.5 !px-3 text-sm bg-emerald-50/50 border-emerald-200 mt-1"></label>
+            <label class="w-[40%] block text-[10px] font-bold text-emerald-700">本次扣次（选填）<input type="number" id="rec-c-count" min="0" inputmode="numeric" placeholder="不填不扣" class="input-field !py-2.5 !px-3 text-sm bg-emerald-50/50 border-emerald-200 mt-1"></label>
           </div>
           <div class="p-3 bg-blue-50/40 border border-blue-100/50 rounded-2xl text-xs">
             <div class="grid grid-cols-[1.25fr_.75fr] gap-2 mb-2">
@@ -2362,11 +2362,13 @@
           const mAmt = Number($('field-p-init-med').value) || 0;
           const moxaTotal = Number($('field-p-init-moxa').value) || 0;
           const moxaCount = $('field-p-init-moxa-value').value === '1' ? 1 : 0;
+          const wantsInitialMoxa = moxaCount > 0 && moxaTotal > 0;
+          const wantsInitialTreatment = cCount > 0 || wantsInitialMoxa;
           const courseNo = app.getCourseNo('field-p-init-course-no');
           if ((pCntStr !== '' || pAmt > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
           if ((pCntStr !== '' || pAmt > 0) && app.hasCourseNo(courseNo)) return ui.showToast('编号已存在', 'warning');
           if (moxaTotal > 0 && pCount <= 0) return ui.showToast('请先填疗程次数', 'warning');
-          const initialConsumeCount = moxaCount && moxaTotal > 0
+          const initialConsumeCount = wantsInitialMoxa
             ? Math.ceil(pCount / moxaTotal)
             : cCount;
           dataStore.patients.push(patient);
@@ -2381,7 +2383,7 @@
             dataStore.treatments.push(record);
             createdIds.push(record.id);
           }
-          if (initialConsumeCount > 0) {
+          if (wantsInitialTreatment && initialConsumeCount > 0) {
             const record = {
               id: uid('t'),
               pid: targetPid,
@@ -2454,6 +2456,8 @@
         const pAmount = Number($('rec-p-amount').value) || 0;
         const moxaTotal = Number($('rec-p-moxa').value) || 0;
         const moxaCount = $('rec-moxa-value').value === '1' ? 1 : 0;
+        const wantsMoxaTreatment = moxaCount > 0;
+        const wantsTreatment = cCount > 0 || wantsMoxaTreatment;
         const mAmount = Number($('rec-m-amount').value) || 0;
         const courseNo = app.getCourseNo('rec-p-course-no');
         if ((pCntStr !== '' || pAmount > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
@@ -2473,12 +2477,12 @@
         if (!moxaCount && cCount > 0 && activeCourse?.moxaTotal > 0) {
           return ui.showToast('当前卡已换艾灸', 'warning');
         }
-        const consumeCount = moxaCount
+        const consumeCount = wantsMoxaTreatment
           ? app.getMoxaConsumeCount(pid, activeCourseNo, date, purchaseRecord)
           : cCount;
         const pendingRecords = [];
-        if (consumeCount > 0 || moxaCount > 0) {
-          const allocations = moxaCount
+        if (wantsTreatment && consumeCount > 0) {
+          const allocations = wantsMoxaTreatment
             ? [{ courseNo: activeCourseNo, count: consumeCount }]
             : app.allocateCourseConsumption(pid, date, consumeCount, purchaseRecord);
           const treatmentTimes = app.getTreatmentTimes(date);
@@ -2520,10 +2524,10 @@
           if (app.state.currentPage === 'daily') app.renderDaily();
           ui.closeModal('modal-record');
         };
-        if (cCount > 0) {
+        if (wantsTreatment) {
           const patientName = dataStore.getPatient(pid)?.name || borrowerName || '该患者';
           const remain = dataStore.calcStats(pid).remain;
-          app.confirmConsumeIfNeeded({ pid, date, count: cCount, patientName, remain, run: commit });
+          app.confirmConsumeIfNeeded({ pid, date, count: consumeCount, patientName, remain, run: commit });
         } else {
           commit();
         }
@@ -2683,17 +2687,20 @@
           const linked = app.getCourseTreatmentRecords(record);
           if (linked.length) return ui.showToast(`此卡已有 ${linked.length} 条治疗，不能单独删除开单`, 'warning');
         }
-        if (record.type === 'consume' && record.notebookCopiedAt) {
-          return ui.showToast('此条已登记纸本，请修改后重新登记', 'warning');
-        }
-        ui.showConfirm('删除流水', '删除后患者额度会重新计算，确认继续吗？', true, () => {
+        const copiedConsume = record.type === 'consume' && Boolean(record.notebookCopiedAt);
+        const confirmTitle = copiedConsume ? '删除已登记治疗' : '删除流水';
+        const confirmText = copiedConsume
+          ? '删除后额度会恢复；如纸本已有记录，请同步划掉。'
+          : '删除后患者额度会重新计算，确认继续吗？';
+        ui.showConfirm(confirmTitle, confirmText, true, () => {
           dataStore.treatments = dataStore.treatments.filter(t => t.id !== tid);
           dataStore.markDeleted('treatment', [tid]);
           dataStore.save();
           app.renderList();
           if (app.state.currentPage === 'daily') app.renderDaily();
           if (pid) app.showDetail(pid);
-          ui.showToast('流水已删除', 'success');
+          app.updateNotebookBadge();
+          ui.showToast(copiedConsume ? '治疗已删除，请核对纸本' : '流水已删除', 'success');
         });
       },
 
