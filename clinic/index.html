@@ -320,11 +320,11 @@
       </section>
 
       <section id="notebook-page" class="page-section hidden animate-fade-in">
-        <div class="flex items-center justify-between mb-3 px-1">
-          <h2 class="text-xl md:text-2xl font-black text-slate-800">待登记</h2>
-          <span class="text-xs text-slate-400"><strong id="notebook-count" class="text-base font-black text-primary">0</strong> 条</span>
+        <div class="flex items-center justify-between gap-3 mb-2 px-1">
+          <span id="notebook-months" class="min-w-0 truncate text-xs font-bold text-slate-500"></span>
+          <span class="text-xs text-slate-400"><strong id="notebook-count" class="text-base font-black text-primary">0</strong> 人次</span>
         </div>
-        <div id="notebook-list" class="space-y-3"></div>
+        <div id="notebook-list" class="space-y-2"></div>
       </section>
 
       <section id="dashboard-page" class="page-section hidden animate-fade-in">
@@ -487,9 +487,9 @@
                 <label class="block text-[10px] font-bold text-blue-700">收值金额<input type="number" id="field-p-init-amount" class="input-field !py-2 text-xs bg-white border-blue-200 mt-1"></label>
               </div>
               <div class="pt-2 border-t border-slate-200">
-                <button type="button" id="field-p-init-moxa-toggle" class="text-xs font-bold text-amber-700 py-1">＋艾灸</button>
+                <button type="button" id="field-p-init-moxa-toggle" class="text-xs font-bold text-amber-700 py-1">＋兑换艾灸</button>
                 <div id="field-p-init-moxa-box" class="hidden mt-1">
-                  <label class="text-[10px] font-bold text-amber-700">艾灸次数<input type="number" id="field-p-init-moxa" min="0" class="input-field !py-2 text-xs bg-white border-amber-200 mt-1"></label>
+                  <label class="text-[10px] font-bold text-amber-700">换为<input type="number" id="field-p-init-moxa" min="0" inputmode="numeric" class="input-field !py-2 text-xs bg-white border-amber-200 mt-1" placeholder="艾灸次数"></label>
                   <button type="button" id="field-p-init-moxa-use" class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-200 bg-white text-amber-700 items-center justify-between text-xs font-bold">
                     <span>本次艾灸</span><i id="field-p-init-moxa-check" class="fa-regular fa-circle"></i>
                   </button>
@@ -558,8 +558,8 @@
               <label class="text-[9px] text-slate-400 col-span-2">金额<input type="number" id="rec-p-amount" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
             </div>
             <div class="pt-2 mt-2 border-t border-blue-100">
-              <button type="button" id="rec-p-moxa-toggle" class="text-xs font-bold text-amber-700 py-1">＋艾灸</button>
-              <label id="rec-p-moxa-box" class="hidden text-[10px] font-bold text-amber-700 mt-1">艾灸次数<input type="number" id="rec-p-moxa" min="0" class="input-field !py-1.5 !px-2 text-xs bg-white border-amber-200 mt-1"></label>
+              <button type="button" id="rec-p-moxa-toggle" class="text-xs font-bold text-amber-700 py-1">＋兑换艾灸</button>
+              <label id="rec-p-moxa-box" class="hidden text-[10px] font-bold text-amber-700 mt-1">换为<input type="number" id="rec-p-moxa" min="0" inputmode="numeric" class="input-field !py-1.5 !px-2 text-xs bg-white border-amber-200 mt-1" placeholder="艾灸次数"></label>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2">
@@ -654,7 +654,7 @@
           <div id="edit-t-type-display" class="p-2.5 rounded-xl text-center text-sm font-bold bg-slate-100 text-slate-600">流水</div>
           <label class="block text-xs font-bold text-slate-400">日期<input type="date" id="edit-t-date" class="input-field mt-1"></label>
           <label id="edit-box-course-no" class="hidden text-xs font-bold text-slate-400">编号<input type="text" id="edit-t-course-no" inputmode="numeric" pattern="[0-9]*" class="input-field mt-1 font-mono tracking-wider"></label>
-          <label id="edit-box-moxa-total" class="hidden text-xs font-bold text-amber-700">艾灸次数<input type="number" id="edit-t-moxa-total" class="input-field mt-1 border-amber-200" min="0"></label>
+          <label id="edit-box-moxa-total" class="hidden text-xs font-bold text-amber-700">换为艾灸<input type="number" id="edit-t-moxa-total" class="input-field mt-1 border-amber-200" min="0" inputmode="numeric"></label>
           <label id="edit-box-moxa-use" class="hidden items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700"><span>本次艾灸</span><input type="checkbox" id="edit-t-moxa-use" class="w-5 h-5 accent-amber-500"></label>
           <label id="edit-box-count" class="block text-xs font-bold text-slate-400">次数<input type="number" id="edit-t-count" class="input-field mt-1" min="0"></label>
           <label id="edit-box-amount" class="block text-xs font-bold text-slate-400">金额<input type="number" id="edit-t-amount" class="input-field mt-1" min="0" step="0.01"></label>
@@ -1066,6 +1066,7 @@
                 purchaseId: '',
                 purchased: 0,
                 consumed: 0,
+                rawConsumed: 0,
                 remain: 0,
                 moxaTotal: 0,
                 moxaUsed: 0,
@@ -1084,6 +1085,7 @@
               }
             } else if (t.type === 'consume') {
               course.consumed += cnt;
+              course.rawConsumed += cnt;
               course.moxaUsed += Number(t.moxaCount) || 0;
             }
           }
@@ -1092,10 +1094,22 @@
           cache[pid].remain = cache[pid].purchased - cache[pid].consumed;
           cache[pid].history.sort(compareRecordsNewestFirst);
           const courses = Object.values(cache[pid].courses);
+          let convertedAdjustment = 0;
           courses.forEach(course => {
+            if (course.moxaTotal > 0 && course.moxaUsed > 0) {
+              const targetConsumed = Math.ceil(
+                Math.min(course.moxaUsed, course.moxaTotal) * course.purchased / course.moxaTotal
+              );
+              if (targetConsumed > course.consumed) {
+                convertedAdjustment += targetConsumed - course.consumed;
+                course.consumed = targetConsumed;
+              }
+            }
             course.remain = course.purchased - course.consumed;
-            course.moxaRemain = course.moxaTotal - course.moxaUsed;
+            course.moxaRemain = Math.max(0, course.moxaTotal - course.moxaUsed);
           });
+          cache[pid].consumed += convertedAdjustment;
+          cache[pid].remain -= convertedAdjustment;
           courses.sort((a, b) => String(b.purchaseDate).localeCompare(String(a.purchaseDate)) || String(b.purchaseId).localeCompare(String(a.purchaseId)));
           cache[pid].currentCourseNo = courses[0]?.courseNo || '';
         });
@@ -1311,7 +1325,7 @@
         $('field-p-referrer-id').value = '';
         $('referrer-search').value = '';
         $('field-p-init-moxa-box').classList.add('hidden');
-        $('field-p-init-moxa-toggle').textContent = '＋艾灸';
+        $('field-p-init-moxa-toggle').textContent = '＋兑换艾灸';
         $('field-p-init-moxa-use').classList.add('hidden');
         $('field-p-init-moxa-use').classList.remove('flex');
         app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', false);
@@ -1402,13 +1416,18 @@
               purchaseOrder: index,
               purchased: 0,
               consumed: 0,
+              rawConsumed: 0,
               remain: 0,
+              moxaTotal: 0,
+              moxaUsed: 0,
+              moxaRemain: 0,
               recordIds: new Set()
             };
             courses.push(course);
             if (courseNo) numberedCourses.set(courseKey, course);
           }
           course.purchased += Number(record.count) || 0;
+          course.moxaTotal += Number(record.moxaTotal) || 0;
           course.remain = course.purchased - course.consumed;
           course.recordIds.add(record.id);
         };
@@ -1427,10 +1446,16 @@
           const candidates = courseNo
             ? courses.filter(course => course.courseNo === courseNo)
             : courses;
+          const moxaCourse = candidates[0];
+          if (moxaCourse && Number(record.moxaCount) > 0) {
+            moxaCourse.moxaUsed += Number(record.moxaCount) || 0;
+            moxaCourse.recordIds.add(record.id);
+          }
           candidates.forEach(course => {
             if (remaining <= 0 || course.remain <= 0) return;
             const allocated = Math.min(remaining, course.remain);
             course.consumed += allocated;
+            course.rawConsumed += allocated;
             course.remain -= allocated;
             course.recordIds.add(record.id);
             remaining -= allocated;
@@ -1438,9 +1463,20 @@
           if (remaining > 0 && candidates.length) {
             const fallback = candidates.at(-1);
             fallback.consumed += remaining;
+            fallback.rawConsumed += remaining;
             fallback.remain -= remaining;
             fallback.recordIds.add(record.id);
           }
+        });
+        courses.forEach(course => {
+          if (course.moxaTotal > 0 && course.moxaUsed > 0) {
+            course.consumed = Math.max(
+              course.consumed,
+              Math.ceil(Math.min(course.moxaUsed, course.moxaTotal) * course.purchased / course.moxaTotal)
+            );
+          }
+          course.remain = course.purchased - course.consumed;
+          course.moxaRemain = Math.max(0, course.moxaTotal - course.moxaUsed);
         });
         return courses;
       },
@@ -1451,6 +1487,63 @@
 
       getOpenCourses(pid, date = getLocalDateString()) {
         return app.getCourseBalances(pid, date).filter(course => course.remain > 0);
+      },
+
+      getCourseRemainSummary(pid, date = getLocalDateString()) {
+        const courses = app.getCourseBalances(pid, date);
+        const summary = courses.reduce((result, course) => {
+          if (course.moxaTotal > 0) {
+            result.hasMoxa = true;
+            result.moxa += Number(course.moxaRemain) || 0;
+            if (course.remain < 0) result.treatment += course.remain;
+          } else {
+            result.treatment += Number(course.remain) || 0;
+          }
+          return result;
+        }, { treatment: 0, moxa: 0, hasMoxa: false });
+        if (!courses.length) {
+          summary.treatment = Number(dataStore.calcStats(pid).remain) || 0;
+        }
+        return summary;
+      },
+
+      isMoxaCourse(pid, courseNo) {
+        return Boolean(dataStore.calcStats(pid).courses?.[String(courseNo || '')]?.moxaTotal);
+      },
+
+      getCourseNumberClass(pid, courseNo) {
+        return app.isMoxaCourse(pid, courseNo)
+          ? 'bg-[#f4e8dc] text-[#8a5a32] border-[#dcc3aa]'
+          : 'bg-blue-50 text-blue-700 border-blue-100';
+      },
+
+      getNextOrderDate(pid) {
+        const latestPurchase = dataStore.treatments
+          .filter(record =>
+            record.type === 'purchase'
+            && record.date
+            && (
+              app.getTreatmentActualPid(record) === pid
+              || app.getTreatmentBillingPid(record) === pid
+            )
+          )
+          .sort(compareRecordsNewestFirst)[0];
+        if (!latestPurchase) return '';
+        const count = Math.max(
+          1,
+          Number(latestPurchase.moxaTotal) || Number(latestPurchase.count) || 1
+        );
+        let date = latestPurchase.date;
+        if (new Date(utils.parseDateToLocalMidnight(date)).getDay() === 6) {
+          date = utils.addDays(date, 1);
+        }
+        for (let index = 1; index < count; index += 1) {
+          date = utils.addDays(date, 2);
+          if (new Date(utils.parseDateToLocalMidnight(date)).getDay() === 6) {
+            date = utils.addDays(date, 1);
+          }
+        }
+        return date;
       },
 
       getCoursePositionLabel(pid, courseNo, date = getLocalDateString(), recordId = '') {
@@ -1516,6 +1609,15 @@
         return { total: course.moxaTotal, used: course.moxaUsed, remain: course.moxaRemain };
       },
 
+      getMoxaConsumeCount(pid, courseNo, date = getLocalDateString(), pendingPurchase = null) {
+        const course = app.getCourseBalances(pid, date, pendingPurchase)
+          .find(item => item.courseNo === String(courseNo || ''));
+        if (!course || course.moxaTotal <= 0 || course.moxaUsed >= course.moxaTotal) return 0;
+        const nextUsed = Math.min(course.moxaUsed + 1, course.moxaTotal);
+        const targetConsumed = Math.ceil(nextUsed * course.purchased / course.moxaTotal);
+        return Math.max(0, targetConsumed - course.rawConsumed);
+      },
+
       setMoxaUseButton(buttonId, valueId, checkId, active) {
         const button = $(buttonId);
         $(valueId).value = active ? '1' : '0';
@@ -1529,16 +1631,17 @@
         const newTotal = Number($('rec-p-moxa').value) || 0;
         const date = $('record-date').value || getLocalDateString();
         const pendingPurchase = isNewCourse
-          ? { courseNo: app.getCourseNo('rec-p-course-no'), count: Number($('rec-p-count').value) || 0, date, id: 'pending' }
+          ? { courseNo: app.getCourseNo('rec-p-course-no'), count: Number($('rec-p-count').value) || 0, moxaTotal: newTotal, date, id: 'pending' }
           : null;
         const activeCourseNo = courseNo || app.getActiveCourseNo(pid, date, pendingPurchase);
         const stats = activeCourseNo === pendingPurchase?.courseNo
           ? { remain: newTotal }
           : app.getMoxaStats(pid, activeCourseNo);
         const show = stats.remain > 0;
+        const autoConsume = show ? app.getMoxaConsumeCount(pid, activeCourseNo, date, pendingPurchase) : 0;
         $('rec-moxa-use').classList.toggle('hidden', !show);
         $('rec-moxa-use').classList.toggle('flex', show);
-        setText('rec-moxa-remain', show ? `余 ${stats.remain}` : '');
+        setText('rec-moxa-remain', show ? `余${stats.remain} · 扣${autoConsume}` : '');
         if (!show) app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', false);
       },
 
@@ -1547,7 +1650,7 @@
         const date = $('record-date').value || getLocalDateString();
         const isNewCourse = $('rec-p-count').value !== '' || Number($('rec-p-amount').value) > 0;
         const pendingPurchase = isNewCourse
-          ? { courseNo: app.getCourseNo('rec-p-course-no'), count: Number($('rec-p-count').value) || 0, date, id: 'pending' }
+          ? { courseNo: app.getCourseNo('rec-p-course-no'), count: Number($('rec-p-count').value) || 0, moxaTotal: Number($('rec-p-moxa').value) || 0, date, id: 'pending' }
           : null;
         const courses = app.getCourseBalances(pid, date, pendingPurchase).filter(course => course.remain > 0);
         if (!courses.length) {
@@ -1559,8 +1662,8 @@
         const renderCourse = (label, course, active) => `
           <span class="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-bold ${active ? 'border-blue-200 bg-white text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600'}">
             <span class="${active ? 'text-blue-400' : 'text-slate-400'}">${label}</span>
-            <span class="font-mono">${escapeHtml(course.courseNo || '未编号')}</span>
-            <span>· 剩${escapeHtml(course.remain)}</span>
+            <span class="font-mono rounded border px-1 ${course.moxaTotal > 0 ? 'bg-[#f4e8dc] text-[#8a5a32] border-[#dcc3aa]' : 'bg-blue-50 text-blue-700 border-blue-100'}">${escapeHtml(course.courseNo || '未编号')}</span>
+            <span>· ${course.moxaTotal > 0 ? `灸${escapeHtml(course.moxaRemain)}` : `剩${escapeHtml(course.remain)}`}</span>
           </span>
         `;
         box.innerHTML = renderCourse('当前卡', courses[0], true)
@@ -1723,7 +1826,7 @@
 
       renderTodayBadges(summary) {
         if (!summary?.records) return '';
-        const badges = ['<span class="inline-block px-2 py-0.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">今日</span>'];
+        const badges = [];
         if (summary.consumes > 0) badges.push(`<span class="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">扣${summary.consumes}</span>`);
         if (summary.purchases > 0) badges.push(`<span class="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">充${summary.purchases}</span>`);
         if (summary.paid > 0) badges.push(`<span class="inline-block px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">收${money(summary.paid)}</span>`);
@@ -1776,7 +1879,9 @@
       },
 
       updateNotebookBadge() {
-        const count = app.getPendingNotebookRecords().length;
+        const count = new Set(
+          app.getPendingNotebookRecords().map(record => `${app.getTreatmentBillingPid(record)}|${record.date || ''}`)
+        ).size;
         ['notebook-count-mobile', 'notebook-count-desktop'].forEach(id => {
           const el = $(id);
           if (!el) return;
@@ -1796,6 +1901,8 @@
           courseNo: course?.courseNo || String(record.courseNo || ''),
           purchaseDate: course?.purchaseDate || '',
           remain: course?.remain ?? dataStore.calcStats(billingPid).remain,
+          moxaTotal: course?.moxaTotal || 0,
+          moxaRemain: course?.moxaRemain || 0,
           bookMonth: String(course?.purchaseDate || record.date || '').slice(0, 7)
         };
       },
@@ -1805,6 +1912,7 @@
         app.updateNotebookBadge();
         const list = $('notebook-list');
         if (!pending.length) {
+          setText('notebook-months', '');
           list.innerHTML = '<div class="card py-14 text-center text-sm text-slate-400">无待登记</div>';
           return;
         }
@@ -1842,6 +1950,12 @@
           if (!monthGroups.has(row.bookMonth)) monthGroups.set(row.bookMonth, []);
           monthGroups.get(row.bookMonth).push(row);
         });
+        const monthKeys = [...monthGroups.keys()];
+        const years = new Set(monthKeys.map(month => month.slice(0, 4)));
+        setText('notebook-months', monthKeys.map(month => {
+          const [year, monthNo] = month.split('-');
+          return years.size > 1 ? `${year}年${Number(monthNo)}月` : `${Number(monthNo)}月`;
+        }).join(' · '));
 
         list.innerHTML = [...monthGroups.entries()].map(([month, courses]) => {
           const [year, monthNo] = month.split('-');
@@ -1856,27 +1970,46 @@
               <div class="divide-y divide-slate-100">
                 ${courses.map(course => {
                   const sorted = [...course.records].sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.startTime || '').localeCompare(String(b.startTime || '')));
+                  const dailyRecords = [...sorted.reduce((groups, record) => {
+                    const date = String(record.date || '');
+                    if (!groups.has(date)) {
+                      groups.set(date, {
+                        date,
+                        startTime: record.startTime || '',
+                        endTime: record.endTime || '',
+                        count: 0
+                      });
+                    }
+                    const day = groups.get(date);
+                    day.count += Number(record.count) || 0;
+                    if (record.startTime && (!day.startTime || record.startTime < day.startTime)) day.startTime = record.startTime;
+                    if (record.endTime && (!day.endTime || record.endTime > day.endTime)) day.endTime = record.endTime;
+                    return groups;
+                  }, new Map()).values()];
                   const ids = sorted.map(record => record.id).join('|');
                   const purchaseDay = Number(String(course.purchaseDate || '').slice(8, 10));
                   const positionLabel = positionLabels.get(`${course.billingPid}|${course.courseKey}`) || '';
                   return `
-                    <div class="px-3 py-2.5">
-                      <div class="flex items-center justify-between gap-2.5 mb-2">
+                    <div class="px-3 py-1.5">
+                      <div class="flex items-center justify-between gap-2 mb-1">
                         <div class="min-w-0 flex-1">
                           <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                             ${positionLabel ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${positionLabel === '当前卡' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'}">${escapeHtml(positionLabel)}</span>` : ''}
-                            <span class="font-mono text-xs font-bold text-primary">${escapeHtml(course.courseNo || '未编号')}</span>
+                            <span class="font-mono text-xs font-bold rounded border px-1.5 py-0.5 ${course.moxaTotal > 0 ? 'bg-[#f4e8dc] text-[#8a5a32] border-[#dcc3aa]' : 'bg-blue-50 text-blue-700 border-blue-100'}">${escapeHtml(course.courseNo || '未编号')}</span>
                             <span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(course.patient?.name || '未知')}</span>
-                            <span class="text-[11px] font-bold text-slate-600 whitespace-nowrap">${purchaseDay ? `${purchaseDay}日` : '--日'} · 剩 ${course.remain}次</span>
+                            <span class="text-[11px] font-bold text-slate-600 whitespace-nowrap">${purchaseDay ? `${purchaseDay}号开单` : '--号开单'} · ${course.moxaTotal > 0 ? `灸 ${course.moxaRemain}次` : `剩 ${course.remain}次`}</span>
                           </div>
                         </div>
                         <button class="notebook-done-btn" data-action="notebook-done" data-ids="${escapeHtml(ids)}">登记</button>
                       </div>
-                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                        ${sorted.map(record => `
-                          <div class="rounded-lg bg-slate-50 border border-slate-100 px-2.5 py-1.5 flex items-center justify-between text-xs">
-                            <span class="font-semibold text-slate-600">${escapeHtml(String(record.date || '').slice(5).replace('-', '/'))}</span>
-                            <span class="font-mono font-semibold text-slate-500">${escapeHtml(record.startTime || '--:--')}–${escapeHtml(record.endTime || '--:--')}</span>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-0.5">
+                        ${dailyRecords.map(day => `
+                          <div class="rounded-lg bg-slate-50 border border-slate-100 px-2.5 py-1 flex items-center justify-between gap-2 text-xs">
+                            <span class="flex items-center gap-2">
+                              <span class="font-semibold text-slate-600">${escapeHtml(day.date.slice(5).replace('-', '/'))}</span>
+                              ${day.count > 1 ? `<span class="shrink-0 font-bold text-primary">扣 ${escapeHtml(day.count)}</span>` : ''}
+                            </span>
+                            <span class="font-mono font-semibold text-slate-500">${escapeHtml(day.startTime || '--:--')}–${escapeHtml(day.endTime || '--:--')}</span>
                           </div>
                         `).join('')}
                       </div>
@@ -1897,7 +2030,8 @@
         records.forEach(record => { record.notebookCopiedAt = copiedAt; });
         dataStore.save();
         app.renderNotebook();
-        ui.showActionToast(`已登记 ${records.length} 条`, '撤销', () => {
+        const visitCount = new Set(records.map(record => `${app.getTreatmentBillingPid(record)}|${record.date || ''}`)).size;
+        ui.showActionToast(`已登记 ${visitCount} 人次`, '撤销', () => {
           records.forEach(record => { record.notebookCopiedAt = ''; });
           dataStore.save();
           app.renderNotebook();
@@ -2008,6 +2142,10 @@
           const courseNo = app.getCourseNo('field-p-init-course-no');
           if ((pCntStr !== '' || pAmt > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
           if ((pCntStr !== '' || pAmt > 0) && app.hasCourseNo(courseNo)) return ui.showToast('编号已存在', 'warning');
+          if (moxaTotal > 0 && pCount <= 0) return ui.showToast('请先填疗程次数', 'warning');
+          const initialConsumeCount = moxaCount && moxaTotal > 0
+            ? Math.ceil(pCount / moxaTotal)
+            : cCount;
           dataStore.patients.push(patient);
           const createdIds = [];
           if (pCntStr !== '' || pAmt > 0) {
@@ -2020,7 +2158,7 @@
             dataStore.treatments.push(record);
             createdIds.push(record.id);
           }
-          if (cCount > 0) {
+          if (initialConsumeCount > 0) {
             const record = {
               id: uid('t'),
               pid: targetPid,
@@ -2029,7 +2167,7 @@
               date: dStr,
               courseNo,
               moxaCount,
-              count: cCount,
+              count: initialConsumeCount,
               amount: 0,
               income: 0,
               remark: '首诊针灸施术',
@@ -2071,7 +2209,7 @@
         if (presetConsume) $('rec-c-count').value = presetConsume;
         $('rec-p-course-no').value = app.getNextCourseNo();
         $('rec-p-moxa-box').classList.add('hidden');
-        $('rec-p-moxa-toggle').textContent = '＋艾灸';
+        $('rec-p-moxa-toggle').textContent = '＋兑换艾灸';
         app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', false);
         app.updateRecordMoxaOption(pid);
         app.updateRecordCourseStatus(pid);
@@ -2097,6 +2235,7 @@
         const courseNo = app.getCourseNo('rec-p-course-no');
         if ((pCntStr !== '' || pAmount > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
         if ((pCntStr !== '' || pAmount > 0) && app.hasCourseNo(courseNo)) return ui.showToast('编号已存在', 'warning');
+        if (moxaTotal > 0 && pCount <= 0) return ui.showToast('请先填疗程次数', 'warning');
         const isNewCourse = Boolean(pCntStr !== '' || pAmount > 0);
         const purchaseRecord = isNewCourse
           ? { id: uid('t'), pid, borrowerId: borrowerId || null, type: 'purchase', date, courseNo, moxaTotal, count: pCount, amount: pAmount, income: pCount === 0 ? pAmount * 0.45 : pAmount * 0.65, remark }
@@ -2106,9 +2245,19 @@
           ? moxaTotal
           : app.getMoxaStats(pid, activeCourseNo).remain;
         if (moxaCount > availableMoxa) return ui.showToast('艾灸余次不足', 'warning');
+        const activeCourse = app.getCourseBalances(pid, date, purchaseRecord)
+          .find(course => course.courseNo === activeCourseNo);
+        if (!moxaCount && cCount > 0 && activeCourse?.moxaTotal > 0) {
+          return ui.showToast('当前卡已换艾灸', 'warning');
+        }
+        const consumeCount = moxaCount
+          ? app.getMoxaConsumeCount(pid, activeCourseNo, date, purchaseRecord)
+          : cCount;
         const pendingRecords = [];
-        if (cCount > 0) {
-          const allocations = app.allocateCourseConsumption(pid, date, cCount, purchaseRecord);
+        if (consumeCount > 0 || moxaCount > 0) {
+          const allocations = moxaCount
+            ? [{ courseNo: activeCourseNo, count: consumeCount }]
+            : app.allocateCourseConsumption(pid, date, consumeCount, purchaseRecord);
           const treatmentTimes = app.getTreatmentTimes(date);
           allocations.forEach((allocation, index) => {
             const isPendingOpening = Boolean(purchaseRecord && allocation.courseNo === courseNo);
@@ -2340,7 +2489,7 @@
         const current = dataStore.treatments[idx];
         const date = $('edit-t-date').value;
         if (!date) return ui.showToast('请填写发生日期', 'warning');
-        const count = Number($('edit-t-count').value) || 0;
+        let count = Number($('edit-t-count').value) || 0;
         const amount = Number($('edit-t-amount').value) || 0;
         const courseNo = current.type === 'purchase' ? app.getCourseNo('edit-t-course-no') : '';
         if (current.type === 'purchase' && !courseNo) return ui.showToast('请填编号', 'warning');
@@ -2354,6 +2503,7 @@
         if (current.type === 'consume' && $('edit-t-moxa-use').checked && !current.moxaCount) {
           const moxaRemain = app.getMoxaStats(billingPid, current.courseNo).remain;
           if (moxaRemain <= 0) return ui.showToast('艾灸余次不足', 'warning');
+          count = app.getMoxaConsumeCount(billingPid, current.courseNo, date);
         }
         let income = 0;
         if (current.type === 'purchase') income = count === 0 ? amount * 0.45 : amount * 0.65;
@@ -2401,11 +2551,18 @@
         });
         const getBorrowSummary = pid => {
           const cards = borrowCardsByPid.get(pid) || [];
-          const ownRemain = dataStore.calcStats(pid).remain;
+          const own = app.getCourseRemainSummary(pid);
+          const cardSummaries = [
+            ...cards.map(item => app.getCourseRemainSummary(item.patient.id))
+          ];
+          const summaries = [own, ...cardSummaries];
           return {
             cards,
-            ownRemain,
-            totalRemain: ownRemain + cards.reduce((sum, item) => sum + (Number(item.stats.remain) || 0), 0)
+            ownTreatmentRemain: own.treatment,
+            ownMoxaRemain: own.moxa,
+            treatmentRemain: summaries.reduce((sum, item) => sum + item.treatment, 0),
+            moxaRemain: summaries.reduce((sum, item) => sum + item.moxa, 0),
+            hasMoxa: summaries.some(item => item.hasMoxa)
           };
         };
         const todayStr = getLocalDateString();
@@ -2440,7 +2597,7 @@
               || (Array.isArray(p.tags) && p.tags.some(tag => String(tag).toLowerCase().includes(term) || getPinyinInitials(tag).includes(term)));
           }));
         } else {
-          const recentCutoff = utils.addDays(getLocalDateString(), -13);
+          const recentCutoff = utils.addDays(getLocalDateString(), -6);
           rows = rows.filter(patient => {
             const latest = getStats(patient.id).history[0];
             return Boolean(latest?.date && latest.date >= recentCutoff);
@@ -2481,33 +2638,37 @@
           const stats = getStats(p.id);
           const rem = stats.remain;
           const borrowSummary = getBorrowSummary(p.id);
-          const hasBorrowCards = borrowSummary.cards.length > 0;
-          const mobileRemainHtml = hasBorrowCards
-            ? `<span class="block text-xl font-black leading-none">${borrowSummary.ownRemain}</span><span class="mt-0.5 block text-[9px] font-black leading-tight">总${borrowSummary.totalRemain}</span>`
-            : `<span class="block text-xl font-black leading-none">${rem}</span>`;
+          const effectiveRemain = borrowSummary.treatmentRemain + borrowSummary.moxaRemain;
+          const remainHtml = borrowSummary.hasMoxa
+            ? `<span class="whitespace-nowrap text-base font-black leading-none"><span class="text-blue-700">${borrowSummary.treatmentRemain}</span><span class="text-slate-300">/</span><span class="text-[#8a5a32]">${borrowSummary.moxaRemain}</span></span>`
+            : borrowSummary.cards.length
+              ? `<span class="block text-xl font-black leading-none">${borrowSummary.ownTreatmentRemain}</span><span class="mt-0.5 block text-[9px] font-black leading-tight">总${borrowSummary.treatmentRemain}</span>`
+              : `<span class="block text-xl font-black leading-none">${borrowSummary.ownTreatmentRemain}</span>`;
           const rec = stats.history.length ? stats.history[0].date : '无流水';
           const todaySummary = todaySummaryByPid.get(p.id) || { consumes: 0, purchases: 0, paid: 0, medicines: 0, records: 0 };
           const todayBadges = app.renderTodayBadges(todaySummary);
-          const currentCourseNo = app.getActiveCourseNo(p.id);
-          const moxaStats = app.getMoxaStats(p.id, currentCourseNo);
-          const moxaBadge = moxaStats.total > 0 ? `<span class="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">灸${moxaStats.remain}</span>` : '';
+          const nextOrderDate = app.getNextOrderDate(p.id);
+          const nextOrderHtml = nextOrderDate
+            ? `<span class="text-[9px] font-semibold text-slate-400 whitespace-nowrap">可开 ${escapeHtml(nextOrderDate.slice(5).replace('-', '/'))}</span>`
+            : '';
           const quickLabel = todaySummary.consumes > 0 ? '已扣' : '扣1';
           let cCls = 'text-success bg-green-50 border-green-100';
           let sTxt = '额度充沛';
-          if (rem <= 0) { cCls = 'text-danger bg-red-50 border-red-100'; sTxt = '已耗尽'; }
-          else if (rem === 1) { cCls = 'text-warning bg-amber-50 border-amber-100'; sTxt = '需复购'; }
+          if (effectiveRemain <= 0) { cCls = 'text-danger bg-red-50 border-red-100'; sTxt = '已耗尽'; }
+          else if (effectiveRemain === 1) { cCls = 'text-warning bg-amber-50 border-amber-100'; sTxt = '需复购'; }
           const tags = (p.tags || []).map(t => `<span class="inline-block px-2 py-0.5 bg-blue-50/50 text-blue-600 border border-blue-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">${escapeHtml(t)}</span>`).join('');
           if (renderDesktop) {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50 transition-colors border-b border-slate-50';
             tr.innerHTML = `
-              <td class="px-6 py-4 cursor-pointer text-center" data-action="detail" data-id="${p.id}"><div class="flex flex-col items-center justify-center"><span class="text-xl md:text-2xl font-black text-slate-800 leading-none">${rem}</span><span class="text-[9px] px-1.5 py-0.5 border rounded-lg font-bold ${cCls} mt-1.5">${sTxt}</span></div></td>
-              <td class="px-6 py-4 cursor-pointer" data-action="detail" data-id="${p.id}"><div class="font-black text-slate-800 text-sm md:text-base flex items-center">${escapeHtml(p.name)} ${p.gender === '女' ? '<i class="fa-solid fa-venus ml-1.5 text-pink-400 text-xs"></i>' : '<i class="fa-solid fa-mars ml-1.5 text-blue-400 text-xs"></i>'} ${p.age ? `<span class="text-xs text-slate-500 ml-1.5 font-normal">${escapeHtml(p.age)}岁</span>` : ''}</div><div class="text-[10px] md:text-xs text-slate-400 mt-1"><i class="fa-solid fa-phone mr-1"></i>${escapeHtml(p.phone || '未录手机')}</div><div class="flex flex-wrap gap-1 mt-1.5">${todayBadges}${moxaBadge}${tags}</div></td>
+              <td class="px-6 py-4 cursor-pointer text-center" data-action="detail" data-id="${p.id}"><div class="flex flex-col items-center justify-center">${remainHtml}<span class="text-[9px] px-1.5 py-0.5 border rounded-lg font-bold ${cCls} mt-1.5">${sTxt}</span></div></td>
+              <td class="px-6 py-4 cursor-pointer" data-action="detail" data-id="${p.id}"><div class="font-black text-slate-800 text-sm md:text-base flex items-center">${escapeHtml(p.name)} ${p.gender === '女' ? '<i class="fa-solid fa-venus ml-1.5 text-pink-400 text-xs"></i>' : '<i class="fa-solid fa-mars ml-1.5 text-blue-400 text-xs"></i>'} ${p.age ? `<span class="text-xs text-slate-500 ml-1.5 font-normal">${escapeHtml(p.age)}岁</span>` : ''}</div><div class="text-[10px] md:text-xs text-slate-400 mt-1"><i class="fa-solid fa-phone mr-1"></i>${escapeHtml(p.phone || '未录手机')}</div><div class="flex flex-wrap gap-1 mt-1.5">${todayBadges}${tags}</div></td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
                 <div class="flex items-center justify-center gap-2">
                   <button data-action="quick-consume" data-id="${p.id}" class="btn bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 px-3 py-1.5 rounded-full text-xs md:text-[13px]">
                     <i class="fa-solid fa-minus mr-1"></i>${quickLabel}
                   </button>
+                  ${nextOrderHtml}
                   <button data-action="record" data-id="${p.id}" class="btn btn-primary px-3.5 py-1.5 rounded-full text-xs md:text-[13px]"><i class="fa-solid fa-file-invoice md:mr-1.5"></i><span class="hidden md:inline">记账</span></button>
                 </div>
               </td>
@@ -2523,17 +2684,18 @@
             card.innerHTML = `
               <div class="flex items-center gap-2">
                 <button class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${cCls} px-1 text-center active:scale-95" data-action="quick-consume" data-id="${p.id}" aria-label="扣1次">
-                  ${mobileRemainHtml}
+                  ${remainHtml}
                 </button>
                 <button class="flex min-w-0 flex-1 items-center text-left" data-action="detail" data-id="${p.id}">
                   <div class="flex min-w-0 flex-1 items-center gap-1.5">
                     <span class="min-w-0 truncate text-[15px] font-black leading-tight text-slate-800">${escapeHtml(p.name)}</span>
                     ${p.gender === '女' ? '<i class="fa-solid fa-venus text-pink-400 text-xs shrink-0"></i>' : '<i class="fa-solid fa-mars text-blue-400 text-xs shrink-0"></i>'}
                     ${p.age ? `<span class="shrink-0 text-[11px] font-semibold text-slate-500">${escapeHtml(p.age)}岁</span>` : ''}
-                    <span class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">${todayBadges}${moxaBadge}${tags}</span>
+                    <span class="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">${todayBadges}${tags}</span>
                   </div>
                 </button>
-                <div class="flex shrink-0 flex-col">
+                <div class="flex shrink-0 items-center gap-1.5">
+                  ${nextOrderHtml}
                   <button data-action="record" data-id="${p.id}" class="h-10 w-10 rounded-xl bg-primary text-white shadow-sm active:scale-95" aria-label="诊疗记账">
                     <i class="fa-solid fa-file-invoice"></i>
                   </button>
@@ -2948,6 +3110,10 @@
           let iconText = '治';
           let valColor = 'text-success';
           let valStr = h.count ? `-${h.count}` : '';
+          if (h.type === 'consume' && Number(h.moxaCount) > 0) {
+            iconBg = 'bg-[#f4e8dc] text-[#8a5a32] border border-[#dcc3aa]';
+            iconText = '灸';
+          }
           if (h.type === 'purchase') { iconBg = 'bg-blue-50 text-blue-600 border border-blue-100'; iconText = '充'; valColor = 'text-primary'; valStr = h.count ? `+${h.count}` : (h.amount ? `¥${h.amount}` : ''); }
           else if (h.type === 'medicine') { iconBg = 'bg-purple-50 text-purple-600 border border-purple-100'; iconText = '药'; valColor = 'text-purple-600'; valStr = h.amount ? `¥${h.amount}` : ''; }
           const createdTimeText = app.getRecordCreatedTimeText(h);
@@ -2961,8 +3127,9 @@
           const coursePosition = (h.type === 'consume' || h.type === 'purchase')
             ? app.getCoursePositionLabel(parties.billingPid, h.courseNo, getLocalDateString(), h.id)
             : '';
+          const courseNumberClass = app.getCourseNumberClass(parties.billingPid, h.courseNo);
           const courseBadge = coursePosition
-            ? `<span class="text-[9px] px-1.5 py-0.5 rounded border font-bold shrink-0 ${coursePosition === '当前卡' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'}">${escapeHtml(coursePosition)} <span class="font-mono">${escapeHtml(h.courseNo || '未编号')}</span></span>`
+            ? `<span class="text-[9px] px-1.5 py-0.5 rounded border font-bold shrink-0 bg-slate-50 text-slate-600 border-slate-200">${escapeHtml(coursePosition)} <span class="font-mono ml-0.5 rounded border px-1 ${courseNumberClass}">${escapeHtml(h.courseNo || '未编号')}</span></span>`
             : '';
           const displayRemark = app.stripBorrowerRemark(h.remark);
           const div = document.createElement('div');
@@ -2973,9 +3140,7 @@
               <div class="flex flex-col min-w-0 flex-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-[13px] font-black text-slate-800 shrink-0">${escapeHtml(h.date)}</span>
-                  ${h.type === 'purchase' && h.courseNo && !coursePosition ? `<span class="text-[9px] bg-blue-50 text-blue-600 border border-blue-100 px-1.5 py-0.5 rounded font-mono font-bold shrink-0">${escapeHtml(h.courseNo)}</span>` : ''}
-                  ${h.type === 'purchase' && Number(h.moxaTotal) > 0 ? `<span class="text-[9px] bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 rounded font-bold shrink-0">艾灸 +${escapeHtml(h.moxaTotal)}</span>` : ''}
-                  ${h.type === 'consume' && Number(h.moxaCount) > 0 ? '<span class="text-[9px] bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 rounded font-bold shrink-0">艾灸</span>' : ''}
+                  ${h.type === 'purchase' && h.courseNo && !coursePosition ? `<span class="text-[9px] border px-1.5 py-0.5 rounded font-mono font-bold shrink-0 ${courseNumberClass}">${escapeHtml(h.courseNo)}</span>` : ''}
                   ${courseBadge}
                   ${h.amount && h.count ? `<span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ¥${escapeHtml(h.amount)}</span>` : ''}
                   ${partyBadge}
@@ -3325,7 +3490,7 @@
           const box = $('field-p-init-moxa-box');
           const opening = box.classList.contains('hidden');
           box.classList.toggle('hidden', !opening);
-          $('field-p-init-moxa-toggle').textContent = opening ? '－艾灸' : '＋艾灸';
+          $('field-p-init-moxa-toggle').textContent = opening ? '－兑换艾灸' : '＋兑换艾灸';
           if (!opening) {
             $('field-p-init-moxa').value = '';
             $('field-p-init-moxa-use').classList.add('hidden');
@@ -3334,12 +3499,12 @@
           }
         });
         $('field-p-init-moxa').addEventListener('input', () => {
-          const show = Number($('field-p-init-moxa').value) > 0 && Number($('field-p-init-consume').value) > 0;
+          const show = Number($('field-p-init-moxa').value) > 0 && Number($('field-p-init-count').value) > 0;
           $('field-p-init-moxa-use').classList.toggle('hidden', !show);
           $('field-p-init-moxa-use').classList.toggle('flex', show);
           if (!show) app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', false);
         });
-        $('field-p-init-consume').addEventListener('input', () => $('field-p-init-moxa').dispatchEvent(new Event('input')));
+        $('field-p-init-count').addEventListener('input', () => $('field-p-init-moxa').dispatchEvent(new Event('input')));
         $('field-p-init-moxa-use').addEventListener('click', () => {
           app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', $('field-p-init-moxa-value').value !== '1');
         });
@@ -3347,12 +3512,13 @@
           const box = $('rec-p-moxa-box');
           const opening = box.classList.contains('hidden');
           box.classList.toggle('hidden', !opening);
-          $('rec-p-moxa-toggle').textContent = opening ? '－艾灸' : '＋艾灸';
+          $('rec-p-moxa-toggle').textContent = opening ? '－兑换艾灸' : '＋兑换艾灸';
           if (!opening) $('rec-p-moxa').value = '';
           app.updateRecordMoxaOption($('record-p-id').value);
         });
         $('rec-moxa-use').addEventListener('click', () => {
           app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', $('rec-moxa-value').value !== '1');
+          app.updateRecordMoxaOption($('record-p-id').value);
         });
         ['rec-p-count', 'rec-p-amount', 'rec-p-moxa'].forEach(id => {
           $(id).addEventListener('input', () => {
