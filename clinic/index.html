@@ -71,6 +71,7 @@
       header [data-page-trigger="patients"] i { font-size: 1.08rem !important; }
       header [data-page-trigger="patients"] > span:last-child { font-size: 1.05rem !important; }
       #mobile-add-patient { padding: .48rem .72rem !important; font-size: .78rem !important; border-radius: .75rem !important; min-height: 2.2rem; }
+      #open-maintenance { width: 2.2rem; height: 2.2rem; border-radius: .75rem; }
       main.container { padding: .78rem .72rem 0 !important; margin-bottom: 5rem !important; }
       .page-section > div:first-child { margin-bottom: .8rem !important; gap: .45rem !important; }
       .page-section h2 { font-size: 1.16rem !important; line-height: 1.45rem !important; }
@@ -150,13 +151,16 @@
           <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="daily"><i class="fa-solid fa-clipboard-check mr-2"></i>今日</button>
           <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="notebook"><i class="fa-solid fa-book-medical mr-2"></i>待登记 <span id="notebook-count-desktop" class="hidden ml-1 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px]">0</span></button>
           <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="dashboard"><i class="fa-solid fa-chart-line mr-2"></i>经营简报</button>
-          <button class="nav-link px-4 py-2 rounded-xl font-bold transition-all" data-page="settings"><i class="fa-solid fa-sliders mr-2"></i>数据维护</button>
         </nav>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 md:gap-3">
           <button id="mobile-add-patient" class="md:hidden btn btn-primary px-3 py-1.5 text-xs"><i class="fa-solid fa-plus mr-1"></i>建档</button>
           <div id="data-status-badge" class="hidden md:inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500">
             <i class="fa-solid fa-circle-notch animate-spin mr-1.5"></i>连接中...
           </div>
+          <button id="open-maintenance" class="relative flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-95" aria-label="维护">
+            <i class="fa-solid fa-sliders text-sm"></i>
+            <span id="sync-status-dot" class="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-slate-300"></span>
+          </button>
         </div>
       </div>
     </header>
@@ -373,47 +377,55 @@
         </div>
       </section>
 
-      <section id="settings-page" class="page-section hidden animate-fade-in">
-        <h2 class="text-xl md:text-2xl font-black mb-6 text-slate-800">数据维护</h2>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="space-y-6">
-            <div class="card p-6 bg-slate-900 text-white shadow-lg">
-              <h3 class="font-bold text-lg mb-5 flex items-center"><i class="fa-solid fa-file-shield text-emerald-400 mr-2"></i>数据导出</h3>
-              <button id="export-backup" class="btn bg-white hover:bg-slate-100 text-slate-900 w-full font-bold py-3"><i class="fa-solid fa-download mr-2"></i>导出 Excel</button>
-            </div>
-            <div class="card p-6 border border-emerald-100 bg-emerald-50/20">
-              <h3 class="font-bold text-lg mb-5 text-emerald-900 flex items-center justify-between"><span><i class="fa-solid fa-clock-rotate-left text-emerald-500 mr-2"></i>本地快照</span><span class="text-sm font-black text-emerald-700"><span id="auto-backup-count">0</span> 份</span></h3>
-              <button id="restore-last-snapshot" class="btn btn-secondary py-3 text-emerald-700 bg-white w-full"><i class="fa-solid fa-rotate-left mr-2"></i>恢复快照</button>
-            </div>
-            <div class="card p-6 border border-purple-100 bg-purple-50/10">
-              <h3 class="font-bold text-lg mb-5 text-purple-900 flex items-center"><i class="fa-solid fa-file-import text-purple-500 mr-2"></i>导入恢复</h3>
-              <label class="btn btn-primary cursor-pointer py-3 w-full"><i class="fa-solid fa-upload mr-2"></i>导入 Excel<input type="file" id="import-excel" class="hidden" accept=".xlsx,.xls"></label>
-            </div>
-          </div>
-          <div class="space-y-6">
-            <div class="card p-6 border border-slate-200 bg-slate-50/30">
-              <h3 class="font-bold text-lg mb-5 text-slate-800 flex items-center"><i class="fa-solid fa-shuffle text-blue-500 mr-2"></i>合并档案</h3>
-              <button id="open-merge" class="btn btn-secondary py-3 text-primary bg-white w-full"><i class="fa-solid fa-code-merge mr-2"></i>合并</button>
-            </div>
-            <div class="card p-6 border-2 border-dashed border-red-200 bg-red-50/10">
-              <h3 class="font-bold text-lg mb-5 text-red-800 flex items-center"><i class="fa-solid fa-radiation text-red-500 mr-2"></i>清空数据</h3>
-              <button id="clear-data" class="btn btn-danger py-3 w-full"><i class="fa-solid fa-trash-can mr-2"></i>清空</button>
-            </div>
-          </div>
-        </div>
-      </section>
     </main>
 
     <footer class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-slate-100 flex justify-between items-center h-[68px] pb-[env(safe-area-inset-bottom)] z-40 shadow-[0_-4px_16px_rgba(0,0,0,.03)]">
-      <button class="mobile-nav-btn flex flex-col items-center w-1/5 pt-2" data-page="patients"><i class="fa-solid fa-address-book text-lg mb-0.5"></i><span class="text-[10px] font-bold">档案</span></button>
-      <button class="mobile-nav-btn flex flex-col items-center w-1/5 pt-2" data-page="daily"><i class="fa-solid fa-clipboard-check text-lg mb-0.5"></i><span class="text-[10px] font-bold">今日</span></button>
-      <button class="mobile-nav-btn relative flex flex-col items-center w-1/5 pt-2" data-page="notebook"><i class="fa-solid fa-book-medical text-lg mb-0.5"></i><span class="text-[10px] font-bold">待登记</span><span id="notebook-count-mobile" class="hidden absolute top-0 right-[22%] min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black leading-4">0</span></button>
-      <button class="mobile-nav-btn flex flex-col items-center w-1/5 pt-2" data-page="dashboard"><i class="fa-solid fa-chart-line text-lg mb-0.5"></i><span class="text-[10px] font-bold">简报</span></button>
-      <button class="mobile-nav-btn flex flex-col items-center w-1/5 pt-2" data-page="settings"><i class="fa-solid fa-sliders text-lg mb-0.5"></i><span class="text-[10px] font-bold">维护</span></button>
+      <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-2" data-page="patients"><i class="fa-solid fa-address-book text-lg mb-0.5"></i><span class="text-[10px] font-bold">档案</span></button>
+      <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-2" data-page="daily"><i class="fa-solid fa-clipboard-check text-lg mb-0.5"></i><span class="text-[10px] font-bold">今日</span></button>
+      <button class="mobile-nav-btn relative flex flex-col items-center w-1/4 pt-2" data-page="notebook"><i class="fa-solid fa-book-medical text-lg mb-0.5"></i><span class="text-[10px] font-bold">待登记</span><span id="notebook-count-mobile" class="hidden absolute top-0 right-[30%] min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black leading-4">0</span></button>
+      <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-2" data-page="dashboard"><i class="fa-solid fa-chart-line text-lg mb-0.5"></i><span class="text-[10px] font-bold">简报</span></button>
     </footer>
   </div>
 
   <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[120] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4"></div>
+
+  <div id="modal-maintenance" class="modal fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-end md:items-center justify-center z-[90] md:p-4 opacity-0 transition-opacity">
+    <div class="modal-content bg-white rounded-t-3xl md:rounded-3xl w-full max-w-sm overflow-hidden border border-slate-100 shadow-2xl scale-95 transition-transform">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <h3 class="font-black text-slate-800">维护</h3>
+        <button class="modal-close w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-2">
+        <button id="export-backup" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 text-left">
+          <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-download text-sm"></i></span>
+          <span class="flex-1 text-sm font-bold text-slate-700">导出 Excel</span>
+          <i class="fa-solid fa-angle-right text-xs text-slate-300"></i>
+        </button>
+        <button id="restore-last-snapshot" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 text-left">
+          <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-rotate-left text-sm"></i></span>
+          <span class="flex-1 text-sm font-bold text-slate-700">恢复快照</span>
+          <span class="text-[11px] font-bold text-emerald-600"><span id="auto-backup-count">0</span> 份</span>
+        </button>
+        <label class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 cursor-pointer">
+          <span class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-upload text-sm"></i></span>
+          <span class="flex-1 text-sm font-bold text-slate-700">导入 Excel</span>
+          <i class="fa-solid fa-angle-right text-xs text-slate-300"></i>
+          <input type="file" id="import-excel" class="hidden" accept=".xlsx,.xls">
+        </label>
+        <button id="open-merge" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 text-left">
+          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-code-merge text-sm"></i></span>
+          <span class="flex-1 text-sm font-bold text-slate-700">合并档案</span>
+          <i class="fa-solid fa-angle-right text-xs text-slate-300"></i>
+        </button>
+      </div>
+      <div class="border-t border-slate-100 p-2 pb-[max(.5rem,env(safe-area-inset-bottom))]">
+        <button id="clear-data" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-red-600 hover:bg-red-50 active:bg-red-100">
+          <span class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0"><i class="fa-solid fa-trash-can text-sm"></i></span>
+          <span class="flex-1 text-sm font-bold">清空数据</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div id="modal-confirm" class="modal fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[95] p-4 opacity-0 transition-opacity">
     <div class="modal-content bg-white rounded-3xl w-full max-w-sm overflow-hidden border border-slate-100 shadow-2xl scale-95 transition-transform">
@@ -652,6 +664,7 @@
           <input type="hidden" id="edit-t-id">
           <input type="hidden" id="edit-t-type">
           <div id="edit-t-type-display" class="p-2.5 rounded-xl text-center text-sm font-bold bg-slate-100 text-slate-600">流水</div>
+          <div id="edit-course-lock" class="hidden rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">艾灸已使用，兑换比例已锁定</div>
           <label class="block text-xs font-bold text-slate-400">日期<input type="date" id="edit-t-date" class="input-field mt-1"></label>
           <label id="edit-box-course-no" class="hidden text-xs font-bold text-slate-400">编号<input type="text" id="edit-t-course-no" inputmode="numeric" pattern="[0-9]*" class="input-field mt-1 font-mono tracking-wider"></label>
           <label id="edit-box-moxa-total" class="hidden text-xs font-bold text-amber-700">换为艾灸<input type="number" id="edit-t-moxa-total" class="input-field mt-1 border-amber-200" min="0" inputmode="numeric"></label>
@@ -875,13 +888,14 @@
     };
 
     const dataStore = {
-      keys: { P: 'clinic_patients', T: 'clinic_treatments', B: 'clinic_auto_backups', U: 'clinic_last_undo' },
+      keys: { P: 'clinic_patients', T: 'clinic_treatments', B: 'clinic_auto_backups', U: 'clinic_last_undo', D: 'clinic_pending_sync_v1' },
       patients: [],
       treatments: [],
       patientMap: new Map(),
       charts: {},
       statsCache: {},
       visibleStatsCache: {},
+      homeSummaryCache: {},
       saveTimer: null,
       syncedPatients: new Map(),
       syncedTreatments: new Map(),
@@ -889,6 +903,10 @@
       syncedTreatmentIndexes: new Map(),
       cloudCollectionMode: 'array',
       hasCloudBaseline: false,
+      cloudLoading: false,
+      pendingSync: false,
+      mutationVersion: 0,
+      syncState: { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] },
 
       async fetchWithRetry(url, options = {}, retries = 3, delay = 700) {
         try {
@@ -902,25 +920,101 @@
         }
       },
 
-      async init() {
+      initLocal() {
         dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
         dataStore.treatments = JSON.parse(localStorage.getItem(dataStore.keys.T) || '[]');
         try {
-          const res = await dataStore.fetchWithRetry(CONFIG.dbUrl);
-          const cloudData = await res.json();
-          if (cloudData) {
-            dataStore.cloudCollectionMode = Array.isArray(cloudData.patients) && Array.isArray(cloudData.treatments) ? 'array' : 'object';
-            dataStore.patients = dataStore.normalizeCloudCollection(cloudData.patients);
-            dataStore.treatments = dataStore.normalizeCloudCollection(cloudData.treatments);
-            dataStore.hasCloudBaseline = true;
-            dataStore.persistLocal();
+          const state = JSON.parse(localStorage.getItem(dataStore.keys.D) || 'null');
+          if (state && typeof state === 'object') {
+            dataStore.syncState = {
+              dirty: Boolean(state.dirty),
+              deletedPatientIds: Array.isArray(state.deletedPatientIds) ? state.deletedPatientIds : [],
+              deletedTreatmentIds: Array.isArray(state.deletedTreatmentIds) ? state.deletedTreatmentIds : []
+            };
           }
         } catch {
-          ui.showToast('未能连接云端，已进入本地离线模式', 'warning');
+          dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] };
         }
         dataStore.rebuildStatsCache();
         dataStore.captureSyncState();
         dataStore.ensureDailyBackup();
+      },
+
+      persistSyncState() {
+        localStorage.setItem(dataStore.keys.D, JSON.stringify(dataStore.syncState));
+      },
+
+      markDeleted(type, ids) {
+        const key = type === 'patient' ? 'deletedPatientIds' : 'deletedTreatmentIds';
+        dataStore.syncState[key] = [...new Set([
+          ...dataStore.syncState[key],
+          ...ids.filter(Boolean)
+        ])];
+        dataStore.syncState.dirty = true;
+        dataStore.persistSyncState();
+      },
+
+      mergeCloudWithLocal(cloudPatients, cloudTreatments) {
+        const deletedPatients = new Set(dataStore.syncState.deletedPatientIds);
+        const deletedTreatments = new Set(dataStore.syncState.deletedTreatmentIds);
+        const merge = (cloud, local, deleted) => {
+          const merged = new Map(cloud.filter(item => item?.id && !deleted.has(item.id)).map(item => [item.id, item]));
+          local.forEach(item => {
+            if (item?.id && !deleted.has(item.id)) merged.set(item.id, item);
+          });
+          return [...merged.values()];
+        };
+        return {
+          patients: merge(cloudPatients, dataStore.patients, deletedPatients),
+          treatments: merge(cloudTreatments, dataStore.treatments, deletedTreatments)
+        };
+      },
+
+      async refreshFromCloud() {
+        dataStore.cloudLoading = true;
+        const initialMutationVersion = dataStore.mutationVersion;
+        let connected = false;
+        try {
+          const res = await dataStore.fetchWithRetry(CONFIG.dbUrl);
+          const cloudData = await res.json();
+          connected = true;
+          const cloudPatients = dataStore.normalizeCloudCollection(cloudData?.patients);
+          const cloudTreatments = dataStore.normalizeCloudCollection(cloudData?.treatments);
+          dataStore.cloudCollectionMode = Array.isArray(cloudData?.patients) && Array.isArray(cloudData?.treatments) ? 'array' : 'object';
+          dataStore.hasCloudBaseline = true;
+          const cloudIsEmpty = !cloudData;
+          const hasPendingLocal = dataStore.syncState.dirty
+            || dataStore.mutationVersion !== initialMutationVersion
+            || (cloudIsEmpty && (dataStore.patients.length > 0 || dataStore.treatments.length > 0));
+          if (!hasPendingLocal) {
+            dataStore.patients = cloudPatients;
+            dataStore.treatments = cloudTreatments;
+            dataStore.rebuildStatsCache();
+            dataStore.persistLocal();
+            dataStore.captureSyncState();
+          } else {
+            const merged = dataStore.mergeCloudWithLocal(cloudPatients, cloudTreatments);
+            dataStore.patients = merged.patients;
+            dataStore.treatments = merged.treatments;
+            dataStore.rebuildStatsCache();
+            dataStore.persistLocal();
+            dataStore.syncedPatients = dataStore.collectionHashes(cloudPatients);
+            dataStore.syncedTreatments = dataStore.collectionHashes(cloudTreatments);
+            dataStore.syncedPatientIndexes = dataStore.collectionIndexes(cloudPatients);
+            dataStore.syncedTreatmentIndexes = dataStore.collectionIndexes(cloudTreatments);
+            dataStore.syncState.dirty = true;
+            dataStore.persistSyncState();
+            dataStore.pendingSync = true;
+          }
+        } catch {
+          ui.showToast('未能连接云端，已进入本地离线模式', 'warning');
+        }
+        dataStore.cloudLoading = false;
+        if (dataStore.pendingSync) {
+          dataStore.pendingSync = false;
+          dataStore.save({ mutation: false, forceFull: true });
+        }
+        return connected;
       },
 
       normalizeCloudCollection(collection) {
@@ -970,25 +1064,31 @@
         localStorage.setItem(dataStore.keys.T, JSON.stringify(dataStore.treatments));
       },
 
-      save({ sync = true } = {}) {
+      save({ sync = true, mutation = true, forceFull = false } = {}) {
+        if (mutation) dataStore.mutationVersion += 1;
+        if (mutation) {
+          dataStore.syncState.dirty = true;
+          dataStore.persistSyncState();
+        }
         dataStore.persistLocal();
         dataStore.rebuildStatsCache();
         app.updateNotebookBadge?.();
         if (!sync) return true;
 
-        const badge = $('data-status-badge');
-        if (badge) {
-          badge.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-1.5 text-blue-500"></i>正在同步...';
-          badge.className = 'hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-full';
-        }
+        app.updateBadge?.('pending');
 
         clearTimeout(dataStore.saveTimer);
+        if (dataStore.cloudLoading) {
+          dataStore.pendingSync = true;
+          return true;
+        }
         dataStore.saveTimer = setTimeout(async () => {
+          const syncVersion = dataStore.mutationVersion;
           try {
             const patientChanges = dataStore.buildCollectionPatch(dataStore.patients, dataStore.syncedPatients, dataStore.syncedPatientIndexes, 'patients');
             const treatmentChanges = dataStore.buildCollectionPatch(dataStore.treatments, dataStore.syncedTreatments, dataStore.syncedTreatmentIndexes, 'treatments');
             const lastUpdate = new Date().toLocaleString();
-            if (!dataStore.hasCloudBaseline) {
+            if (!dataStore.hasCloudBaseline || forceFull || dataStore.syncState.deletedPatientIds.length || dataStore.syncState.deletedTreatmentIds.length) {
               await dataStore.fetchWithRetry(CONFIG.dbUrl, {
                 method: 'PUT',
                 body: JSON.stringify({
@@ -1010,12 +1110,16 @@
             dataStore.syncedTreatments = treatmentChanges.current;
             dataStore.syncedPatientIndexes = patientChanges.currentIndexes;
             dataStore.syncedTreatmentIndexes = treatmentChanges.currentIndexes;
-            app.updateBadge();
-          } catch {
-            if (badge) {
-              badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-1.5 text-amber-500 animate-pulse"></i>本地离线保存';
-              badge.className = 'hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold bg-amber-50 text-amber-600 rounded-full';
+            if (dataStore.mutationVersion === syncVersion) {
+              dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] };
+              dataStore.persistSyncState();
+              app.updateBadge();
+            } else {
+              app.updateBadge?.('pending');
+              dataStore.save({ mutation: false });
             }
+          } catch {
+            app.updateBadge?.('offline');
           }
         }, 400);
         return true;
@@ -1114,22 +1218,93 @@
           cache[pid].currentCourseNo = courses[0]?.courseNo || '';
         });
         dataStore.statsCache = cache;
-        const visible = {};
+        dataStore.visibleStatsCache = {};
+        dataStore.rebuildHomeSummaryCache();
+      },
+
+      rebuildHomeSummaryCache() {
+        const today = getLocalDateString();
+        const summaries = {};
         dataStore.patients.forEach(patient => {
-          const base = cache[patient.id];
-          visible[patient.id] = { ...base, history: [...base.history] };
+          const stats = dataStore.statsCache[patient.id] || dataStore.calcStats(patient.id);
+          const courses = Object.values(stats.courses || {});
+          let remain = courses.reduce((result, course) => {
+            if (Number(course.moxaTotal) > 0) {
+              result.hasMoxa = true;
+              result.moxa += Number(course.moxaRemain) || 0;
+              if (Number(course.remain) < 0) result.treatment += Number(course.remain) || 0;
+            } else {
+              result.treatment += Number(course.remain) || 0;
+            }
+            return result;
+          }, { treatment: 0, moxa: 0, hasMoxa: false });
+          if (remain.hasMoxa) {
+            remain = app.getCourseRemainSummary(patient.id);
+          } else {
+            remain.treatment = Number(stats.remain) || 0;
+          }
+          summaries[patient.id] = {
+            latestRecord: stats.history?.[0] || null,
+            treatmentRemain: remain.treatment,
+            moxaRemain: remain.moxa,
+            hasMoxa: remain.hasMoxa,
+            today: { consumes: 0, purchases: 0, paid: 0, medicines: 0, records: 0 },
+            latestPurchase: null
+          };
         });
+        const addTodayRecord = (pid, record) => {
+          const summary = summaries[pid];
+          if (!summary) return;
+          const count = Number(record.count) || 0;
+          const amount = Number(record.amount) || 0;
+          if (record.type === 'consume') summary.today.consumes += count;
+          if (record.type === 'purchase') {
+            summary.today.purchases += count;
+            summary.today.paid += amount;
+          }
+          if (record.type === 'medicine') {
+            summary.today.medicines += amount;
+            summary.today.paid += amount;
+          }
+          summary.today.records += 1;
+        };
+        const setLatestPurchase = (pid, record) => {
+          const summary = summaries[pid];
+          if (!summary || record.type !== 'purchase' || !record.date) return;
+          if (!summary.latestPurchase || compareRecordsNewestFirst(record, summary.latestPurchase) < 0) {
+            summary.latestPurchase = record;
+          }
+        };
+        const setLatestRecord = (pid, record) => {
+          const summary = summaries[pid];
+          if (!summary) return;
+          if (!summary.latestRecord || compareRecordsNewestFirst(record, summary.latestRecord) < 0) {
+            summary.latestRecord = record;
+          }
+        };
         dataStore.treatments.forEach(record => {
           const billingPid = app.getTreatmentBillingPid(record);
           const actualPid = app.getTreatmentActualPid(record);
-          if (!actualPid || actualPid === billingPid || !visible[actualPid]) return;
-          visible[actualPid].history.push(record);
-          if (record.type === 'consume') visible[actualPid].consumed += Number(record.count) || 0;
+          setLatestRecord(billingPid, record);
+          if (actualPid && actualPid !== billingPid) setLatestRecord(actualPid, record);
+          if (record.date === today) {
+            addTodayRecord(billingPid, record);
+            if (actualPid && actualPid !== billingPid) addTodayRecord(actualPid, record);
+          }
+          setLatestPurchase(billingPid, record);
         });
-        Object.values(visible).forEach(stats => {
-          stats.history.sort(compareRecordsNewestFirst);
-        });
-        dataStore.visibleStatsCache = visible;
+        dataStore.homeSummaryCache = summaries;
+      },
+
+      getHomeSummary(pid) {
+        return dataStore.homeSummaryCache[pid] || {
+          latestRecord: null,
+          treatmentRemain: Number(dataStore.calcStats(pid).remain) || 0,
+          moxaRemain: 0,
+          hasMoxa: false,
+          today: { consumes: 0, purchases: 0, paid: 0, medicines: 0, records: 0 },
+          latestPurchase: null
+        };
       },
 
       calcStats(pid) {
@@ -1250,16 +1425,20 @@
       state: { search: '', currentPage: 'patients', currentDetailPid: null, detailHistoryLimit: 10 },
 
       async initSystem() {
-        await dataStore.init();
+        dataStore.initLocal();
         $('daily-date-picker').value = getLocalDateString();
         app.bindEvents();
         app.initSearchDropdown('merge-p1-search', 'merge-p1-dropdown', 'merge-p1-id');
         app.initSearchDropdown('merge-p2-search', 'merge-p2-dropdown', 'merge-p2-id');
         app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id');
         app.initSearchDropdown('referrer-search', 'referrer-dropdown', 'field-p-referrer-id');
-        app.updateBadge();
+        app.updateBadge('loading');
         app.updateNotebookBadge();
         app.showPage('patients');
+        const connected = await dataStore.refreshFromCloud();
+        app.updateBadge(connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
+        app.updateNotebookBadge();
+        app.showPage(app.state.currentPage);
       },
 
       verifyAuth() {
@@ -1288,9 +1467,35 @@
         });
       },
 
-      updateBadge() {
+      updateBadge(status = 'online') {
         const b = $('data-status-badge');
+        const dot = $('sync-status-dot');
+        const dotClasses = {
+          online: 'bg-emerald-500',
+          loading: 'bg-blue-500 animate-pulse',
+          pending: 'bg-amber-500 animate-pulse',
+          offline: 'bg-red-500'
+        };
+        if (dot) {
+          dot.className = `absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white ${dotClasses[status] || dotClasses.online}`;
+          dot.title = status === 'online' ? '已同步' : status === 'loading' ? '更新中' : status === 'pending' ? '待同步' : '离线';
+        }
         if (!b) return;
+        if (status === 'loading') {
+          b.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-1.5 text-blue-500"></i>本地已载入 · 更新中';
+          b.className = 'hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-full';
+          return;
+        }
+        if (status === 'pending') {
+          b.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1.5 text-amber-500 animate-pulse"></i>本地已保存 · 待同步';
+          b.className = 'hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold bg-amber-50 text-amber-700 rounded-full';
+          return;
+        }
+        if (status === 'offline') {
+          b.innerHTML = '<i class="fa-solid fa-cloud-arrow-down mr-1.5 text-amber-500"></i>本地离线';
+          b.className = 'hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold bg-amber-50 text-amber-600 rounded-full';
+          return;
+        }
         b.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>云端同步中 | 在线: ${dataStore.patients.length}人`;
         b.className = 'hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold bg-emerald-50/80 text-emerald-700 rounded-full border border-emerald-100';
       },
@@ -1310,7 +1515,6 @@
         if (id === 'daily') app.renderDaily();
         if (id === 'notebook') app.renderNotebook();
         if (id === 'dashboard') app.renderDashboard();
-        if (id === 'settings') app.updateBackupStatus();
       },
 
       openPatientModal(pid = null, defaultName = '') {
@@ -1518,16 +1722,7 @@
       },
 
       getNextOrderDate(pid) {
-        const latestPurchase = dataStore.treatments
-          .filter(record =>
-            record.type === 'purchase'
-            && record.date
-            && (
-              app.getTreatmentActualPid(record) === pid
-              || app.getTreatmentBillingPid(record) === pid
-            )
-          )
-          .sort(compareRecordsNewestFirst)[0];
+        const latestPurchase = dataStore.getHomeSummary(pid).latestPurchase;
         if (!latestPurchase) return '';
         const count = Math.max(
           1,
@@ -1782,7 +1977,19 @@
       },
 
       getVisibleStats(pid) {
-        return dataStore.visibleStatsCache[pid] || dataStore.calcStats(pid);
+        if (dataStore.visibleStatsCache[pid]) return dataStore.visibleStatsCache[pid];
+        const base = dataStore.calcStats(pid);
+        const visible = { ...base, history: [...base.history] };
+        dataStore.treatments.forEach(record => {
+          const billingPid = app.getTreatmentBillingPid(record);
+          const actualPid = app.getTreatmentActualPid(record);
+          if (actualPid !== pid || actualPid === billingPid) return;
+          visible.history.push(record);
+          if (record.type === 'consume') visible.consumed += Number(record.count) || 0;
+        });
+        visible.history.sort(compareRecordsNewestFirst);
+        dataStore.visibleStatsCache[pid] = visible;
+        return visible;
       },
 
       getBorrowCardSummary(pid) {
@@ -1826,11 +2033,9 @@
 
       renderTodayBadges(summary) {
         if (!summary?.records) return '';
-        const badges = [];
-        if (summary.consumes > 0) badges.push(`<span class="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">扣${summary.consumes}</span>`);
-        if (summary.purchases > 0) badges.push(`<span class="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">充${summary.purchases}</span>`);
-        if (summary.paid > 0) badges.push(`<span class="inline-block px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">收${money(summary.paid)}</span>`);
-        return badges.join('');
+        return summary.consumes > 0
+          ? `<span class="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-lg text-[9px] md:text-[10px] whitespace-nowrap font-bold">扣${summary.consumes}</span>`
+          : '';
       },
 
       rememberUndo(ids, label) {
@@ -2036,6 +2241,24 @@
           dataStore.save();
           app.renderNotebook();
         });
+      },
+
+      markNotebookForRewrite(record) {
+        if (record?.type !== 'consume' || !record.notebookCopiedAt) return false;
+        record.notebookPending = true;
+        record.notebookCopiedAt = '';
+        return true;
+      },
+
+      getCourseTreatmentRecords(purchaseRecord) {
+        if (!purchaseRecord || purchaseRecord.type !== 'purchase') return [];
+        const billingPid = app.getTreatmentBillingPid(purchaseRecord);
+        const courseNo = String(purchaseRecord.courseNo || '');
+        return dataStore.treatments.filter(record =>
+          record.type === 'consume'
+          && app.getTreatmentBillingPid(record) === billingPid
+          && String(record.courseNo || '') === courseNo
+        );
       },
 
       updateBackupStatus() {
@@ -2420,6 +2643,7 @@
           const before = dataStore.treatments.length;
           dataStore.treatments = dataStore.treatments.filter(t => !undoIds.has(t.id));
           const removed = before - dataStore.treatments.length;
+          dataStore.markDeleted('treatment', [...undoIds]);
           dataStore.clearLastUndo();
           dataStore.save();
           app.refreshViews(app.state.currentDetailPid);
@@ -2428,9 +2652,22 @@
       },
 
       deletePatientFull(pid) {
+        const linkedCards = dataStore.patients.filter(patient => patient.source === '借卡' && patient.lenderId === pid);
+        const borrowedRecords = dataStore.treatments.filter(record =>
+          app.getTreatmentActualPid(record) === pid
+          && app.getTreatmentBillingPid(record) !== pid
+        );
+        if (linkedCards.length || borrowedRecords.length) {
+          return ui.showToast('此人有关联借卡，请先处理借卡关系', 'warning');
+        }
         ui.showConfirm('永久删除患者档案', '这会删除该患者的全部到诊流水，确认执行吗？', true, () => {
-          dataStore.treatments = dataStore.treatments.filter(t => app.getTreatmentBillingPid(t) !== pid);
+          const removedTreatmentIds = dataStore.treatments
+            .filter(t => app.getTreatmentBillingPid(t) === pid)
+            .map(t => t.id);
+          dataStore.treatments = dataStore.treatments.filter(t => !removedTreatmentIds.includes(t.id));
           dataStore.patients = dataStore.patients.filter(p => p.id !== pid);
+          dataStore.markDeleted('treatment', removedTreatmentIds);
+          dataStore.markDeleted('patient', [pid]);
           dataStore.save();
           ui.closeModal('modal-detail');
           app.renderList();
@@ -2440,8 +2677,18 @@
       },
 
       deleteTreatment(tid, pid) {
+        const record = dataStore.treatments.find(t => t.id === tid);
+        if (!record) return ui.showToast('未找到这条流水', 'error');
+        if (record.type === 'purchase') {
+          const linked = app.getCourseTreatmentRecords(record);
+          if (linked.length) return ui.showToast(`此卡已有 ${linked.length} 条治疗，不能单独删除开单`, 'warning');
+        }
+        if (record.type === 'consume' && record.notebookCopiedAt) {
+          return ui.showToast('此条已登记纸本，请修改后重新登记', 'warning');
+        }
         ui.showConfirm('删除流水', '删除后患者额度会重新计算，确认继续吗？', true, () => {
           dataStore.treatments = dataStore.treatments.filter(t => t.id !== tid);
+          dataStore.markDeleted('treatment', [tid]);
           dataStore.save();
           app.renderList();
           if (app.state.currentPage === 'daily') app.renderDaily();
@@ -2462,6 +2709,15 @@
         $('edit-t-count').value = Number(record.count) || 0;
         $('edit-t-amount').value = Number(record.amount) || 0;
         $('edit-t-remark').value = record.remark || '';
+        const usedMoxa = record.type === 'purchase'
+          ? app.getMoxaStats(app.getTreatmentBillingPid(record), record.courseNo).used
+          : 0;
+        $('edit-t-count').disabled = usedMoxa > 0;
+        $('edit-t-moxa-total').disabled = usedMoxa > 0;
+        $('edit-t-count').classList.toggle('opacity-50', usedMoxa > 0);
+        $('edit-t-moxa-total').classList.toggle('opacity-50', usedMoxa > 0);
+        $('edit-t-moxa-total').title = usedMoxa > 0 ? '艾灸已使用，兑换比例已锁定' : '';
+        $('edit-course-lock').classList.toggle('hidden', usedMoxa <= 0);
 
         const typeMap = {
           consume: { text: '治疗扣次', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-100' },
@@ -2498,7 +2754,11 @@
         const billingPid = app.getTreatmentBillingPid(current);
         if (current.type === 'purchase') {
           const usedMoxa = app.getMoxaStats(billingPid, oldCourseNo).used;
-          if ((Number($('edit-t-moxa-total').value) || 0) < usedMoxa) return ui.showToast(`已用艾灸 ${usedMoxa} 次`, 'warning');
+          const nextMoxaTotal = Number($('edit-t-moxa-total').value) || 0;
+          if (usedMoxa > 0 && (count !== Number(current.count) || nextMoxaTotal !== Number(current.moxaTotal || 0))) {
+            return ui.showToast('艾灸已使用，兑换比例不能修改', 'warning');
+          }
+          if (nextMoxaTotal < usedMoxa) return ui.showToast(`已用艾灸 ${usedMoxa} 次`, 'warning');
         }
         if (current.type === 'consume' && $('edit-t-moxa-use').checked && !current.moxaCount) {
           const moxaRemain = app.getMoxaStats(billingPid, current.courseNo).remain;
@@ -2508,6 +2768,7 @@
         let income = 0;
         if (current.type === 'purchase') income = count === 0 ? amount * 0.45 : amount * 0.65;
         if (current.type === 'medicine') income = amount * 0.2;
+        let requiresNotebookRewrite = app.markNotebookForRewrite(current);
         dataStore.treatments[idx] = {
           ...current,
           date,
@@ -2523,13 +2784,14 @@
           dataStore.treatments.forEach(record => {
             if (record.type === 'consume' && app.getTreatmentBillingPid(record) === billingPid && record.courseNo === oldCourseNo) {
               record.courseNo = courseNo;
+              if (app.markNotebookForRewrite(record)) requiresNotebookRewrite = true;
             }
           });
         }
         dataStore.save();
         ui.closeModal('modal-edit-record');
         app.refreshViews(app.state.currentDetailPid || app.getTreatmentBillingPid(dataStore.treatments[idx]));
-        ui.showToast('流水已修改', 'success');
+        ui.showToast(requiresNotebookRewrite ? '已修改，重新加入待登记' : '流水已修改', 'success');
       },
 
       renderList() {
@@ -2538,23 +2800,25 @@
         const renderDesktop = window.matchMedia('(min-width: 768px)').matches;
         const renderMobile = !renderDesktop;
         let rows = [...dataStore.patients];
-        const visibleStatsCache = new Map();
-        const getStats = pid => {
-          if (!visibleStatsCache.has(pid)) visibleStatsCache.set(pid, app.getVisibleStats(pid));
-          return visibleStatsCache.get(pid);
-        };
         const borrowCardsByPid = new Map();
         dataStore.patients.forEach(patient => {
           if (patient.source !== '借卡' || !patient.lenderId) return;
           if (!borrowCardsByPid.has(patient.lenderId)) borrowCardsByPid.set(patient.lenderId, []);
-          borrowCardsByPid.get(patient.lenderId).push({ patient, stats: dataStore.calcStats(patient.id) });
+          borrowCardsByPid.get(patient.lenderId).push({ patient, summary: dataStore.getHomeSummary(patient.id) });
         });
         const getBorrowSummary = pid => {
           const cards = borrowCardsByPid.get(pid) || [];
-          const own = app.getCourseRemainSummary(pid);
-          const cardSummaries = [
-            ...cards.map(item => app.getCourseRemainSummary(item.patient.id))
-          ];
+          const ownHome = dataStore.getHomeSummary(pid);
+          const own = {
+            treatment: ownHome.treatmentRemain,
+            moxa: ownHome.moxaRemain,
+            hasMoxa: ownHome.hasMoxa
+          };
+          const cardSummaries = cards.map(item => ({
+            treatment: item.summary.treatmentRemain,
+            moxa: item.summary.moxaRemain,
+            hasMoxa: item.summary.hasMoxa
+          }));
           const summaries = [own, ...cardSummaries];
           return {
             cards,
@@ -2565,28 +2829,6 @@
             hasMoxa: summaries.some(item => item.hasMoxa)
           };
         };
-        const todayStr = getLocalDateString();
-        const todaySummaryByPid = new Map();
-        const addTodayRecord = (pid, record) => {
-          if (!pid) return;
-          if (!todaySummaryByPid.has(pid)) {
-            todaySummaryByPid.set(pid, { consumes: 0, purchases: 0, paid: 0, medicines: 0, records: 0 });
-          }
-          const sum = todaySummaryByPid.get(pid);
-          const count = Number(record.count) || 0;
-          const amount = Number(record.amount) || 0;
-          if (record.type === 'consume') sum.consumes += count;
-          if (record.type === 'purchase') { sum.purchases += count; sum.paid += amount; }
-          if (record.type === 'medicine') { sum.medicines += amount; sum.paid += amount; }
-          sum.records += 1;
-        };
-        dataStore.treatments.forEach(record => {
-          if (record.date !== todayStr) return;
-          const billingPid = app.getTreatmentBillingPid(record);
-          const actualPid = app.getTreatmentActualPid(record);
-          addTodayRecord(billingPid, record);
-          if (actualPid && actualPid !== billingPid) addTodayRecord(actualPid, record);
-        });
         if (app.state.search) {
           const terms = app.state.search.toLowerCase().split(/\s+/).filter(Boolean);
           rows = rows.filter(p => terms.every(term => {
@@ -2599,16 +2841,16 @@
         } else {
           const recentCutoff = utils.addDays(getLocalDateString(), -6);
           rows = rows.filter(patient => {
-            const latest = getStats(patient.id).history[0];
+            const latest = dataStore.getHomeSummary(patient.id).latestRecord;
             return Boolean(latest?.date && latest.date >= recentCutoff);
           });
         }
         rows.sort((a, b) => {
-          const ah = getStats(a.id).history;
-          const bh = getStats(b.id).history;
-          if (ah.length && bh.length) return compareRecordsNewestFirst(ah[0], bh[0]) || String(b.id).localeCompare(String(a.id));
-          if (ah.length) return -1;
-          if (bh.length) return 1;
+          const ah = dataStore.getHomeSummary(a.id).latestRecord;
+          const bh = dataStore.getHomeSummary(b.id).latestRecord;
+          if (ah && bh) return compareRecordsNewestFirst(ah, bh) || String(b.id).localeCompare(String(a.id));
+          if (ah) return -1;
+          if (bh) return 1;
           return String(b.id).localeCompare(String(a.id));
         });
         setText('total-count', rows.length);
@@ -2635,8 +2877,7 @@
         const fragment = renderDesktop ? document.createDocumentFragment() : null;
         const mobileFragment = renderMobile ? document.createDocumentFragment() : null;
         rows.forEach(p => {
-          const stats = getStats(p.id);
-          const rem = stats.remain;
+          const homeSummary = dataStore.getHomeSummary(p.id);
           const borrowSummary = getBorrowSummary(p.id);
           const effectiveRemain = borrowSummary.treatmentRemain + borrowSummary.moxaRemain;
           const remainHtml = borrowSummary.hasMoxa
@@ -2644,8 +2885,8 @@
             : borrowSummary.cards.length
               ? `<span class="block text-xl font-black leading-none">${borrowSummary.ownTreatmentRemain}</span><span class="mt-0.5 block text-[9px] font-black leading-tight">总${borrowSummary.treatmentRemain}</span>`
               : `<span class="block text-xl font-black leading-none">${borrowSummary.ownTreatmentRemain}</span>`;
-          const rec = stats.history.length ? stats.history[0].date : '无流水';
-          const todaySummary = todaySummaryByPid.get(p.id) || { consumes: 0, purchases: 0, paid: 0, medicines: 0, records: 0 };
+          const rec = homeSummary.latestRecord?.date || '无流水';
+          const todaySummary = homeSummary.today;
           const todayBadges = app.renderTodayBadges(todaySummary);
           const nextOrderDate = app.getNextOrderDate(p.id);
           const nextOrderHtml = nextOrderDate
@@ -3267,6 +3508,7 @@
             if (p.referrerId === p2Id) p.referrerId = p1Id;
           });
           dataStore.patients = dataStore.patients.filter(p => p.id !== p2Id);
+          dataStore.markDeleted('patient', [p2Id]);
           dataStore.save();
           ui.closeModal('modal-merge');
           app.renderList();
@@ -3285,6 +3527,7 @@
           }
           localStorage.removeItem(dataStore.keys.P);
           localStorage.removeItem(dataStore.keys.T);
+          localStorage.removeItem(dataStore.keys.D);
           dataStore.clearLastUndo();
           sessionStorage.removeItem('clinic_auth');
           setTimeout(() => location.reload(), 500);
@@ -3300,7 +3543,7 @@
           dataStore.patients = Array.isArray(latest.patients) ? latest.patients : [];
           dataStore.treatments = Array.isArray(latest.treatments) ? latest.treatments : [];
           dataStore.clearLastUndo();
-          dataStore.save();
+          dataStore.save({ forceFull: true });
           app.refreshViews();
           ui.showToast('已恢复最近本地快照', 'success');
         });
@@ -3374,7 +3617,7 @@
               dataStore.createLocalSnapshot('导入前快照');
               dataStore.patients = newPatients;
               dataStore.treatments = newTreatments;
-              dataStore.save();
+              dataStore.save({ forceFull: true });
               ui.showToast('备份导入成功，正在刷新', 'success');
               setTimeout(() => location.reload(), 1000);
             } catch (error) {
@@ -3402,9 +3645,16 @@
         $('undo-last-record').addEventListener('click', app.undoLastTreatmentGroup);
         $('global-remain-btn').addEventListener('click', () => app.showPeriodDetail('global_remain'));
         $('copy-daily-table').addEventListener('click', app.copyDailyTable);
+        $('open-maintenance').addEventListener('click', () => {
+          app.updateBackupStatus();
+          ui.openModal('modal-maintenance');
+        });
         $('export-backup').addEventListener('click', dataStore.exportFullBackup);
         $('restore-last-snapshot').addEventListener('click', app.restoreLastSnapshot);
-        $('open-merge').addEventListener('click', () => ui.openModal('modal-merge'));
+        $('open-merge').addEventListener('click', () => {
+          ui.closeModal('modal-maintenance');
+          ui.openModal('modal-merge');
+        });
         $('execute-merge').addEventListener('click', app.executeMerge);
         $('clear-data').addEventListener('click', app.confirmClearData);
         $('import-excel').addEventListener('change', e => app.importExcel(e.target.files[0]));
