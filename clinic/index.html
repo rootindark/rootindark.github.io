@@ -2080,7 +2080,25 @@
       },
 
       getPendingNotebookRecords() {
-        return dataStore.treatments.filter(t => t.type === 'consume' && t.notebookPending === true && !t.notebookCopiedAt);
+        const trackedDates = dataStore.treatments
+          .filter(t =>
+            t.type === 'consume'
+            && (
+              Object.prototype.hasOwnProperty.call(t, 'notebookPending')
+              || Object.prototype.hasOwnProperty.call(t, 'notebookCopiedAt')
+            )
+          )
+          .map(t => String(t.date || ''))
+          .filter(Boolean)
+          .sort();
+        const trackingStartDate = trackedDates[0] || '';
+        return dataStore.treatments.filter(t => {
+          if (t.type !== 'consume' || t.notebookCopiedAt) return false;
+          if (t.notebookPending === true) return true;
+          const isLegacyRecord = !Object.prototype.hasOwnProperty.call(t, 'notebookPending')
+            && !Object.prototype.hasOwnProperty.call(t, 'notebookCopiedAt');
+          return Boolean(isLegacyRecord && trackingStartDate && String(t.date || '') >= trackingStartDate);
+        });
       },
 
       updateNotebookBadge() {
