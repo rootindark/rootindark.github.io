@@ -308,6 +308,7 @@
             <table id="daily-export-table" class="w-full text-left border-collapse whitespace-nowrap">
               <thead class="bg-white border-b border-slate-100 text-xs text-slate-500">
                 <tr>
+                  <th class="px-4 py-2 font-semibold border-r border-slate-100 text-center">编号</th>
                   <th class="px-4 py-2 font-semibold border-r border-slate-100 text-center">姓名</th>
                   <th class="px-4 py-2 font-semibold border-r border-slate-100 text-center">年龄</th>
                   <th class="px-4 py-2 font-semibold border-r border-slate-100 text-center">日期</th>
@@ -2080,25 +2081,7 @@
       },
 
       getPendingNotebookRecords() {
-        const trackedDates = dataStore.treatments
-          .filter(t =>
-            t.type === 'consume'
-            && (
-              Object.prototype.hasOwnProperty.call(t, 'notebookPending')
-              || Object.prototype.hasOwnProperty.call(t, 'notebookCopiedAt')
-            )
-          )
-          .map(t => String(t.date || ''))
-          .filter(Boolean)
-          .sort();
-        const trackingStartDate = trackedDates[0] || '';
-        return dataStore.treatments.filter(t => {
-          if (t.type !== 'consume' || t.notebookCopiedAt) return false;
-          if (t.notebookPending === true) return true;
-          const isLegacyRecord = !Object.prototype.hasOwnProperty.call(t, 'notebookPending')
-            && !Object.prototype.hasOwnProperty.call(t, 'notebookCopiedAt');
-          return Boolean(isLegacyRecord && trackingStartDate && String(t.date || '') >= trackingStartDate);
-        });
+        return dataStore.treatments.filter(t => t.type === 'consume' && t.notebookPending === true && !t.notebookCopiedAt);
       },
 
       updateNotebookBadge() {
@@ -2144,8 +2127,11 @@
         pending.forEach(record => {
           const course = app.getNotebookCourse(record);
           const key = `${course.bookMonth}|${course.courseKey}|${course.billingPid}`;
-          if (!groups.has(key)) groups.set(key, { ...course, records: [] });
-          groups.get(key).records.push(record);
+          if (!groups.has(key)) groups.set(key, { ...course, records: [], actualPids: new Set() });
+          const group = groups.get(key);
+          group.records.push(record);
+          const actualPid = app.getTreatmentActualPid(record);
+          if (actualPid && actualPid !== course.billingPid) group.actualPids.add(actualPid);
         });
         const positionLabels = new Map();
         [...new Set([...groups.values()].map(course => course.billingPid))].forEach(pid => {
@@ -2212,6 +2198,9 @@
                   const ids = sorted.map(record => record.id).join('|');
                   const purchaseDay = Number(String(course.purchaseDate || '').slice(8, 10));
                   const positionLabel = positionLabels.get(`${course.billingPid}|${course.courseKey}`) || '';
+                  const actualNames = [...(course.actualPids || [])]
+                    .map(id => dataStore.getPatient(id)?.name)
+                    .filter(Boolean);
                   return `
                     <div class="px-3 py-1.5">
                       <div class="flex items-center justify-between gap-2 mb-1">
@@ -2220,6 +2209,7 @@
                             ${positionLabel ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${positionLabel === '当前卡' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-600 border-slate-200'}">${escapeHtml(positionLabel)}</span>` : ''}
                             <span class="font-mono text-xs font-bold rounded border px-1.5 py-0.5 ${course.moxaTotal > 0 ? 'bg-[#f4e8dc] text-[#8a5a32] border-[#dcc3aa]' : 'bg-blue-50 text-blue-700 border-blue-100'}">${escapeHtml(course.courseNo || '未编号')}</span>
                             <span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(course.patient?.name || '未知')}</span>
+                            ${actualNames.length ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">治 ${escapeHtml(actualNames.join('、'))}</span>` : ''}
                             <span class="text-[11px] font-bold text-slate-600 whitespace-nowrap">${purchaseDay ? `${purchaseDay}号开单` : '--号开单'} · ${course.moxaTotal > 0 ? `灸 ${course.moxaRemain}次` : `剩 ${course.remain}次`}</span>
                           </div>
                         </div>
@@ -2311,7 +2301,6 @@
           const consumeRows = dayTreatments.filter(t => app.getTreatmentBillingPid(t) === pid && t.type === 'consume' && Number(t.count) > 0);
           return consumeRows.length > 1 || consumeRows.reduce((sum, t) => sum + (Number(t.count) || 0), 0) > 1;
         });
-        const consumeNoChargePids = consumePids.filter(pid => pMap[pid].pAmt <= 0 && pMap[pid].mAmt <= 0);
         const chargeNoConsumePids = paidPids.filter(pid => pMap[pid].consumes <= 0);
 
         setText('today-visited-count', actualVisitCount ?? pids.length);
@@ -2319,11 +2308,8 @@
         setText('today-paid-patient-count', paidPids.length);
 
         const checks = [
-          { ok: pids.length > 0, label: pids.length ? `已记 ${actualVisitCount ?? pids.length} 人` : '无流水', tone: pids.length ? 'good' : 'warn' },
           { ok: duplicateConsumePids.length === 0, label: duplicateConsumePids.length ? `重复扣次 ${duplicateConsumePids.length} 人` : '无重复', tone: duplicateConsumePids.length ? 'danger' : 'good' },
-          { ok: paidPids.length > 0 || consumePids.length === 0, label: paidPids.length ? `收费 ${paidPids.length} 人` : '无收费', tone: paidPids.length ? 'good' : 'warn' },
-          { ok: chargeNoConsumePids.length === 0, label: chargeNoConsumePids.length ? `收未扣 ${chargeNoConsumePids.length} 人` : '收扣正常', tone: chargeNoConsumePids.length ? 'warn' : 'good' },
-          { ok: consumeNoChargePids.length === 0 || paidPids.length > 0, label: consumeNoChargePids.length ? `扣未收 ${consumeNoChargePids.length} 人` : '扣收正常', tone: consumeNoChargePids.length ? 'info' : 'good' }
+          { ok: chargeNoConsumePids.length === 0, label: chargeNoConsumePids.length ? `收未扣 ${chargeNoConsumePids.length} 人` : '收扣正常', tone: chargeNoConsumePids.length ? 'warn' : 'good' }
         ];
         const styleMap = {
           good: 'bg-emerald-50 text-emerald-700 border-emerald-100 fa-circle-check',
@@ -2990,13 +2976,14 @@
           const amt = Number(t.amount) || 0;
           const cnt = Number(t.count) || 0;
           const inc = Number(t.income) || 0;
-          if (!pMap[billingPid]) pMap[billingPid] = { consumes: 0, purchases: 0, pAmt: 0, mAmt: 0, income: 0, actualPids: new Set() };
+          if (!pMap[billingPid]) pMap[billingPid] = { consumes: 0, purchases: 0, pAmt: 0, mAmt: 0, income: 0, actualPids: new Set(), courseNos: new Set() };
           if (actualPid && actualPid !== billingPid) pMap[billingPid].actualPids.add(actualPid);
           totalIncome += inc;
           pMap[billingPid].income += inc;
           if (t.type === 'purchase') {
             totalRev += amt; purRev += amt; totalPurCount += cnt;
             pMap[billingPid].purchases += cnt; pMap[billingPid].pAmt += amt;
+            if (t.courseNo) pMap[billingPid].courseNos.add(String(t.courseNo));
           } else if (t.type === 'medicine') {
             totalRev += amt; medRev += amt; pMap[billingPid].mAmt += amt;
           } else if (t.type === 'consume') {
@@ -3026,7 +3013,7 @@
         app.renderCloseout({ targetDate, pMap, dayTreatments: ts, actualVisitCount: actualVisitPids.size });
         if (!pids.length) {
           $('daily-list-body').innerHTML = `<tr><td colspan="4" class="py-12 text-center text-slate-400 text-xs">无流水</td></tr>`;
-          $('daily-export-body').innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400 text-xs">无</td></tr>';
+          $('daily-export-body').innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-400 text-xs">无</td></tr>';
           return;
         }
 
@@ -3039,6 +3026,7 @@
           if (!p) return;
           const stats = dataStore.calcStats(pid);
           const d = pMap[pid];
+          const courseNoText = [...(d.courseNos || [])].join('、');
           const actualPids = new Set([pid, ...(d.actualPids || [])]);
           const isNewToday = [...actualPids].some(actualPid => app.isNewPatientOnDate(actualPid, targetDate));
           const newBadge = isNewToday
@@ -3067,6 +3055,7 @@
             const exportTr = document.createElement('tr');
             exportTr.className = 'hover:bg-slate-50 transition-colors';
             exportTr.innerHTML = `
+              <td class="px-4 py-2 border-r border-slate-100 text-center font-mono font-bold">${escapeHtml(courseNoText)}</td>
               <td class="px-4 py-2 border-r border-slate-100 text-center font-bold">${escapeHtml(p.name)}</td>
               <td class="px-4 py-2 border-r border-slate-100 text-center">${escapeHtml(p.age || '')}</td>
               <td class="px-4 py-2 border-r border-slate-100 text-center">${dateStrCn}</td>
@@ -3360,76 +3349,203 @@
         tbody.appendChild(frag);
       },
 
-      renderDetailHistory(pid) {
+      getDetailLedgerGroups(pid) {
         const stats = app.getVisibleStats(pid);
+        const visibleRecordIds = new Set(stats.history.map(record => record.id));
+        const groups = new Map();
+        const standalone = [];
+        const balanceCache = new Map();
+        const getBalances = billingPid => {
+          if (!balanceCache.has(billingPid)) balanceCache.set(billingPid, app.getCourseBalances(billingPid));
+          return balanceCache.get(billingPid);
+        };
+        const getCourseForRecord = record => {
+          const billingPid = app.getTreatmentBillingPid(record);
+          const balances = getBalances(billingPid);
+          return balances.find(course => course.recordIds.has(record.id))
+            || (record.courseNo ? balances.find(course => course.courseNo === String(record.courseNo || '')) : null);
+        };
+        const pushUnique = (list, record) => {
+          if (record && !list.some(item => item.id === record.id)) list.push(record);
+        };
+        const ensureCourseGroup = record => {
+          const billingPid = app.getTreatmentBillingPid(record);
+          const course = getCourseForRecord(record);
+          const courseNo = course?.courseNo || String(record.courseNo || '');
+          const key = `${billingPid}|${course?.courseKey || courseNo || record.id}`;
+          if (!groups.has(key)) {
+            const courseRecords = course
+              ? dataStore.treatments.filter(item => app.getTreatmentBillingPid(item) === billingPid && course.recordIds.has(item.id))
+              : [];
+            const purchases = courseRecords.filter(item => item.type === 'purchase');
+            groups.set(key, {
+              kind: 'course',
+              key,
+              billingPid,
+              course,
+              courseNo,
+              purchaseDate: course?.purchaseDate || purchases[0]?.date || '',
+              purchases: [],
+              consumes: [],
+              actualPids: new Set(),
+              visibleRecordIds
+            });
+            purchases.forEach(item => pushUnique(groups.get(key).purchases, item));
+          }
+          return groups.get(key);
+        };
+
+        stats.history.forEach(record => {
+          if (record.type === 'purchase' || record.type === 'consume') {
+            const group = ensureCourseGroup(record);
+            if (record.type === 'purchase') pushUnique(group.purchases, record);
+            if (record.type === 'consume') {
+              pushUnique(group.consumes, record);
+              const parties = app.getTreatmentParties(record);
+              if (parties.actualPid && parties.actualPid !== parties.billingPid) group.actualPids.add(parties.actualPid);
+            }
+            return;
+          }
+          standalone.push({ kind: 'standalone', record, date: record.date || '' });
+        });
+
+        return [
+          ...groups.values(),
+          ...standalone
+        ].sort((a, b) => {
+          const aDate = a.kind === 'course' ? (a.purchaseDate || a.consumes[0]?.date || '') : a.date;
+          const bDate = b.kind === 'course' ? (b.purchaseDate || b.consumes[0]?.date || '') : b.date;
+          const byDate = String(bDate).localeCompare(String(aDate));
+          if (byDate) return byDate;
+          return String(b.key || b.record?.id || '').localeCompare(String(a.key || a.record?.id || ''));
+        });
+      },
+
+      renderDetailHistory(pid) {
+        const groups = app.getDetailLedgerGroups(pid);
         const list = $('det-history-list');
         list.innerHTML = '';
-        if (!stats.history.length) {
+        if (!groups.length) {
           list.innerHTML = '<div class="p-6 text-center text-slate-400 text-sm">无流水</div>';
           return;
         }
 
-        const visibleHistory = stats.history.slice(0, app.state.detailHistoryLimit);
+        const visibleGroups = groups.slice(0, app.state.detailHistoryLimit);
         const frag = document.createDocumentFragment();
-        visibleHistory.forEach(h => {
-          let iconBg = 'bg-emerald-50 text-emerald-600 border border-emerald-100';
-          let iconText = '治';
-          let valColor = 'text-success';
-          let valStr = h.count ? `-${h.count}` : '';
-          if (h.type === 'consume' && Number(h.moxaCount) > 0) {
-            iconBg = 'bg-[#f4e8dc] text-[#8a5a32] border border-[#dcc3aa]';
-            iconText = '灸';
-          }
-          if (h.type === 'purchase') { iconBg = 'bg-blue-50 text-blue-600 border border-blue-100'; iconText = '充'; valColor = 'text-primary'; valStr = h.count ? `+${h.count}` : (h.amount ? `¥${h.amount}` : ''); }
-          else if (h.type === 'medicine') { iconBg = 'bg-purple-50 text-purple-600 border border-purple-100'; iconText = '药'; valColor = 'text-purple-600'; valStr = h.amount ? `¥${h.amount}` : ''; }
-          const createdTimeText = app.getRecordCreatedTimeText(h);
-          const parties = app.getTreatmentParties(h);
-          let partyBadge = '';
-          if (parties.actualPid !== parties.billingPid && parties.actualPid === pid) {
-            partyBadge = `<span class="detail-party-badge text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ${escapeHtml(parties.billingPatient?.name || '主卡')}</span>`;
-          } else if (h.type === 'consume' && parties.actualPid !== parties.billingPid && parties.billingPid === pid) {
-            partyBadge = `<span class="detail-party-badge text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实治 ${escapeHtml(parties.actualPatient?.name || '未知')}</span>`;
-          }
-          const coursePosition = (h.type === 'consume' || h.type === 'purchase')
-            ? app.getCoursePositionLabel(parties.billingPid, h.courseNo, getLocalDateString(), h.id)
-            : '';
-          const courseNumberClass = app.getCourseNumberClass(parties.billingPid, h.courseNo);
-          const courseBadge = coursePosition
-            ? `<span class="text-[9px] px-1.5 py-0.5 rounded border font-bold shrink-0 bg-slate-50 text-slate-600 border-slate-200">${escapeHtml(coursePosition)} <span class="font-mono ml-0.5 rounded border px-1 ${courseNumberClass}">${escapeHtml(h.courseNo || '未编号')}</span></span>`
-            : '';
-          const displayRemark = app.stripBorrowerRemark(h.remark);
+        visibleGroups.forEach(group => {
           const div = document.createElement('div');
-          div.className = 'bg-white flex items-center justify-between px-4 py-3 border-b border-slate-100';
-          div.innerHTML = `
-            <div class="flex items-center gap-3 overflow-hidden flex-1 pr-2">
-              <span class="shrink-0 text-xs w-7 h-7 flex items-center justify-center rounded-xl ${iconBg} font-bold shadow-sm">${iconText}</span>
-              <div class="flex flex-col min-w-0 flex-1">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-[13px] font-black text-slate-800 shrink-0">${escapeHtml(h.date)}</span>
-                  ${h.type === 'purchase' && h.courseNo && !coursePosition ? `<span class="text-[9px] border px-1.5 py-0.5 rounded font-mono font-bold shrink-0 ${courseNumberClass}">${escapeHtml(h.courseNo)}</span>` : ''}
-                  ${courseBadge}
-                  ${h.amount && h.count ? `<span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ¥${escapeHtml(h.amount)}</span>` : ''}
-                  ${partyBadge}
+          div.className = 'bg-white border-b border-slate-100';
+          if (group.kind === 'standalone') {
+            const h = group.record;
+            const isMedicine = h.type === 'medicine';
+            const iconBg = isMedicine ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-slate-50 text-slate-500 border border-slate-100';
+            const iconText = isMedicine ? '药' : '记';
+            const valStr = h.amount ? `¥${money(h.amount)}` : (h.count ? `${h.count}次` : '');
+            const displayRemark = app.stripBorrowerRemark(h.remark);
+            div.innerHTML = `
+              <div class="flex items-center justify-between px-4 py-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="shrink-0 text-xs w-7 h-7 flex items-center justify-center rounded-xl ${iconBg} font-bold shadow-sm">${iconText}</span>
+                  <div class="min-w-0">
+                    <div class="text-[13px] font-black text-slate-800">${escapeHtml(h.date || '未记日期')}</div>
+                    <div class="text-xs text-slate-400 truncate mt-1">${escapeHtml(displayRemark || (isMedicine ? '中药' : '其他流水'))}</div>
+                  </div>
                 </div>
-                ${displayRemark ? `<span class="text-xs text-slate-400 truncate mt-1">${escapeHtml(displayRemark)}</span>` : ''}
-                <span class="text-[10px] text-slate-300 truncate mt-0.5">${escapeHtml(createdTimeText)}</span>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="font-black text-base ${isMedicine ? 'text-purple-600' : 'text-slate-500'}">${escapeHtml(valStr)}</span>
+                  <button data-action="edit-treatment" data-id="${h.id}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button data-action="delete-treatment" data-id="${h.id}" data-pid="${pid}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
               </div>
-            </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <span class="font-black text-lg ${valColor} leading-none tracking-tight">${escapeHtml(valStr)}</span>
-              <button data-action="edit-treatment" data-id="${h.id}" class="text-amber-500 hover:text-amber-600 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
-              <button data-action="delete-treatment" data-id="${h.id}" data-pid="${pid}" class="text-red-400 hover:text-red-600 p-2"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
+            `;
+            frag.appendChild(div);
+            return;
+          }
+
+          const purchases = [...group.purchases].sort(compareRecordsNewestFirst);
+          const consumes = [...group.consumes].sort((a, b) =>
+            String(a.date || '').localeCompare(String(b.date || ''))
+            || String(a.startTime || '').localeCompare(String(b.startTime || ''))
+          );
+          const mainPurchase = purchases[0] || null;
+          const course = group.course || {};
+          const billingPatient = dataStore.getPatient(group.billingPid);
+          const actualNames = [...group.actualPids].map(id => dataStore.getPatient(id)?.name).filter(Boolean);
+          const isMoxa = Number(course.moxaTotal || mainPurchase?.moxaTotal) > 0;
+          const courseClass = app.getCourseNumberClass(group.billingPid, group.courseNo);
+          const purchased = Number(course.purchased ?? purchases.reduce((sum, item) => sum + (Number(item.count) || 0), 0)) || 0;
+          const consumed = Number(course.consumed ?? consumes.reduce((sum, item) => sum + (Number(item.count) || 0), 0)) || 0;
+          const remain = Number(course.remain ?? (purchased - consumed)) || 0;
+          const amount = purchases.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+          const iconBg = isMoxa ? 'bg-[#f4e8dc] text-[#8a5a32] border border-[#dcc3aa]' : 'bg-blue-50 text-blue-600 border border-blue-100';
+          const summaryText = isMoxa
+            ? `治${purchased}→灸${Number(course.moxaTotal || mainPurchase?.moxaTotal || 0)} · 已灸${Number(course.moxaUsed || 0)} · 剩${Number(course.moxaRemain || 0)}`
+            : `${purchased}次 · 已用${consumed} · 剩${remain}`;
+          const titleText = group.purchaseDate ? `${group.purchaseDate}开单` : '未归属记录';
+          const relationBadge = group.billingPid !== pid
+            ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">实缴 ${escapeHtml(billingPatient?.name || '主卡')}</span>`
+            : (actualNames.length ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold shrink-0">治 ${escapeHtml(actualNames.join('、'))}</span>` : '');
+          div.innerHTML = `
+            <details class="group">
+              <summary class="list-none flex items-center justify-between gap-3 px-4 py-3 active:bg-slate-50 cursor-pointer">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <span class="shrink-0 text-xs w-7 h-7 flex items-center justify-center rounded-xl ${iconBg} font-bold shadow-sm">${isMoxa ? '灸' : '单'}</span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[13px] font-black text-slate-800 shrink-0">${escapeHtml(titleText)}</span>
+                      <span class="text-[9px] border px-1.5 py-0.5 rounded font-mono font-bold shrink-0 ${courseClass}">${escapeHtml(group.courseNo || '未编号')}</span>
+                      ${relationBadge}
+                    </div>
+                    <div class="text-[11px] text-slate-500 font-bold mt-1 truncate">${escapeHtml(summaryText)}${amount ? ` · ¥${money(amount)}` : ''}</div>
+                  </div>
+                </div>
+                <i class="fa-solid fa-chevron-down text-slate-300 text-xs transition-transform group-open:rotate-180"></i>
+              </summary>
+              <div class="bg-slate-50/70 border-t border-slate-100 px-3 py-2 space-y-1.5">
+                ${purchases.map(record => {
+                  const canManage = group.visibleRecordIds.has(record.id);
+                  return `
+                  <div class="rounded-xl bg-white border border-slate-100 px-3 py-2 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <div class="text-xs font-black text-slate-700">${escapeHtml(record.date || '')}<span class="ml-2 text-blue-600">开单</span></div>
+                      <div class="text-[10px] text-slate-400 mt-0.5 truncate">${record.count ? `${escapeHtml(record.count)}次` : ''}${record.amount ? ` · ¥${money(record.amount)}` : ''}${record.remark ? ` · ${escapeHtml(app.stripBorrowerRemark(record.remark))}` : ''}</div>
+                    </div>
+                    <div class="flex items-center shrink-0 ${canManage ? '' : 'hidden'}">
+                      <button data-action="edit-treatment" data-id="${record.id}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                      <button data-action="delete-treatment" data-id="${record.id}" data-pid="${pid}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                  </div>
+                `}).join('')}
+                ${consumes.length ? consumes.map(record => {
+                  const parties = app.getTreatmentParties(record);
+                  const actualBadge = parties.actualPid !== parties.billingPid
+                    ? `<span class="ml-1.5 text-[9px] bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded font-bold">${parties.billingPid === pid ? `治 ${escapeHtml(parties.actualPatient?.name || '未知')}` : `实缴 ${escapeHtml(parties.billingPatient?.name || '主卡')}`}</span>`
+                    : '';
+                  return `
+                    <div class="rounded-xl bg-white border border-slate-100 px-3 py-2 flex items-center justify-between gap-2">
+                      <div class="min-w-0">
+                        <div class="text-xs font-black text-slate-700">${escapeHtml(record.date || '')}<span class="ml-2 ${Number(record.moxaCount) > 0 ? 'text-[#8a5a32]' : 'text-emerald-600'}">${Number(record.moxaCount) > 0 ? '艾灸' : '治疗'} -${escapeHtml(record.count || 0)}</span>${actualBadge}</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5 truncate">${record.startTime || record.endTime ? `${escapeHtml(record.startTime || '--:--')}–${escapeHtml(record.endTime || '--:--')}` : '未记时间'}${record.remark ? ` · ${escapeHtml(app.stripBorrowerRemark(record.remark))}` : ''}</div>
+                      </div>
+                      <div class="flex items-center shrink-0">
+                        <button data-action="edit-treatment" data-id="${record.id}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button data-action="delete-treatment" data-id="${record.id}" data-pid="${pid}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                      </div>
+                    </div>
+                  `;
+                }).join('') : '<div class="rounded-xl bg-white border border-slate-100 px-3 py-2 text-xs text-slate-400 font-bold">暂无消耗</div>'}
+              </div>
+            </details>
           `;
           frag.appendChild(div);
         });
         list.appendChild(frag);
 
-        const remaining = stats.history.length - visibleHistory.length;
+        const remaining = groups.length - visibleGroups.length;
         if (remaining > 0) {
           const more = document.createElement('div');
           more.className = 'p-3 bg-slate-50/60 text-center';
-          more.innerHTML = `<button data-action="detail-load-more" data-pid="${pid}" class="w-full py-2 text-xs font-bold text-primary active:scale-95">加载更多（剩 ${remaining} 条）</button>`;
+          more.innerHTML = `<button data-action="detail-load-more" data-pid="${pid}" class="w-full py-2 text-xs font-bold text-primary active:scale-95">加载更多（剩 ${remaining} 张）</button>`;
           list.appendChild(more);
         }
       },
