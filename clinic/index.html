@@ -1563,7 +1563,8 @@
           setText('modal-patient-title', '新建档案');
           $('init-options').classList.remove('hidden');
           $('field-p-name').value = defaultName;
-          $('field-p-init-course-no').value = app.getNextCourseNo();
+          $('field-p-init-course-no').value = '';
+          $('field-p-init-course-no').placeholder = app.getNextCourseNo();
         }
         ui.openModal('modal-patient');
       },
@@ -1577,6 +1578,18 @@
 
       getCourseNo(inputId) {
         return String($(inputId)?.value || '').replace(/\D/g, '');
+      },
+
+      syncCourseNoForPurchase(courseNoId, countId, amountId) {
+        const input = $(courseNoId);
+        if (!input) return;
+        const needsCourseNo = $(countId).value !== '' || Number($(amountId).value) > 0;
+        if (needsCourseNo && !app.getCourseNo(courseNoId)) {
+          input.value = app.getNextCourseNo();
+        } else if (!needsCourseNo) {
+          input.value = '';
+          input.placeholder = app.getNextCourseNo();
+        }
       },
 
       hasCourseNo(courseNo, exceptId = '') {
@@ -2368,6 +2381,7 @@
           const moxaCount = $('field-p-init-moxa-value').value === '1' ? 1 : 0;
           const wantsInitialMoxa = moxaCount > 0 && moxaTotal > 0;
           const wantsInitialTreatment = cCount > 0 || wantsInitialMoxa;
+          app.syncCourseNoForPurchase('field-p-init-course-no', 'field-p-init-count', 'field-p-init-amount');
           const courseNo = app.getCourseNo('field-p-init-course-no');
           if ((pCntStr !== '' || pAmt > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
           if ((pCntStr !== '' || pAmt > 0) && app.hasCourseNo(courseNo)) return ui.showToast('编号已存在', 'warning');
@@ -2436,7 +2450,8 @@
         $('record-date').value = app.getEntryDate();
         ['rec-c-count', 'rec-p-count', 'rec-p-amount', 'rec-p-moxa', 'rec-m-amount', 'record-remark'].forEach(id => { $(id).value = ''; });
         if (presetConsume) $('rec-c-count').value = presetConsume;
-        $('rec-p-course-no').value = app.getNextCourseNo();
+        $('rec-p-course-no').value = '';
+        $('rec-p-course-no').placeholder = app.getNextCourseNo();
         $('rec-p-moxa-box').classList.add('hidden');
         $('rec-p-moxa-toggle').textContent = '＋兑换艾灸';
         app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', false);
@@ -2463,6 +2478,7 @@
         const wantsMoxaTreatment = moxaCount > 0;
         const wantsTreatment = cCount > 0 || wantsMoxaTreatment;
         const mAmount = Number($('rec-m-amount').value) || 0;
+        app.syncCourseNoForPurchase('rec-p-course-no', 'rec-p-count', 'rec-p-amount');
         const courseNo = app.getCourseNo('rec-p-course-no');
         if ((pCntStr !== '' || pAmount > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
         if ((pCntStr !== '' || pAmount > 0) && app.hasCourseNo(courseNo)) return ui.showToast('编号已存在', 'warning');
@@ -3895,7 +3911,12 @@
           $('field-p-init-moxa-use').classList.toggle('flex', show);
           if (!show) app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', false);
         });
-        $('field-p-init-count').addEventListener('input', () => $('field-p-init-moxa').dispatchEvent(new Event('input')));
+        ['field-p-init-count', 'field-p-init-amount'].forEach(id => {
+          $(id).addEventListener('input', () => {
+            app.syncCourseNoForPurchase('field-p-init-course-no', 'field-p-init-count', 'field-p-init-amount');
+            $('field-p-init-moxa').dispatchEvent(new Event('input'));
+          });
+        });
         $('field-p-init-moxa-use').addEventListener('click', () => {
           app.setMoxaUseButton('field-p-init-moxa-use', 'field-p-init-moxa-value', 'field-p-init-moxa-check', $('field-p-init-moxa-value').value !== '1');
         });
@@ -3913,6 +3934,7 @@
         });
         ['rec-p-count', 'rec-p-amount', 'rec-p-moxa'].forEach(id => {
           $(id).addEventListener('input', () => {
+            app.syncCourseNoForPurchase('rec-p-course-no', 'rec-p-count', 'rec-p-amount');
             app.updateRecordMoxaOption($('record-p-id').value);
             app.updateRecordCourseStatus($('record-p-id').value);
           });
