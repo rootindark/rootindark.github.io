@@ -550,6 +550,7 @@
           <input type="hidden" id="record-p-id">
           <input type="hidden" id="record-borrower-id">
           <input type="hidden" id="record-borrower-name">
+          <input type="hidden" id="record-consume-course-no">
           <div class="flex gap-3 items-end">
             <div class="w-[60%]">
               <label class="block text-[10px] font-bold text-slate-400 mb-1">就诊日期</label>
@@ -1707,6 +1708,12 @@
         return app.getCourseBalances(pid, date).filter(course => course.remain > 0);
       },
 
+      getConsumableCourses(pid, date = getLocalDateString(), pendingPurchase = null) {
+        return app.getCourseBalances(pid, date, pendingPurchase).filter(course =>
+          course.moxaTotal > 0 ? course.moxaRemain > 0 : course.remain > 0
+        );
+      },
+
       getCourseRemainSummary(pid, date = getLocalDateString()) {
         const courses = app.getCourseBalances(pid, date);
         const summary = courses.reduce((result, course) => {
@@ -1767,18 +1774,21 @@
         return index === 0 ? '当前卡' : (index === 1 ? '下一张' : `第${index + 1}张`);
       },
 
-      allocateCourseConsumption(pid, date, count, pendingPurchase = null) {
+      allocateCourseConsumption(pid, date, count, pendingPurchase = null, selectedCourseNo = '') {
         let remaining = Number(count) || 0;
         const allocations = [];
         const courses = app.getCourseBalances(pid, date, pendingPurchase);
-        courses.filter(course => course.remain > 0).forEach(course => {
+        const selectedCourses = selectedCourseNo
+          ? courses.filter(course => course.courseNo === String(selectedCourseNo))
+          : courses;
+        selectedCourses.filter(course => course.remain > 0).forEach(course => {
           if (remaining <= 0) return;
           const allocated = Math.min(remaining, course.remain);
           allocations.push({ courseKey: course.courseKey, courseNo: course.courseNo, count: allocated });
           remaining -= allocated;
         });
         if (remaining > 0) {
-          const fallback = courses.at(-1)?.courseNo || pendingPurchase?.courseNo || '';
+          const fallback = selectedCourses.at(-1)?.courseNo || pendingPurchase?.courseNo || courses.at(-1)?.courseNo || '';
           const last = allocations.at(-1);
           if (last && last.courseNo === fallback) last.count += remaining;
           else allocations.push({ courseNo: fallback, count: remaining });
@@ -1842,7 +1852,8 @@
         const pendingPurchase = isNewCourse
           ? { courseNo: app.getCourseNo('rec-p-course-no'), count: Number($('rec-p-count').value) || 0, moxaTotal: newTotal, date, id: 'pending' }
           : null;
-        const activeCourseNo = courseNo || app.getActiveCourseNo(pid, date, pendingPurchase);
+        const selectedCourseNo = $('record-consume-course-no').value;
+        const activeCourseNo = courseNo || selectedCourseNo || app.getActiveCourseNo(pid, date, pendingPurchase);
         const stats = activeCourseNo === pendingPurchase?.courseNo
           ? { remain: newTotal }
           : app.getMoxaStats(pid, activeCourseNo);
@@ -1861,24 +1872,29 @@
         const pendingPurchase = isNewCourse
           ? { courseNo: app.getCourseNo('rec-p-course-no'), count: Number($('rec-p-count').value) || 0, moxaTotal: Number($('rec-p-moxa').value) || 0, date, id: 'pending' }
           : null;
-        const courses = app.getCourseBalances(pid, date, pendingPurchase).filter(course => course.remain > 0);
+        const courses = app.getConsumableCourses(pid, date, pendingPurchase);
         if (!courses.length) {
+          $('record-consume-course-no').value = '';
           box.classList.add('hidden');
           box.classList.remove('flex');
           box.innerHTML = '';
           return;
         }
-        const renderCourse = (label, course, active) => `
-          <span class="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-bold ${active ? 'border-blue-200 bg-white text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-600'}">
-            <span class="${active ? 'text-blue-400' : 'text-slate-400'}">${label}</span>
+        let selectedCourseNo = $('record-consume-course-no').value;
+        if (!courses.some(course => course.courseNo === selectedCourseNo)) selectedCourseNo = courses[0].courseNo;
+        $('record-consume-course-no').value = selectedCourseNo;
+        const renderCourse = (course, active) => `
+          <button type="button" data-record-course-no="${escapeHtml(course.courseNo)}" class="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-bold ${active ? 'border-primary bg-white text-primary ring-1 ring-primary/20' : 'border-slate-200 bg-slate-50 text-slate-600'}">
+            <span class="${course.moxaTotal > 0 ? 'text-amber-700' : (active ? 'text-blue-500' : 'text-slate-400')}">${course.moxaTotal > 0 ? '艾灸卡' : '治疗卡'}</span>
             <span class="font-mono rounded border px-1 ${course.moxaTotal > 0 ? 'bg-[#f4e8dc] text-[#8a5a32] border-[#dcc3aa]' : 'bg-blue-50 text-blue-700 border-blue-100'}">${escapeHtml(course.courseNo || '未编号')}</span>
             <span>· ${course.moxaTotal > 0 ? `灸${escapeHtml(course.moxaRemain)}` : `剩${escapeHtml(course.remain)}`}</span>
-          </span>
+            ${active ? '<i class="fa-solid fa-circle-check ml-0.5"></i>' : ''}
+          </button>
         `;
-        box.innerHTML = renderCourse('当前卡', courses[0], true)
-          + (courses[1] ? renderCourse('下一张', courses[1], false) : '');
+        box.innerHTML = courses.map(course => renderCourse(course, course.courseNo === selectedCourseNo)).join('');
         box.classList.remove('hidden');
         box.classList.add('flex');
+        app.updateRecordMoxaOption(pid, selectedCourseNo);
       },
 
       setPillValue(selector, hiddenId, value) {
@@ -2430,7 +2446,7 @@
         ui.closeModal('modal-patient');
       },
 
-      openRecordUI(pid, presetConsume = 0) {
+      openRecordUI(pid, presetConsume = 0, selectedCourseNo = '') {
         const p = dataStore.getPatient(pid);
         if (!p) return;
         const stats = dataStore.calcStats(pid);
@@ -2439,6 +2455,7 @@
         $('record-p-id').value = pid;
         $('record-borrower-id').value = target?.borrowerId || '';
         $('record-borrower-name').value = target?.borrowerName || '';
+        $('record-consume-course-no').value = selectedCourseNo;
         $('record-patient-name').innerHTML = target?.borrowerName
           ? `${escapeHtml(p.name)} <span class="text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-lg text-[10px] font-bold ml-1.5">实治: ${escapeHtml(target.borrowerName)}</span>`
           : `${escapeHtml(p.name)}${p.source === '借卡' ? '<span class="text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-lg text-[10px] font-bold ml-1.5">主卡</span>' : ''}`;
@@ -2455,8 +2472,13 @@
         $('rec-p-moxa-box').classList.add('hidden');
         $('rec-p-moxa-toggle').textContent = '＋兑换艾灸';
         app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', false);
-        app.updateRecordMoxaOption(pid);
         app.updateRecordCourseStatus(pid);
+        const selectedCourse = app.getConsumableCourses(pid, $('record-date').value)
+          .find(course => course.courseNo === $('record-consume-course-no').value);
+        if (selectedCourse?.moxaTotal > 0) {
+          app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', true);
+          app.updateRecordMoxaOption(pid, selectedCourse.courseNo);
+        }
         setText('record-income-val', '0.00');
         ui.openModal('modal-record');
       },
@@ -2487,7 +2509,8 @@
         const purchaseRecord = isNewCourse
           ? { id: uid('t'), pid, borrowerId: borrowerId || null, type: 'purchase', date, courseNo, moxaTotal, count: pCount, amount: pAmount, income: pCount === 0 ? pAmount * 0.45 : pAmount * 0.65, remark }
           : null;
-        const activeCourseNo = app.getActiveCourseNo(pid, date, purchaseRecord);
+        const selectedCourseNo = $('record-consume-course-no').value;
+        const activeCourseNo = selectedCourseNo || app.getActiveCourseNo(pid, date, purchaseRecord);
         const availableMoxa = activeCourseNo === courseNo && purchaseRecord
           ? moxaTotal
           : app.getMoxaStats(pid, activeCourseNo).remain;
@@ -2504,7 +2527,7 @@
         if (wantsTreatment && consumeCount > 0) {
           const allocations = wantsMoxaTreatment
             ? [{ courseNo: activeCourseNo, count: consumeCount }]
-            : app.allocateCourseConsumption(pid, date, consumeCount, purchaseRecord);
+            : app.allocateCourseConsumption(pid, date, consumeCount, purchaseRecord, selectedCourseNo);
           const treatmentTimes = app.getTreatmentTimes(date);
           allocations.forEach((allocation, index) => {
             const isPendingOpening = Boolean(purchaseRecord && allocation.courseNo === courseNo);
@@ -2546,7 +2569,9 @@
         };
         if (wantsTreatment) {
           const patientName = dataStore.getPatient(pid)?.name || borrowerName || '该患者';
-          const remain = dataStore.calcStats(pid).remain;
+          const remain = activeCourse
+            ? (activeCourse.moxaTotal > 0 ? activeCourse.moxaRemain : activeCourse.remain)
+            : dataStore.calcStats(pid).remain;
           app.confirmConsumeIfNeeded({ pid, date, count: consumeCount, patientName, remain, run: commit });
         } else {
           commit();
@@ -2557,7 +2582,7 @@
         const actualPatient = dataStore.getPatient(actualPid);
         if (!actualPatient) return ui.showToast('未找到实际治疗人档案', 'error');
         const summary = app.getBorrowCardSummary(actualPid);
-        if (!summary.cards.length) return app.commitQuickConsume(actualPid);
+        if (!summary.cards.length) return app.chooseQuickConsumeCourse(actualPid);
 
         setText('quick-card-title', `${actualPatient.name} 扣哪张卡`);
         const options = [
@@ -2579,7 +2604,7 @@
         $('quick-card-options').innerHTML = options.map(item => {
           const tone = item.remain > 0 ? 'text-success bg-emerald-50 border-emerald-100' : 'text-danger bg-red-50 border-red-100';
           return `
-            <button class="w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between text-left shadow-sm active:scale-[0.99]" data-billing-id="${escapeHtml(item.billingPid)}" data-actual-id="${escapeHtml(item.actualPid)}">
+            <button class="w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between text-left shadow-sm active:scale-[0.99]" data-quick-action="account" data-billing-id="${escapeHtml(item.billingPid)}" data-actual-id="${escapeHtml(item.actualPid)}">
               <span class="min-w-0 pr-3">
                 <span class="block text-sm font-black text-slate-800 truncate">${escapeHtml(item.name)}</span>
                 <span class="block text-[11px] text-slate-400 font-semibold mt-0.5">${escapeHtml(item.note)}</span>
@@ -2591,15 +2616,54 @@
         ui.openModal('modal-quick-card-picker');
       },
 
-      commitQuickConsume(billingPid, actualPid = '') {
+      chooseQuickConsumeCourse(billingPid, actualPid = '', fromAccountPicker = false) {
+        const courses = app.getConsumableCourses(billingPid);
+        const hasTreatment = courses.some(course => course.moxaTotal <= 0);
+        const hasMoxa = courses.some(course => course.moxaTotal > 0);
+        if (!(hasTreatment && hasMoxa)) {
+          if (fromAccountPicker) ui.closeModal('modal-quick-card-picker');
+          const course = courses[0];
+          if (course?.moxaTotal > 0) return app.openRecordUI(billingPid, 1, course.courseNo);
+          return app.commitQuickConsume(billingPid, actualPid, course?.courseNo || '');
+        }
+
+        const actualPatient = dataStore.getPatient(actualPid || billingPid);
+        const billingPatient = dataStore.getPatient(billingPid);
+        const quickTitle = actualPid && actualPid !== billingPid
+          ? `${actualPatient?.name || '患者'} 用${billingPatient?.name || '所选账户'}扣什么卡`
+          : `${billingPatient?.name || '患者'} 扣什么卡`;
+        setText('quick-card-title', quickTitle);
+        $('quick-card-options').innerHTML = courses.map(course => {
+          const isMoxa = course.moxaTotal > 0;
+          const remain = isMoxa ? course.moxaRemain : course.remain;
+          const tone = isMoxa
+            ? 'text-amber-700 bg-amber-50 border-amber-100'
+            : 'text-success bg-emerald-50 border-emerald-100';
+          return `
+            <button class="w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between text-left shadow-sm active:scale-[0.99]" data-quick-action="course" data-billing-id="${escapeHtml(billingPid)}" data-actual-id="${escapeHtml(actualPid)}" data-course-no="${escapeHtml(course.courseNo)}" data-is-moxa="${isMoxa ? '1' : '0'}">
+              <span class="min-w-0 pr-3">
+                <span class="block text-sm font-black text-slate-800">${isMoxa ? '艾灸卡' : '治疗卡'}</span>
+                <span class="block text-[11px] text-slate-400 font-semibold mt-0.5">编号 ${escapeHtml(course.courseNo || '未编号')}</span>
+              </span>
+              <span class="shrink-0 min-w-16 px-2 py-1 rounded-xl border text-center font-black ${tone}">${isMoxa ? `余${escapeHtml(remain)}灸` : `余${escapeHtml(remain)}次`}</span>
+            </button>
+          `;
+        }).join('');
+        ui.openModal('modal-quick-card-picker');
+      },
+
+      commitQuickConsume(billingPid, actualPid = '', selectedCourseNo = '') {
         const target = app.getBillingTarget(billingPid);
         if (!target || !target.targetPatient) return ui.showToast('未找到可扣次的患者档案', 'error');
         const actualPatient = actualPid && actualPid !== billingPid ? dataStore.getPatient(actualPid) : null;
         const borrowerId = actualPatient ? actualPatient.id : (target.borrowerId || null);
         const patientName = actualPatient ? `${actualPatient.name}（用${target.targetPatient.name}卡）` : target.targetPatient.name;
+        const selectedCourse = selectedCourseNo
+          ? app.getCourseBalances(target.targetPid).find(course => course.courseNo === selectedCourseNo)
+          : null;
         const run = () => {
           const date = getLocalDateString();
-          const courseNo = app.allocateCourseConsumption(target.targetPid, date, 1)[0]?.courseNo || '';
+          const courseNo = app.allocateCourseConsumption(target.targetPid, date, 1, null, selectedCourseNo)[0]?.courseNo || '';
           const isOpeningTreatment = app.isOpeningDayFirstTreatment(target.targetPid, courseNo, date);
           const record = {
             id: uid('t'),
@@ -2628,7 +2692,7 @@
           date: getLocalDateString(),
           count: 1,
           patientName,
-          remain: target.stats.remain,
+          remain: selectedCourse?.remain ?? target.stats.remain,
           run
         });
       },
@@ -2638,9 +2702,7 @@
         if (!patient) return ui.showToast('未找到可扣次的患者档案', 'error');
         const summary = app.getBorrowCardSummary(pid);
         if (patient.source !== '借卡' && summary.cards.length) return app.openQuickConsumePicker(pid);
-        const courseNo = app.getActiveCourseNo(pid);
-        if (app.getMoxaStats(pid, courseNo).remain > 0) return app.openRecordUI(pid, 1);
-        return app.commitQuickConsume(pid);
+        return app.chooseQuickConsumeCourse(pid);
       },
 
       undoLastTreatmentGroup() {
@@ -3884,14 +3946,26 @@
           $('rec-c-count').value = btn.dataset.count;
         });
         $('quick-card-options').addEventListener('click', e => {
-          const btn = e.target.closest('[data-billing-id]');
+          const btn = e.target.closest('[data-quick-action]');
           if (!btn) return;
-          ui.closeModal('modal-quick-card-picker');
-          const courseNo = app.getActiveCourseNo(btn.dataset.billingId);
-          if (app.getMoxaStats(btn.dataset.billingId, courseNo).remain > 0) {
-            return app.openRecordUI(btn.dataset.billingId, 1);
+          if (btn.dataset.quickAction === 'account') {
+            return app.chooseQuickConsumeCourse(btn.dataset.billingId, btn.dataset.actualId, true);
           }
-          app.commitQuickConsume(btn.dataset.billingId, btn.dataset.actualId);
+          ui.closeModal('modal-quick-card-picker');
+          if (btn.dataset.isMoxa === '1') {
+            return app.openRecordUI(btn.dataset.billingId, 1, btn.dataset.courseNo);
+          }
+          app.commitQuickConsume(btn.dataset.billingId, btn.dataset.actualId, btn.dataset.courseNo);
+        });
+        $('record-course-status').addEventListener('click', e => {
+          const btn = e.target.closest('[data-record-course-no]');
+          if (!btn) return;
+          $('record-consume-course-no').value = btn.dataset.recordCourseNo;
+          const pid = $('record-p-id').value;
+          const course = app.getConsumableCourses(pid, $('record-date').value)
+            .find(item => item.courseNo === btn.dataset.recordCourseNo);
+          app.setMoxaUseButton('rec-moxa-use', 'rec-moxa-value', 'rec-moxa-check', Boolean(course?.moxaTotal > 0));
+          app.updateRecordCourseStatus(pid);
         });
         $('field-p-init-moxa-toggle').addEventListener('click', () => {
           const box = $('field-p-init-moxa-box');
