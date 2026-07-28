@@ -49,6 +49,9 @@
       .summary-label { @apply flex items-center justify-center rounded-xl bg-slate-50 text-[10px] font-black text-slate-500; }
       .period-box.compact { @apply min-h-0 px-1.5 py-1.5; }
       .period-box.compact em { @apply block not-italic text-[9px] text-slate-400 mt-0.5 leading-none; }
+      .remain-bucket { @apply rounded-xl border bg-white px-2 py-1.5 text-left active:scale-95 transition-all; }
+      .remain-bucket span { @apply block text-[10px] font-bold text-slate-400 leading-none; }
+      .remain-bucket strong { @apply block text-sm font-black text-slate-800 leading-tight mt-1; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       .patient-mobile-card { @apply bg-white rounded-2xl border border-slate-100 shadow-sm p-3 active:scale-[0.99] transition-transform; }
@@ -94,6 +97,9 @@
       .period-box strong { font-size: .86rem !important; }
       .period-box.compact strong { font-size: .76rem !important; line-height: .95rem !important; }
       .period-box.compact em { font-size: .56rem !important; margin-top: .12rem !important; }
+      .remain-bucket { padding: .42rem .45rem !important; border-radius: .72rem !important; }
+      .remain-bucket span { font-size: .6rem !important; }
+      .remain-bucket strong { font-size: .82rem !important; }
       #daily-page .card { margin-bottom: .82rem !important; }
       #closeout-list { gap: .48rem !important; }
       #closeout-list > div { padding: .54rem .65rem !important; border-radius: .78rem !important; font-size: .75rem !important; }
@@ -231,6 +237,24 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-3 gap-1.5 mb-3">
+          <button class="remain-bucket border-emerald-100" data-remain-bucket="active">
+            <span>&lt;20天</span>
+            <strong><b id="remain-active-total">0</b><small class="ml-0.5 text-[10px] text-slate-400">次</small></strong>
+            <span><b id="remain-active-count">0</b>人</span>
+          </button>
+          <button class="remain-bucket border-blue-100" data-remain-bucket="recent">
+            <span>20-60天</span>
+            <strong><b id="remain-recent-total">0</b><small class="ml-0.5 text-[10px] text-slate-400">次</small></strong>
+            <span><b id="remain-recent-count">0</b>人</span>
+          </button>
+          <button class="remain-bucket border-red-100" data-remain-bucket="lost">
+            <span>&gt;60天</span>
+            <strong><b id="remain-lost-total">0</b><small class="ml-0.5 text-[10px] text-slate-400">次</small></strong>
+            <span><b id="remain-lost-count">0</b>人</span>
+          </button>
+        </div>
+
         <div class="card p-3 mb-4">
           <div class="grid grid-cols-[2.8rem_repeat(3,minmax(0,1fr))] gap-1.5 text-center items-stretch">
             <div></div>
@@ -354,27 +378,32 @@
           <div id="weekday-avg-list" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2"></div>
         </div>
 
-        <div class="card p-0 mb-6 border-red-100 overflow-hidden">
-          <div class="bg-red-50/50 px-5 py-3 border-b border-red-100 flex justify-between items-center">
-            <h3 class="font-bold text-danger flex items-center"><i class="fa-solid fa-bell mr-2 animate-pulse-fast"></i>随访清单</h3>
-            <span class="text-xs bg-red-100 text-danger px-3 py-1 rounded-full font-bold"><span id="dash-dormant-count">0</span> 人</span>
-          </div>
-          <div class="p-5 bg-white">
-            <div class="overflow-x-auto no-scrollbar">
-              <table class="w-full text-left border-collapse min-w-[500px]">
-                <thead class="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                  <tr>
-                    <th class="py-2.5 font-semibold">患者</th>
-                    <th class="py-2.5 font-semibold">余次</th>
-                    <th class="py-2.5 font-semibold">最后</th>
-                    <th class="py-2.5 font-semibold">动作</th>
-                    <th class="py-2.5 text-right font-semibold">操作</th>
-                  </tr>
-                </thead>
-                <tbody id="dormant-list-body" class="divide-y divide-slate-50 text-sm"></tbody>
-              </table>
+        <div id="dashboard-rankings" class="grid grid-cols-2 gap-2.5 md:gap-4 mb-6">
+          <div class="card min-w-0">
+            <div class="px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-100 flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-emerald-500 text-xs"></i>
+              <h3 class="font-bold text-xs md:text-sm text-slate-700">治疗次数 Top 10</h3>
             </div>
+            <ol id="treatment-ranking-list" class="divide-y divide-slate-50"></ol>
           </div>
+          <div class="card min-w-0">
+            <div class="px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-100 flex items-center gap-2">
+              <i class="fa-solid fa-yen-sign text-amber-500 text-xs"></i>
+              <h3 class="font-bold text-xs md:text-sm text-slate-700">累计实付 Top 10</h3>
+            </div>
+            <ol id="spending-ranking-list" class="divide-y divide-slate-50"></ol>
+          </div>
+        </div>
+
+        <div class="card mb-6">
+          <div class="px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+            <h3 class="font-bold text-xs md:text-sm text-slate-700 flex items-center min-w-0">
+              <i class="fa-solid fa-battery-empty text-red-500 text-xs mr-2"></i>
+              <span class="truncate">高频活跃 · 余0</span>
+            </h3>
+            <span class="shrink-0 rounded-lg bg-red-50 px-2 py-1 text-[10px] font-black text-red-600"><span id="active-zero-count">0</span> 人</span>
+          </div>
+          <div id="active-zero-list" class="grid max-h-72 grid-cols-2 overflow-y-auto md:grid-cols-3"></div>
         </div>
       </section>
 
@@ -2312,6 +2341,53 @@
         return stats.history[stats.history.length - 1].date === date;
       },
 
+      getRemainBucketMeta(bucket) {
+        return {
+          active: { title: '<20天预存', min: 0, max: 19, tone: 'text-emerald-600' },
+          recent: { title: '20-60天预存', min: 20, max: 60, tone: 'text-blue-600' },
+          lost: { title: '久未预存', min: 61, max: Infinity, tone: 'text-danger' }
+        }[bucket] || null;
+      },
+
+      getRemainBuckets(referenceDate = getLocalDateString()) {
+        const referenceTime = utils.parseDateToLocalMidnight(referenceDate);
+        const buckets = {
+          active: { total: 0, count: 0, patients: [] },
+          recent: { total: 0, count: 0, patients: [] },
+          lost: { total: 0, count: 0, patients: [] }
+        };
+
+        Object.keys(dataStore.statsCache).forEach(pid => {
+          const stats = dataStore.statsCache[pid];
+          const remain = Number(stats.remain) || 0;
+          if (remain <= 0) return;
+          const p = dataStore.getPatient(pid);
+          if (!p) return;
+          const lastDate = stats.history[0]?.date || '';
+          const lastTime = lastDate ? utils.parseDateToLocalMidnight(lastDate) : 0;
+          const days = lastTime ? Math.max(0, Math.floor((referenceTime - lastTime) / 86400000)) : Infinity;
+          let key = 'lost';
+          if (days < 20) key = 'active';
+          else if (days <= 60) key = 'recent';
+          buckets[key].total += remain;
+          buckets[key].count += 1;
+          buckets[key].patients.push({ p, stats, remain, lastDate, days });
+        });
+
+        Object.values(buckets).forEach(bucket => {
+          bucket.patients.sort((a, b) => b.days - a.days || b.remain - a.remain);
+        });
+        return buckets;
+      },
+
+      renderRemainBuckets(referenceDate = getLocalDateString()) {
+        const buckets = app.getRemainBuckets(referenceDate);
+        Object.entries(buckets).forEach(([key, bucket]) => {
+          setText(`remain-${key}-total`, bucket.total);
+          setText(`remain-${key}-count`, bucket.count);
+        });
+      },
+
       confirmConsumeIfNeeded({ pid, date, count, patientName, remain, run }) {
         const duplicate = app.hasConsumeOnDate(pid, date);
         const insufficient = Number(remain) <= 0;
@@ -3044,6 +3120,7 @@
         let globalRem = 0;
         Object.values(dataStore.statsCache).forEach(s => { if (s.remain > 0) globalRem += s.remain; });
         setText('global-total-remain', globalRem);
+        app.renderRemainBuckets(targetDate);
 
         const ts = dataStore.treatments.filter(t => t.date === targetDate);
         let totalRev = 0, totalIncome = 0, totalPurCount = 0, totalConsume = 0, purRev = 0, medRev = 0;
@@ -3099,6 +3176,12 @@
         const dateStrCn = `${ty}年${tm}月${td}日`;
         const bodyFrag = document.createDocumentFragment();
         const exportFrag = document.createDocumentFragment();
+        const exportRows = [];
+        const getCourseSortKey = (courseNoText) => {
+          const firstNo = String(courseNoText || '').split(/[、,，\s/]+/).find(Boolean) || '';
+          const num = Number(firstNo);
+          return Number.isFinite(num) && firstNo !== '' ? num : Number.POSITIVE_INFINITY;
+        };
         pids.forEach(pid => {
           const p = dataStore.getPatient(pid);
           if (!p) return;
@@ -3142,9 +3225,18 @@
               <td class="px-4 py-2 border-r border-slate-100 text-center">${d.mAmt || ''}</td>
               <td class="px-4 py-2 text-center font-bold">${d.income ? Number(d.income).toFixed(2) : ''}</td>
             `;
-            exportFrag.appendChild(exportTr);
+            exportRows.push({ tr: exportTr, courseNoText, name: p.name });
           }
         });
+        exportRows
+          .sort((a, b) => {
+            const courseDiff = getCourseSortKey(a.courseNoText) - getCourseSortKey(b.courseNoText);
+            if (courseDiff !== 0) return courseDiff;
+            const courseTextDiff = String(a.courseNoText).localeCompare(String(b.courseNoText), 'zh-CN', { numeric: true });
+            if (courseTextDiff !== 0) return courseTextDiff;
+            return String(a.name).localeCompare(String(b.name), 'zh-CN');
+          })
+          .forEach(row => exportFrag.appendChild(row.tr));
         $('daily-list-body').appendChild(bodyFrag);
         $('daily-export-body').appendChild(exportFrag);
       },
@@ -3203,17 +3295,26 @@
         let prefix = '';
         let suffix = '';
 
-        if (type === 'global_remain') {
-          title = '未消耗额度';
-          colorCls = 'text-danger';
+        if (type === 'global_remain' || type === 'remain_bucket') {
+          const bucketMeta = type === 'remain_bucket' ? app.getRemainBucketMeta(period) : null;
+          title = bucketMeta?.title || '未消耗额度';
+          colorCls = bucketMeta?.tone || 'text-danger';
           suffix = ' 次';
-          const remainList = Object.keys(dataStore.statsCache)
-            .map(pid => ({ p: dataStore.getPatient(pid), stats: dataStore.statsCache[pid] }))
-            .filter(item => item.p && item.stats.remain > 0)
-            .sort((a, b) => utils.parseDateToLocalMidnight(a.stats.history[0]?.date || '1970-01-01') - utils.parseDateToLocalMidnight(b.stats.history[0]?.date || '1970-01-01'));
-          remainList.forEach(({ p, stats }) => {
-            total += stats.remain;
-            html += `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${p.id}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(p.name)}</span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(stats.history[0]?.date || '未记录')}</span></div><span class="font-black text-danger text-base shrink-0">${stats.remain} 次</span></li>`;
+          const remainList = type === 'remain_bucket'
+            ? (app.getRemainBuckets(targetDate)[period]?.patients || [])
+            : Object.keys(dataStore.statsCache)
+              .map(pid => {
+                const stats = dataStore.statsCache[pid];
+                const lastDate = stats.history[0]?.date || '';
+                const days = lastDate ? Math.max(0, Math.floor((utils.parseDateToLocalMidnight(targetDate) - utils.parseDateToLocalMidnight(lastDate)) / 86400000)) : Infinity;
+                return { p: dataStore.getPatient(pid), stats, remain: Number(stats.remain) || 0, lastDate, days };
+              })
+              .filter(item => item.p && item.remain > 0)
+              .sort((a, b) => b.days - a.days || b.remain - a.remain);
+          remainList.forEach(({ p, stats, remain, lastDate, days }) => {
+            const displayDays = Number.isFinite(days) ? `${days}天` : '未记录';
+            total += remain;
+            html += `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${p.id}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(p.name)}</span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(lastDate || '未记录')} · ${displayDays}</span></div><span class="font-black ${colorCls} text-base shrink-0">${remain} 次</span></li>`;
           });
         } else {
           const ts = dataStore.treatments.filter(t => t.date >= startStr && t.date <= endStr).sort((a, b) => utils.parseDateToLocalMidnight(a.date) - utils.parseDateToLocalMidnight(b.date));
@@ -3254,7 +3355,7 @@
 
         setText('daily-det-title', title);
         $('daily-det-total').className = `font-black text-2xl ${colorCls}`;
-        setText('daily-det-total', `${prefix}${type === 'patients' || type === 'pur' || type === 'con' || type === 'global_remain' ? total.toFixed(0) : total.toFixed(2)}${suffix}`);
+        setText('daily-det-total', `${prefix}${type === 'patients' || type === 'pur' || type === 'con' || type === 'global_remain' || type === 'remain_bucket' ? total.toFixed(0) : total.toFixed(2)}${suffix}`);
         $('daily-det-list').innerHTML = html || '<li class="px-4 py-8 text-center text-xs text-slate-400">无</li>';
         ui.openModal('modal-daily-detail');
       },
@@ -3280,7 +3381,104 @@
         setText('dash-repurchase', patientsWithPurchase ? `${((repurchaseCount / patientsWithPurchase) * 100).toFixed(1)}%` : '0%');
         setText('dash-referral-rate', dataStore.patients.length ? `${((sourceCounts['推荐'] / dataStore.patients.length) * 100).toFixed(1)}%` : '0%');
         app.renderWeekdayAverages(todayStr);
-        app.renderDormant(todayStr);
+        app.renderRankings();
+        app.renderActiveZeroList(todayStr);
+      },
+
+      renderRankings() {
+        const totals = new Map();
+        dataStore.treatments.forEach(record => {
+          const billingPid = app.getTreatmentBillingPid(record);
+          if (!billingPid || !dataStore.getPatient(billingPid)) return;
+          if (!totals.has(billingPid)) totals.set(billingPid, { treatments: 0, spending: 0 });
+          const total = totals.get(billingPid);
+          if (record.type === 'consume') total.treatments += Number(record.count) || 0;
+          if (record.type === 'purchase' || record.type === 'medicine') total.spending += Number(record.amount) || 0;
+        });
+
+        const buildRanking = (metric, listId, formatter) => {
+          const rows = [...totals.entries()]
+            .map(([pid, total]) => ({ pid, patient: dataStore.getPatient(pid), value: total[metric] }))
+            .filter(item => item.patient && item.value > 0)
+            .sort((a, b) => b.value - a.value || a.patient.name.localeCompare(b.patient.name, 'zh-CN'))
+            .slice(0, 10);
+          const list = $(listId);
+          if (!rows.length) {
+            list.innerHTML = '<li class="px-3 py-6 text-center text-xs text-slate-400">无</li>';
+            return;
+          }
+          list.innerHTML = rows.map((item, index) => {
+            const rankClass = index === 0
+              ? 'bg-amber-100 text-amber-700'
+              : index === 1
+                ? 'bg-slate-200 text-slate-600'
+                : index === 2
+                  ? 'bg-orange-100 text-orange-700'
+                  : 'bg-slate-50 text-slate-400';
+            return `
+              <li>
+                <button type="button" data-rank-pid="${escapeHtml(item.pid)}" class="w-full min-w-0 px-2.5 py-2.5 md:px-4 flex items-center gap-2 text-left hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                  <span class="w-5 h-5 shrink-0 rounded-md flex items-center justify-center text-[10px] font-black ${rankClass}">${index + 1}</span>
+                  <span class="min-w-0 flex-1 truncate text-xs md:text-sm font-bold text-slate-700">${escapeHtml(item.patient.name)}</span>
+                  <strong class="shrink-0 text-[11px] md:text-sm font-black ${metric === 'treatments' ? 'text-emerald-600' : 'text-amber-600'}">${formatter(item.value)}</strong>
+                </button>
+              </li>
+            `;
+          }).join('');
+        };
+
+        buildRanking('treatments', 'treatment-ranking-list', value => `${value}次`);
+        buildRanking('spending', 'spending-ranking-list', value => `¥${money(value)}`);
+      },
+
+      renderActiveZeroList(todayStr = getLocalDateString()) {
+        const startStr = utils.addDays(todayStr, -13);
+        const start60Str = utils.addDays(todayStr, -59);
+        const recentByBillingPid = new Map();
+        const treatmentCount60 = new Map();
+        dataStore.treatments.forEach(record => {
+          if (record.type !== 'consume' || record.date > todayStr || Number(record.count) <= 0) return;
+          const billingPid = app.getTreatmentBillingPid(record);
+          if (!billingPid) return;
+          if (record.date >= start60Str) {
+            treatmentCount60.set(billingPid, (treatmentCount60.get(billingPid) || 0) + (Number(record.count) || 0));
+          }
+          if (record.date < startStr) return;
+          const current = recentByBillingPid.get(billingPid);
+          if (!current || compareRecordsNewestFirst(record, current) < 0) recentByBillingPid.set(billingPid, record);
+        });
+
+        const patients = [...recentByBillingPid.entries()]
+          .map(([pid, lastRecord]) => {
+            const patient = dataStore.getPatient(pid);
+            const stats = dataStore.calcStats(pid);
+            const actualPid = app.getTreatmentActualPid(lastRecord);
+            const actualPatient = actualPid && actualPid !== pid ? dataStore.getPatient(actualPid) : null;
+            return { pid, patient, stats, lastRecord, actualPatient, count60: treatmentCount60.get(pid) || 0 };
+          })
+          .filter(item => item.patient && Number(item.stats.remain) === 0 && item.count60 > 5)
+          .sort((a, b) => compareRecordsNewestFirst(a.lastRecord, b.lastRecord) || a.patient.name.localeCompare(b.patient.name, 'zh-CN'));
+
+        setText('active-zero-count', patients.length);
+        const list = $('active-zero-list');
+        if (!patients.length) {
+          list.className = 'py-8 text-center text-xs text-slate-400';
+          list.innerHTML = '无';
+          return;
+        }
+        list.className = 'grid max-h-72 grid-cols-2 overflow-y-auto md:grid-cols-3';
+        list.innerHTML = patients.map(item => {
+          const actualText = item.actualPatient ? `治 ${item.actualPatient.name}` : '';
+          return `
+            <button type="button" data-active-zero-pid="${escapeHtml(item.pid)}" class="min-w-0 border-b border-r border-slate-100 px-3 py-2.5 text-left hover:bg-slate-50 active:bg-slate-100 transition-colors">
+              <span class="flex items-center justify-between gap-2">
+                <strong class="min-w-0 truncate text-xs md:text-sm text-slate-700">${escapeHtml(item.patient.name)}</strong>
+                <span class="shrink-0 text-[10px] font-black text-red-500">余0</span>
+              </span>
+              <span class="mt-1 block truncate text-[10px] font-semibold text-slate-400">60天${item.count60}次 · ${escapeHtml(item.lastRecord.date.slice(5).replace('-', '/'))}${actualText ? ` · ${escapeHtml(actualText)}` : ''}</span>
+            </button>
+          `;
+        }).join('');
       },
 
       renderWeekdayAverages(todayStr) {
@@ -3387,44 +3585,6 @@
           data: { labels, datasets: [{ data, backgroundColor: ['#e2e8f0', '#8b5cf6'], borderWidth: 0, hoverOffset: 4 }] },
           options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } } }
         });
-      },
-
-      renderDormant(todayStr) {
-        const todayTime = utils.parseDateToLocalMidnight(todayStr);
-        const dormant = [];
-        Object.keys(dataStore.statsCache).forEach(pid => {
-          const stats = dataStore.statsCache[pid];
-          if (!stats.history.length) return;
-          const p = dataStore.getPatient(pid);
-          if (!p) return;
-          const lastDate = stats.history[0].date;
-          const days = Math.floor((todayTime - utils.parseDateToLocalMidnight(lastDate)) / 86400000);
-          if (stats.remain > 1 && days > 15) dormant.push({ p, stats, lastDate, days, priority: 1, status: `停滞 ${days}天`, action: '提醒复诊', cls: 'bg-amber-50 text-warning border border-amber-100' });
-          else if (stats.remain <= 0 && days > 30) dormant.push({ p, stats, lastDate, days, priority: 3, status: '无余次', action: '询问疗效', cls: 'bg-red-50 text-danger border border-red-100' });
-        });
-        dormant.sort((a, b) => a.priority - b.priority || b.days - a.days);
-        setText('dash-dormant-count', dormant.length);
-        const tbody = $('dormant-list-body');
-        tbody.innerHTML = '';
-        if (!dormant.length) {
-          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400 text-xs font-semibold">无</td></tr>';
-          return;
-        }
-        const frag = document.createDocumentFragment();
-        dormant.slice(0, 20).forEach(item => {
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-slate-50 transition-colors cursor-pointer';
-          tr.dataset.pid = item.p.id;
-          tr.innerHTML = `
-            <td class="py-3 pr-2"><div class="font-bold text-slate-800">${escapeHtml(item.p.name)}</div><div class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(item.p.phone || '无联系方式')}</div></td>
-            <td class="py-3"><span class="font-black ${item.stats.remain > 0 ? 'text-success' : 'text-slate-400'}">${item.stats.remain}</span> 次</td>
-            <td class="py-3 text-xs text-slate-500">${escapeHtml(item.lastDate)}</td>
-            <td class="py-3"><span class="text-[10px] px-2 py-0.5 rounded-lg font-bold ${item.cls}">${escapeHtml(item.action)} · ${escapeHtml(item.status)}</span></td>
-            <td class="py-3 text-right"><button data-action="record" data-id="${item.p.id}" class="btn btn-secondary !py-1 !px-2.5 text-[11px]"><i class="fa-solid fa-paper-plane text-primary mr-1"></i>跟进</button></td>
-          `;
-          frag.appendChild(tr);
-        });
-        tbody.appendChild(frag);
       },
 
       getDetailLedgerGroups(pid) {
@@ -3768,20 +3928,32 @@
         });
       },
 
-      copyDailyTable() {
-        const table = $('daily-export-table');
-        const range = document.createRange();
-        range.selectNode(table);
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
+      async copyDailyTable() {
+        const tbody = $('daily-export-body');
+        const rows = [...tbody.querySelectorAll('tr')]
+          .map(tr => [...tr.cells].map(td => td.innerText.trim()))
+          .filter(cells => cells.length === 8 && cells.some(Boolean) && cells[0] !== '无');
+        if (!rows.length) return ui.showToast('暂无可复制内容', 'warning');
+
+        const text = rows.map(cells => cells.join('\t')).join('\n');
         try {
-          document.execCommand('copy');
-          ui.showToast('到诊报表已复制', 'success');
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+          }
+          ui.showToast('财务明细已复制', 'success');
         } catch {
           ui.showToast('复制异常，请手动框选', 'error');
         }
-        selection.removeAllRanges();
       },
 
       importExcel(file) {
@@ -3863,6 +4035,9 @@
         $('daily-date-picker').addEventListener('change', e => app.renderDaily(e.target.value));
         $('undo-last-record').addEventListener('click', app.undoLastTreatmentGroup);
         $('global-remain-btn').addEventListener('click', () => app.showPeriodDetail('global_remain'));
+        document.querySelectorAll('[data-remain-bucket]').forEach(btn => {
+          btn.addEventListener('click', () => app.showPeriodDetail('remain_bucket', btn.dataset.remainBucket));
+        });
         $('copy-daily-table').addEventListener('click', app.copyDailyTable);
         $('open-maintenance').addEventListener('click', () => {
           app.updateBackupStatus();
@@ -4063,11 +4238,13 @@
           if (!btn) return;
           app.markNotebookCopied(String(btn.dataset.ids || '').split('|').filter(Boolean));
         });
-        $('dormant-list-body').addEventListener('click', e => {
-          const recordBtn = e.target.closest('[data-action="record"]');
-          if (recordBtn) return app.openRecordUI(recordBtn.dataset.id);
-          const row = e.target.closest('[data-pid]');
-          if (row) app.showDetail(row.dataset.pid);
+        $('dashboard-rankings').addEventListener('click', e => {
+          const row = e.target.closest('[data-rank-pid]');
+          if (row) app.showDetail(row.dataset.rankPid);
+        });
+        $('active-zero-list').addEventListener('click', e => {
+          const row = e.target.closest('[data-active-zero-pid]');
+          if (row) app.showDetail(row.dataset.activeZeroPid);
         });
         $('det-history-list').addEventListener('click', e => {
           const moreBtn = e.target.closest('[data-action="detail-load-more"]');
