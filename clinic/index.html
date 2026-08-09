@@ -935,19 +935,28 @@
       cloudCollectionMode: 'array',
       hasCloudBaseline: false,
       cloudLoading: false,
+      refreshPromise: null,
       pendingSync: false,
       mutationVersion: 0,
       syncState: { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] },
 
-      async fetchWithRetry(url, options = {}, retries = 3, delay = 700) {
+      async fetchWithRetry(url, options = {}, retries = 3, delay = 700, timeoutMs = 12000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        const requestOptions = { ...options, signal: controller.signal };
+        if (!requestOptions.method || requestOptions.method.toUpperCase() === 'GET') {
+          requestOptions.cache = 'no-store';
+        }
         try {
-          const res = await fetch(url, options);
+          const res = await fetch(url, requestOptions);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res;
         } catch (error) {
           if (retries <= 0) throw error;
           await new Promise(resolve => setTimeout(resolve, delay));
-          return dataStore.fetchWithRetry(url, options, retries - 1, delay * 1.7);
+          return dataStore.fetchWithRetry(url, options, retries - 1, delay * 1.7, timeoutMs);
+        } finally {
+          clearTimeout(timeoutId);
         }
       },
 
@@ -1002,6 +1011,16 @@
       },
 
       async refreshFromCloud() {
+        if (dataStore.refreshPromise) return dataStore.refreshPromise;
+        dataStore.refreshPromise = dataStore.performCloudRefresh();
+        try {
+          return await dataStore.refreshPromise;
+        } finally {
+          dataStore.refreshPromise = null;
+        }
+      },
+
+      async performCloudRefresh() {
         dataStore.cloudLoading = true;
         const initialMutationVersion = dataStore.mutationVersion;
         let connected = false;
@@ -1114,6 +1133,10 @@
           return true;
         }
         dataStore.saveTimer = setTimeout(async () => {
+          if (dataStore.cloudLoading) {
+            dataStore.pendingSync = true;
+            return;
+          }
           const syncVersion = dataStore.mutationVersion;
           try {
             const patientChanges = dataStore.buildCollectionPatch(dataStore.patients, dataStore.syncedPatients, dataStore.syncedPatientIndexes, 'patients');
@@ -1453,12 +1476,20 @@
     };
 
     const app = {
-      state: { search: '', currentPage: 'patients', currentDetailPid: null, detailHistoryLimit: 10 },
+      state: {
+        search: '',
+        currentPage: 'patients',
+        currentDetailPid: null,
+        detailHistoryLimit: 10,
+        lastCloudRefreshAt: 0,
+        lifecycleEventsBound: false
+      },
 
       async initSystem() {
         dataStore.initLocal();
         $('daily-date-picker').value = getLocalDateString();
         app.bindEvents();
+        app.bindLifecycleEvents();
         app.initSearchDropdown('merge-p1-search', 'merge-p1-dropdown', 'merge-p1-id');
         app.initSearchDropdown('merge-p2-search', 'merge-p2-dropdown', 'merge-p2-id');
         app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id');
@@ -1467,9 +1498,37 @@
         app.updateNotebookBadge();
         app.showPage('patients');
         const connected = await dataStore.refreshFromCloud();
+        if (connected) app.state.lastCloudRefreshAt = Date.now();
         app.updateBadge(connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
         app.updateNotebookBadge();
         app.showPage(app.state.currentPage);
+      },
+
+      async refreshAfterResume({ force = false } = {}) {
+        const main = $('main-app');
+        if (!main || main.classList.contains('hidden') || document.visibilityState === 'hidden') return false;
+        const isFresh = Date.now() - app.state.lastCloudRefreshAt < 60000;
+        if (!force && isFresh) return true;
+        if (dataStore.refreshPromise) return dataStore.refreshPromise;
+        app.updateBadge('loading');
+        const connected = await dataStore.refreshFromCloud();
+        if (connected) app.state.lastCloudRefreshAt = Date.now();
+        app.updateBadge(connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
+        app.updateNotebookBadge();
+        app.showPage(app.state.currentPage);
+        return connected;
+      },
+
+      bindLifecycleEvents() {
+        if (app.state.lifecycleEventsBound) return;
+        app.state.lifecycleEventsBound = true;
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') app.refreshAfterResume();
+        });
+        window.addEventListener('pageshow', event => {
+          if (event.persisted) app.refreshAfterResume({ force: true });
+        });
+        window.addEventListener('online', () => app.refreshAfterResume({ force: true }));
       },
 
       verifyAuth() {
