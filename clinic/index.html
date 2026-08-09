@@ -935,9 +935,11 @@
       cloudCollectionMode: 'array',
       hasCloudBaseline: false,
       cloudLoading: false,
+      cloudLoadFailed: false,
       refreshPromise: null,
       pendingSync: false,
       mutationVersion: 0,
+      localStorageRecovered: false,
       syncState: { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] },
 
       async fetchWithRetry(url, options = {}, retries = 3, delay = 700, timeoutMs = 12000) {
@@ -960,9 +962,20 @@
         }
       },
 
+      readLocalCollection(key) {
+        try {
+          const value = JSON.parse(localStorage.getItem(key) || '[]');
+          if (!Array.isArray(value)) throw new Error('Invalid local collection');
+          return value.filter(item => item && typeof item === 'object');
+        } catch {
+          dataStore.localStorageRecovered = true;
+          return [];
+        }
+      },
+
       initLocal() {
-        dataStore.patients = JSON.parse(localStorage.getItem(dataStore.keys.P) || '[]');
-        dataStore.treatments = JSON.parse(localStorage.getItem(dataStore.keys.T) || '[]');
+        dataStore.patients = dataStore.readLocalCollection(dataStore.keys.P);
+        dataStore.treatments = dataStore.readLocalCollection(dataStore.keys.T);
         try {
           const state = JSON.parse(localStorage.getItem(dataStore.keys.D) || 'null');
           if (state && typeof state === 'object') {
@@ -974,14 +987,23 @@
           }
         } catch {
           dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] };
+          dataStore.localStorageRecovered = true;
         }
+        dataStore.compactLocalBackups();
         dataStore.rebuildStatsCache();
         dataStore.captureSyncState();
         dataStore.ensureDailyBackup();
       },
 
       persistSyncState() {
-        localStorage.setItem(dataStore.keys.D, JSON.stringify(dataStore.syncState));
+        const value = JSON.stringify(dataStore.syncState);
+        try {
+          localStorage.setItem(dataStore.keys.D, value);
+        } catch {
+          dataStore.localStorageRecovered = true;
+          dataStore.persistLocalBackups([]);
+          try { localStorage.setItem(dataStore.keys.D, value); } catch { /* 云端同步仍可继续 */ }
+        }
       },
 
       markDeleted(type, ids) {
@@ -1022,6 +1044,7 @@
 
       async performCloudRefresh() {
         dataStore.cloudLoading = true;
+        dataStore.cloudLoadFailed = false;
         const initialMutationVersion = dataStore.mutationVersion;
         let connected = false;
         try {
@@ -1057,6 +1080,7 @@
             dataStore.pendingSync = true;
           }
         } catch {
+          dataStore.cloudLoadFailed = true;
           ui.showToast('未能连接云端，已进入本地离线模式', 'warning');
         }
         dataStore.cloudLoading = false;
@@ -1110,8 +1134,23 @@
       },
 
       persistLocal() {
-        localStorage.setItem(dataStore.keys.P, JSON.stringify(dataStore.patients));
-        localStorage.setItem(dataStore.keys.T, JSON.stringify(dataStore.treatments));
+        const patients = JSON.stringify(dataStore.patients);
+        const treatments = JSON.stringify(dataStore.treatments);
+        try {
+          localStorage.setItem(dataStore.keys.P, patients);
+          localStorage.setItem(dataStore.keys.T, treatments);
+          return true;
+        } catch {
+          dataStore.localStorageRecovered = true;
+          dataStore.persistLocalBackups([]);
+          try {
+            localStorage.setItem(dataStore.keys.P, patients);
+            localStorage.setItem(dataStore.keys.T, treatments);
+            return true;
+          } catch {
+            return false;
+          }
+        }
       },
 
       save({ sync = true, mutation = true, forceFull = false } = {}) {
@@ -1378,8 +1417,30 @@
           const backups = JSON.parse(localStorage.getItem(dataStore.keys.B) || '[]');
           return Array.isArray(backups) ? backups : [];
         } catch {
+          dataStore.localStorageRecovered = true;
           return [];
         }
+      },
+
+      persistLocalBackups(backups) {
+        const candidates = [backups.slice(0, 3), backups.slice(0, 1), []];
+        for (const candidate of candidates) {
+          try {
+            if (candidate.length) localStorage.setItem(dataStore.keys.B, JSON.stringify(candidate));
+            else localStorage.removeItem(dataStore.keys.B);
+            return true;
+          } catch {
+            dataStore.localStorageRecovered = true;
+          }
+        }
+        return false;
+      },
+
+      compactLocalBackups() {
+        const backups = dataStore.getLocalBackups();
+        if (backups.length <= 3) return true;
+        dataStore.localStorageRecovered = true;
+        return dataStore.persistLocalBackups(backups);
       },
 
       createLocalSnapshot(reason = '自动快照') {
@@ -1393,7 +1454,7 @@
           patients: dataStore.patients,
           treatments: dataStore.treatments
         });
-        localStorage.setItem(dataStore.keys.B, JSON.stringify(backups.slice(0, 7)));
+        return dataStore.persistLocalBackups(backups);
       },
 
       ensureDailyBackup() {
@@ -1486,7 +1547,17 @@
       },
 
       async initSystem() {
-        dataStore.initLocal();
+        app.updateBadge('loading');
+        try {
+          dataStore.initLocal();
+        } catch {
+          dataStore.patients = [];
+          dataStore.treatments = [];
+          dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] };
+          dataStore.localStorageRecovered = true;
+          dataStore.rebuildStatsCache();
+          dataStore.captureSyncState();
+        }
         $('daily-date-picker').value = getLocalDateString();
         app.bindEvents();
         app.bindLifecycleEvents();
@@ -1494,10 +1565,10 @@
         app.initSearchDropdown('merge-p2-search', 'merge-p2-dropdown', 'merge-p2-id');
         app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id');
         app.initSearchDropdown('referrer-search', 'referrer-dropdown', 'field-p-referrer-id');
-        app.updateBadge('loading');
         app.updateNotebookBadge();
+        const cloudRefresh = dataStore.refreshFromCloud();
         app.showPage('patients');
-        const connected = await dataStore.refreshFromCloud();
+        const connected = await cloudRefresh;
         if (connected) app.state.lastCloudRefreshAt = Date.now();
         app.updateBadge(connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
         app.updateNotebookBadge();
@@ -1511,7 +1582,9 @@
         if (!force && isFresh) return true;
         if (dataStore.refreshPromise) return dataStore.refreshPromise;
         app.updateBadge('loading');
-        const connected = await dataStore.refreshFromCloud();
+        const cloudRefresh = dataStore.refreshFromCloud();
+        app.showPage(app.state.currentPage);
+        const connected = await cloudRefresh;
         if (connected) app.state.lastCloudRefreshAt = Date.now();
         app.updateBadge(connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
         app.updateNotebookBadge();
@@ -3083,17 +3156,38 @@
         if (mobileList) mobileList.innerHTML = '';
         if (!rows.length) {
           const safeSearch = escapeHtml(app.state.search);
-          tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-16 text-center text-slate-400">未找到${safeSearch ? `<div class="mt-4"><button class="btn btn-primary mx-auto px-6" data-create-name="${safeSearch}"><i class="fa-solid fa-user-plus mr-2"></i>新建 "${safeSearch}"</button></div>` : ''}</td></tr>`;
-          tbody.querySelector('[data-create-name]')?.addEventListener('click', () => app.openPatientModal(null, app.state.search));
+          const isCloudLoading = !safeSearch && dataStore.patients.length === 0 && dataStore.cloudLoading;
+          const isCloudFailure = !safeSearch && dataStore.patients.length === 0 && dataStore.cloudLoadFailed;
+          const emptyTitle = isCloudLoading
+            ? '正在从云端恢复数据...'
+            : isCloudFailure
+              ? '云端数据加载失败'
+              : safeSearch
+                ? '未找到'
+                : dataStore.patients.length
+                  ? '近7天暂无接诊，搜索可查全部档案'
+                  : '暂无患者档案';
+          const emptyAction = isCloudFailure
+            ? '<button class="btn btn-primary mt-4 mx-auto px-6" data-retry-cloud><i class="fa-solid fa-rotate mr-2"></i>重新加载</button>'
+            : safeSearch
+              ? `<button class="btn btn-primary mt-4 mx-auto px-6" data-create-name="${safeSearch}"><i class="fa-solid fa-user-plus mr-2"></i>新建 "${safeSearch}"</button>`
+              : '';
+          const emptyIcon = isCloudLoading ? 'fa-circle-notch animate-spin' : isCloudFailure ? 'fa-cloud-arrow-down' : 'fa-magnifying-glass';
+          const bindEmptyActions = root => {
+            root?.querySelector('[data-create-name]')?.addEventListener('click', () => app.openPatientModal(null, app.state.search));
+            root?.querySelector('[data-retry-cloud]')?.addEventListener('click', () => app.refreshAfterResume({ force: true }));
+          };
+          tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-16 text-center text-slate-400"><i class="fa-solid ${emptyIcon} text-xl mb-3"></i><div>${emptyTitle}</div>${emptyAction}</td></tr>`;
+          bindEmptyActions(tbody);
           if (mobileList) {
             mobileList.innerHTML = `
               <div class="patient-mobile-card text-center py-10 text-slate-400">
-                <i class="fa-solid fa-magnifying-glass text-2xl text-slate-300 mb-3"></i>
-                <p class="text-sm font-bold">未找到</p>
-                ${safeSearch ? `<button class="btn btn-primary mt-4 mx-auto px-5" data-create-name="${safeSearch}"><i class="fa-solid fa-user-plus mr-2"></i>创建 "${safeSearch}"</button>` : ''}
+                <i class="fa-solid ${emptyIcon} text-2xl text-slate-300 mb-3"></i>
+                <p class="text-sm font-bold">${emptyTitle}</p>
+                ${emptyAction}
               </div>
             `;
-            mobileList.querySelector('[data-create-name]')?.addEventListener('click', () => app.openPatientModal(null, app.state.search));
+            bindEmptyActions(mobileList);
           }
           return;
         }
