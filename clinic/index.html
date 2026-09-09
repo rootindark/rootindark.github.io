@@ -7,11 +7,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="针推管理">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.16.4/dist/index.js"></script>
+  <script src="./assets/vendor/tailwind.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
+  <script src="./assets/vendor/chart.umd.min.js"></script>
+  <script src="./assets/vendor/xlsx.full.min.js"></script>
+  <script src="./assets/vendor/pinyin-pro.min.js"></script>
+  <script src="./clinic-config.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -57,6 +58,9 @@
       .patient-mobile-card { @apply bg-white rounded-2xl border border-slate-100 shadow-sm p-3 active:scale-[0.99] transition-transform; }
       .notebook-done-btn { @apply h-8 px-3 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-sm transition-all active:scale-95 hover:bg-blue-700 shrink-0; }
       .notebook-batch-btn { @apply h-7 px-2.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 text-[11px] font-bold transition-all active:scale-95 hover:bg-blue-100; }
+      .todo-check { @apply w-6 h-6 rounded-full border-2 border-slate-300 text-white flex items-center justify-center shrink-0 transition-all active:scale-90; }
+      .todo-check:hover { @apply border-primary bg-blue-50; }
+      .todo-check.done { @apply border-emerald-500 bg-emerald-500; }
     }
 
     @media (max-width: 767px) {
@@ -102,7 +106,8 @@
       .remain-bucket strong { font-size: .82rem !important; }
       #daily-page .card { margin-bottom: .82rem !important; }
       #closeout-list { gap: .48rem !important; }
-      #closeout-list > div { padding: .54rem .65rem !important; border-radius: .78rem !important; font-size: .75rem !important; }
+      #closeout-list > div,
+      #closeout-list > button { padding: .54rem .65rem !important; border-radius: .78rem !important; font-size: .75rem !important; }
       #daily-list-body td,
       #daily-export-body td { padding-top: .62rem !important; padding-bottom: .62rem !important; font-size: .8rem !important; }
       #notebook-page > div:first-child { margin-bottom: .65rem !important; }
@@ -139,9 +144,9 @@
   <div id="login-screen" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center transition-opacity duration-300 backdrop-blur-md">
     <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border border-slate-100">
       <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
-      <h2 class="text-2xl font-black text-slate-800 mb-5">出诊密钥</h2>
-      <input type="password" id="login-pwd" placeholder="请输入密钥" class="input-field mb-4 text-center tracking-widest text-lg" autocomplete="current-password">
-      <button id="login-submit" class="btn btn-primary w-full text-base py-3.5"><i class="fa-solid fa-lock-open mr-2"></i>解锁</button>
+      <h2 class="text-2xl font-black text-slate-800 mb-5">进入针推系统</h2>
+      <input type="password" id="login-pwd" placeholder="请输入系统密码" class="input-field mb-4 text-center tracking-wider" autocomplete="current-password" autofocus>
+      <button id="login-submit" class="btn btn-primary w-full text-base py-3.5"><i class="fa-solid fa-right-to-bracket mr-2"></i>进入系统</button>
     </div>
   </div>
 
@@ -163,6 +168,10 @@
           <div id="data-status-badge" class="hidden md:inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500">
             <i class="fa-solid fa-circle-notch animate-spin mr-1.5"></i>连接中...
           </div>
+          <button id="open-todos" class="relative h-9 px-2.5 md:px-3 rounded-xl bg-blue-50 text-primary hover:bg-blue-100 active:scale-95 transition-all flex items-center gap-1.5" aria-label="打开我的待办">
+            <i class="fa-solid fa-list-check text-sm"></i><span class="hidden md:inline text-xs font-bold">待办</span>
+            <span id="todo-count" class="hidden absolute -right-1.5 -top-1.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black leading-5 text-center border-2 border-white">0</span>
+          </button>
           <button id="open-maintenance" class="relative flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-95" aria-label="维护">
             <i class="fa-solid fa-sliders text-sm"></i>
             <span id="sync-status-dot" class="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-slate-300"></span>
@@ -304,6 +313,13 @@
             <div class="rounded-xl bg-white border border-emerald-100 px-2 py-1.5"><p class="text-[10px] text-slate-400">收费</p><p id="today-paid-patient-count" class="text-lg font-black text-primary leading-tight">0</p></div>
           </div>
           <div id="closeout-list" class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs"></div>
+          <div id="closeout-todos" class="hidden mt-3 border-t border-blue-100 pt-3">
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-xs font-black text-slate-600">今天未完成</span>
+              <span id="closeout-todo-count" class="rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700">0 件</span>
+            </div>
+            <div id="closeout-todo-list" class="space-y-2"></div>
+          </div>
         </div>
 
         <div class="card flex flex-col mb-5">
@@ -415,6 +431,39 @@
       <button class="mobile-nav-btn relative flex flex-col items-center w-1/4 pt-2" data-page="notebook"><i class="fa-solid fa-book-medical text-lg mb-0.5"></i><span class="text-[10px] font-bold">待登记</span><span id="notebook-count-mobile" class="hidden absolute top-0 right-[30%] min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black leading-4">0</span></button>
       <button class="mobile-nav-btn flex flex-col items-center w-1/4 pt-2" data-page="dashboard"><i class="fa-solid fa-chart-line text-lg mb-0.5"></i><span class="text-[10px] font-bold">简报</span></button>
     </footer>
+
+    <div id="todo-backdrop" class="fixed inset-0 z-[70] hidden bg-slate-900/30 backdrop-blur-[2px] opacity-0 transition-opacity"></div>
+    <aside id="todo-drawer" class="fixed right-0 top-0 z-[80] flex h-[100dvh] w-full max-w-md translate-x-full flex-col bg-slate-50 shadow-2xl transition-transform duration-300" aria-hidden="true" aria-label="我的待办">
+      <div class="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
+        <div class="flex items-center gap-3">
+          <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-primary"><i class="fa-solid fa-list-check"></i></span>
+          <div><h2 class="font-black text-slate-800">我的待办</h2><p id="todo-summary" class="text-xs text-slate-400">今天都处理完了</p></div>
+        </div>
+        <button id="close-todos" class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200" aria-label="关闭待办"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="todo-form" class="border-b border-slate-100 bg-white p-4">
+        <input id="todo-edit-id" type="hidden">
+        <div id="todo-edit-bar" class="mb-2 hidden items-center justify-between rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
+          <span><i class="fa-solid fa-pen mr-1.5"></i>正在编辑待办</span>
+          <button id="todo-cancel-edit" type="button" class="text-amber-700 underline underline-offset-2">取消</button>
+        </div>
+        <div class="flex gap-2">
+          <input id="todo-input" type="text" maxlength="120" class="input-field flex-1" placeholder="记一件事……" autocomplete="off">
+          <button id="todo-submit" type="submit" class="btn btn-primary w-12 px-0" aria-label="保存待办"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <div class="mt-2 flex items-center gap-2">
+          <button type="button" class="todo-date-shortcut rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-primary" data-offset="0">今天</button>
+          <button type="button" class="todo-date-shortcut rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-500" data-offset="1">明天</button>
+          <button type="button" class="todo-date-shortcut rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-500" data-offset="">以后</button>
+          <input id="todo-date" type="date" class="ml-auto rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-500 outline-none focus:border-primary" aria-label="待办日期">
+        </div>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          <label class="text-[11px] font-bold text-slate-400">时间（选填）<input id="todo-start-time" type="time" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm font-semibold text-slate-600 outline-none focus:border-primary focus:bg-white"></label>
+          <label class="text-[11px] font-bold text-slate-400">结束（时间段）<input id="todo-end-time" type="time" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm font-semibold text-slate-600 outline-none focus:border-primary focus:bg-white"></label>
+        </div>
+      </form>
+      <div id="todo-list" class="flex-1 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"></div>
+    </aside>
   </div>
 
   <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-[120] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4"></div>
@@ -758,8 +807,9 @@
     'use strict';
 
     const CONFIG = Object.freeze({
-      dbUrl: 'https://clinic-data-913bd-default-rtdb.firebaseio.com/clinic_pro.json',
-      authKey: 'mhtxyc'
+      dbUrl: String(window.CLINIC_CONFIG?.dbUrl || ''),
+      firebaseApiKey: String(window.CLINIC_CONFIG?.firebaseApiKey || ''),
+      firebaseLoginEmail: String(window.CLINIC_CONFIG?.firebaseLoginEmail || 'clinic-owner@local.invalid')
     });
 
     const $ = (id) => document.getElementById(id);
@@ -777,6 +827,35 @@
       return local.toISOString().split('T')[0];
     };
     const uid = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const RECORD_ID_PATTERN = /^[A-Za-z0-9_-]{1,120}$/;
+    const assertRecordId = (value, field = 'ID', { optional = false } = {}) => {
+      if (optional && (value === null || value === undefined || value === '')) return null;
+      const id = String(value || '');
+      if (!RECORD_ID_PATTERN.test(id)) throw new Error(`${field}格式非法`);
+      return id;
+    };
+    const validateRecord = (record, type) => {
+      if (!record || typeof record !== 'object') throw new Error('数据记录格式无效');
+      record.id = assertRecordId(record.id, type === 'patient' ? '患者ID' : type === 'todo' ? '待办ID' : '流水ID');
+      if (type === 'patient') {
+        record.lenderId = assertRecordId(record.lenderId, '关联用卡人ID', { optional: true });
+        record.referrerId = assertRecordId(record.referrerId, '推荐人ID', { optional: true });
+      } else if (type === 'treatment') {
+        record.pid = assertRecordId(record.pid, '患者ID');
+        record.borrowerId = assertRecordId(record.borrowerId, '实际用卡人ID', { optional: true });
+      } else {
+        record.ownerId = assertRecordId(record.ownerId, '待办归属');
+        record.text = String(record.text || '').trim().slice(0, 120);
+        if (!record.text) throw new Error('待办内容不能为空');
+        record.dueDate = /^\d{4}-\d{2}-\d{2}$/.test(String(record.dueDate || '')) ? record.dueDate : '';
+        record.startTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(String(record.startTime || '')) ? record.startTime : '';
+        record.endTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(String(record.endTime || '')) ? record.endTime : '';
+        if (!record.startTime) record.endTime = '';
+        record.completed = Boolean(record.completed);
+      }
+      return record;
+    };
+    const validateCollection = (collection, type) => collection.map(item => validateRecord(item, type));
     const compareRecordsNewestFirst = (a, b) => {
       const dateOrder = String(b?.date || '').localeCompare(String(a?.date || ''));
       if (dateOrder) return dateOrder;
@@ -918,10 +997,139 @@
       }
     };
 
+    const localAccess = {
+      passwordKey: 'clinic_system_password_v1',
+      sessionKey: 'clinic_system_access_v1',
+
+      load() {
+        return sessionStorage.getItem(localAccess.sessionKey) === 'granted';
+      },
+
+      async hash(password) {
+        const bytes = new TextEncoder().encode(`clinic-system:${password}`);
+        if (globalThis.crypto?.subtle) {
+          const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+          return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('');
+        }
+        let hash = 2166136261;
+        bytes.forEach(value => { hash = Math.imul(hash ^ value, 16777619); });
+        return `local-${(hash >>> 0).toString(16)}`;
+      },
+
+      async verify(password) {
+        const candidate = await localAccess.hash(password);
+        const saved = localStorage.getItem(localAccess.passwordKey);
+        if (saved && saved !== candidate) return false;
+        if (!saved) localStorage.setItem(localAccess.passwordKey, candidate);
+        sessionStorage.setItem(localAccess.sessionKey, 'granted');
+        return true;
+      },
+
+      clearSession() {
+        sessionStorage.removeItem(localAccess.sessionKey);
+      }
+    };
+
+    const authSession = {
+      key: 'clinic_firebase_auth_v1',
+      current: null,
+
+      isConfigured() {
+        return /^https:\/\/[A-Za-z0-9.-]+\.firebaseio\.com\/.+\.json$/.test(CONFIG.dbUrl)
+          && CONFIG.firebaseApiKey
+          && !CONFIG.firebaseApiKey.startsWith('REPLACE_');
+      },
+
+      load() {
+        try {
+          const saved = JSON.parse(sessionStorage.getItem(authSession.key) || 'null');
+          if (!saved?.idToken || !saved?.refreshToken || !saved?.expiresAt) return null;
+          authSession.current = saved;
+          return saved;
+        } catch {
+          authSession.clear();
+          return null;
+        }
+      },
+
+      save(session) {
+        authSession.current = session;
+        sessionStorage.setItem(authSession.key, JSON.stringify(session));
+      },
+
+      clear() {
+        authSession.current = null;
+        sessionStorage.removeItem(authSession.key);
+      },
+
+      async requestPasswordAuth(endpoint, password) {
+        return fetch(`https://identitytoolkit.googleapis.com/v1/accounts:${endpoint}?key=${encodeURIComponent(CONFIG.firebaseApiKey)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: CONFIG.firebaseLoginEmail,
+            password: `clinic-access:${password}`,
+            returnSecureToken: true
+          })
+        });
+      },
+
+      async signIn(password) {
+        if (!authSession.isConfigured()) throw new Error('尚未配置 Firebase 安全登录');
+        if (!password) throw new Error('请输入系统密码');
+        let res = await authSession.requestPasswordAuth('signInWithPassword', password);
+        let body = await res.json().catch(() => ({}));
+        if (!res.ok || !body.idToken) {
+          const createRes = await authSession.requestPasswordAuth('signUp', password);
+          const createBody = await createRes.json().catch(() => ({}));
+          if (!createRes.ok || !createBody.idToken) throw new Error('系统密码错误');
+          res = createRes;
+          body = createBody;
+        }
+        authSession.save({
+          idToken: body.idToken,
+          refreshToken: body.refreshToken,
+          expiresAt: Date.now() + Math.max(Number(body.expiresIn || 3600) - 60, 60) * 1000,
+          localId: body.localId || ''
+        });
+      },
+
+      async refresh() {
+        const session = authSession.current || authSession.load();
+        if (!session?.refreshToken) throw new Error('登录已失效');
+        const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(CONFIG.firebaseApiKey)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: session.refreshToken })
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || !body.id_token) {
+          authSession.clear();
+          throw new Error('登录已失效，请重新登录');
+        }
+        authSession.save({
+          ...session,
+          idToken: body.id_token,
+          refreshToken: body.refresh_token || session.refreshToken,
+          expiresAt: Date.now() + Math.max(Number(body.expires_in || 3600) - 60, 60) * 1000,
+          localId: body.user_id || session.localId
+        });
+        return authSession.current.idToken;
+      },
+
+      async getIdToken() {
+        const session = authSession.current || authSession.load();
+        if (!session) throw new Error('请先登录');
+        if (Date.now() < Number(session.expiresAt)) return session.idToken;
+        return authSession.refresh();
+      }
+    };
+
     const dataStore = {
-      keys: { P: 'clinic_patients', T: 'clinic_treatments', B: 'clinic_auto_backups', U: 'clinic_last_undo', D: 'clinic_pending_sync_v1' },
+      keys: { P: 'clinic_patients', T: 'clinic_treatments', O: 'clinic_todos', B: 'clinic_auto_backups', U: 'clinic_last_undo', D: 'clinic_pending_sync_v1' },
       patients: [],
       treatments: [],
+      todos: [],
       patientMap: new Map(),
       charts: {},
       statsCache: {},
@@ -930,8 +1138,10 @@
       saveTimer: null,
       syncedPatients: new Map(),
       syncedTreatments: new Map(),
+      syncedTodos: new Map(),
       syncedPatientIndexes: new Map(),
       syncedTreatmentIndexes: new Map(),
+      syncedTodoIndexes: new Map(),
       cloudCollectionMode: 'array',
       hasCloudBaseline: false,
       cloudLoading: false,
@@ -940,12 +1150,20 @@
       pendingSync: false,
       mutationVersion: 0,
       localStorageRecovered: false,
-      syncState: { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] },
+      syncState: { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [], deletedTodoIds: [] },
 
       async fetchWithRetry(url, options = {}, retries = 3, delay = 700, timeoutMs = 12000) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-        const requestOptions = { ...options, signal: controller.signal };
+        const requestOptions = {
+          ...options,
+          headers: { ...options.headers },
+          signal: controller.signal
+        };
+        if (authSession.isConfigured()) {
+          const idToken = await authSession.getIdToken();
+          requestOptions.headers.Authorization = `Bearer ${idToken}`;
+        }
         if (!requestOptions.method || requestOptions.method.toUpperCase() === 'GET') {
           requestOptions.cache = 'no-store';
         }
@@ -966,7 +1184,8 @@
         try {
           const value = JSON.parse(localStorage.getItem(key) || '[]');
           if (!Array.isArray(value)) throw new Error('Invalid local collection');
-          return value.filter(item => item && typeof item === 'object');
+          const type = key === dataStore.keys.P ? 'patient' : key === dataStore.keys.T ? 'treatment' : 'todo';
+          return validateCollection(value, type);
         } catch {
           dataStore.localStorageRecovered = true;
           return [];
@@ -976,17 +1195,19 @@
       initLocal() {
         dataStore.patients = dataStore.readLocalCollection(dataStore.keys.P);
         dataStore.treatments = dataStore.readLocalCollection(dataStore.keys.T);
+        dataStore.todos = dataStore.readLocalCollection(dataStore.keys.O);
         try {
           const state = JSON.parse(localStorage.getItem(dataStore.keys.D) || 'null');
           if (state && typeof state === 'object') {
             dataStore.syncState = {
               dirty: Boolean(state.dirty),
               deletedPatientIds: Array.isArray(state.deletedPatientIds) ? state.deletedPatientIds : [],
-              deletedTreatmentIds: Array.isArray(state.deletedTreatmentIds) ? state.deletedTreatmentIds : []
+              deletedTreatmentIds: Array.isArray(state.deletedTreatmentIds) ? state.deletedTreatmentIds : [],
+              deletedTodoIds: Array.isArray(state.deletedTodoIds) ? state.deletedTodoIds : []
             };
           }
         } catch {
-          dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] };
+          dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [], deletedTodoIds: [] };
           dataStore.localStorageRecovered = true;
         }
         dataStore.compactLocalBackups();
@@ -1007,7 +1228,7 @@
       },
 
       markDeleted(type, ids) {
-        const key = type === 'patient' ? 'deletedPatientIds' : 'deletedTreatmentIds';
+        const key = type === 'patient' ? 'deletedPatientIds' : type === 'todo' ? 'deletedTodoIds' : 'deletedTreatmentIds';
         dataStore.syncState[key] = [...new Set([
           ...dataStore.syncState[key],
           ...ids.filter(Boolean)
@@ -1016,9 +1237,10 @@
         dataStore.persistSyncState();
       },
 
-      mergeCloudWithLocal(cloudPatients, cloudTreatments) {
+      mergeCloudWithLocal(cloudPatients, cloudTreatments, cloudTodos) {
         const deletedPatients = new Set(dataStore.syncState.deletedPatientIds);
         const deletedTreatments = new Set(dataStore.syncState.deletedTreatmentIds);
+        const deletedTodos = new Set(dataStore.syncState.deletedTodoIds);
         const merge = (cloud, local, deleted) => {
           const merged = new Map(cloud.filter(item => item?.id && !deleted.has(item.id)).map(item => [item.id, item]));
           local.forEach(item => {
@@ -1028,7 +1250,8 @@
         };
         return {
           patients: merge(cloudPatients, dataStore.patients, deletedPatients),
-          treatments: merge(cloudTreatments, dataStore.treatments, deletedTreatments)
+          treatments: merge(cloudTreatments, dataStore.treatments, deletedTreatments),
+          todos: merge(cloudTodos, dataStore.todos, deletedTodos)
         };
       },
 
@@ -1051,30 +1274,36 @@
           const res = await dataStore.fetchWithRetry(CONFIG.dbUrl);
           const cloudData = await res.json();
           connected = true;
-          const cloudPatients = dataStore.normalizeCloudCollection(cloudData?.patients);
-          const cloudTreatments = dataStore.normalizeCloudCollection(cloudData?.treatments);
-          dataStore.cloudCollectionMode = Array.isArray(cloudData?.patients) && Array.isArray(cloudData?.treatments) ? 'array' : 'object';
+          const validatedCloud = dataStore.validateCloudData(cloudData);
+          const cloudPatients = validatedCloud.patients;
+          const cloudTreatments = validatedCloud.treatments;
+          const cloudTodos = validatedCloud.todos;
+          dataStore.cloudCollectionMode = Array.isArray(cloudData?.patients) && Array.isArray(cloudData?.treatments) && Array.isArray(cloudData?.todos) ? 'array' : 'object';
           dataStore.hasCloudBaseline = true;
           const cloudIsEmpty = !cloudData;
           const hasPendingLocal = dataStore.syncState.dirty
             || dataStore.mutationVersion !== initialMutationVersion
-            || (cloudIsEmpty && (dataStore.patients.length > 0 || dataStore.treatments.length > 0));
+            || (cloudIsEmpty && (dataStore.patients.length > 0 || dataStore.treatments.length > 0 || dataStore.todos.length > 0));
           if (!hasPendingLocal) {
             dataStore.patients = cloudPatients;
             dataStore.treatments = cloudTreatments;
+            dataStore.todos = cloudTodos;
             dataStore.rebuildStatsCache();
             dataStore.persistLocal();
             dataStore.captureSyncState();
           } else {
-            const merged = dataStore.mergeCloudWithLocal(cloudPatients, cloudTreatments);
+            const merged = dataStore.mergeCloudWithLocal(cloudPatients, cloudTreatments, cloudTodos);
             dataStore.patients = merged.patients;
             dataStore.treatments = merged.treatments;
+            dataStore.todos = merged.todos;
             dataStore.rebuildStatsCache();
             dataStore.persistLocal();
             dataStore.syncedPatients = dataStore.collectionHashes(cloudPatients);
             dataStore.syncedTreatments = dataStore.collectionHashes(cloudTreatments);
+            dataStore.syncedTodos = dataStore.collectionHashes(cloudTodos);
             dataStore.syncedPatientIndexes = dataStore.collectionIndexes(cloudPatients);
             dataStore.syncedTreatmentIndexes = dataStore.collectionIndexes(cloudTreatments);
+            dataStore.syncedTodoIndexes = dataStore.collectionIndexes(cloudTodos);
             dataStore.syncState.dirty = true;
             dataStore.persistSyncState();
             dataStore.pendingSync = true;
@@ -1092,9 +1321,18 @@
       },
 
       normalizeCloudCollection(collection) {
-        if (Array.isArray(collection)) return collection.filter(item => item && typeof item === 'object');
-        if (collection && typeof collection === 'object') return Object.values(collection).filter(item => item && typeof item === 'object');
-        return [];
+        const values = Array.isArray(collection)
+          ? collection.filter(item => item !== null && item !== undefined)
+          : (collection && typeof collection === 'object' ? Object.values(collection) : []);
+        return values;
+      },
+
+      validateCloudData(cloudData) {
+        return {
+          patients: validateCollection(dataStore.normalizeCloudCollection(cloudData?.patients), 'patient'),
+          treatments: validateCollection(dataStore.normalizeCloudCollection(cloudData?.treatments), 'treatment'),
+          todos: validateCollection(dataStore.normalizeCloudCollection(cloudData?.todos), 'todo')
+        };
       },
 
       collectionToObject(collection) {
@@ -1112,8 +1350,10 @@
       captureSyncState() {
         dataStore.syncedPatients = dataStore.collectionHashes(dataStore.patients);
         dataStore.syncedTreatments = dataStore.collectionHashes(dataStore.treatments);
+        dataStore.syncedTodos = dataStore.collectionHashes(dataStore.todos);
         dataStore.syncedPatientIndexes = dataStore.collectionIndexes(dataStore.patients);
         dataStore.syncedTreatmentIndexes = dataStore.collectionIndexes(dataStore.treatments);
+        dataStore.syncedTodoIndexes = dataStore.collectionIndexes(dataStore.todos);
       },
 
       buildCollectionPatch(collection, synced, syncedIndexes, path) {
@@ -1136,9 +1376,11 @@
       persistLocal() {
         const patients = JSON.stringify(dataStore.patients);
         const treatments = JSON.stringify(dataStore.treatments);
+        const todos = JSON.stringify(dataStore.todos);
         try {
           localStorage.setItem(dataStore.keys.P, patients);
           localStorage.setItem(dataStore.keys.T, treatments);
+          localStorage.setItem(dataStore.keys.O, todos);
           return true;
         } catch {
           dataStore.localStorageRecovered = true;
@@ -1146,6 +1388,7 @@
           try {
             localStorage.setItem(dataStore.keys.P, patients);
             localStorage.setItem(dataStore.keys.T, treatments);
+            localStorage.setItem(dataStore.keys.O, todos);
             return true;
           } catch {
             return false;
@@ -1162,6 +1405,8 @@
         dataStore.persistLocal();
         dataStore.rebuildStatsCache();
         app.updateNotebookBadge?.();
+        app.updateTodoBadge?.();
+        if (!$('todo-drawer')?.classList.contains('translate-x-full')) app.renderTodos?.();
         if (!sync) return true;
 
         app.updateBadge?.('pending');
@@ -1180,20 +1425,22 @@
           try {
             const patientChanges = dataStore.buildCollectionPatch(dataStore.patients, dataStore.syncedPatients, dataStore.syncedPatientIndexes, 'patients');
             const treatmentChanges = dataStore.buildCollectionPatch(dataStore.treatments, dataStore.syncedTreatments, dataStore.syncedTreatmentIndexes, 'treatments');
+            const todoChanges = dataStore.buildCollectionPatch(dataStore.todos, dataStore.syncedTodos, dataStore.syncedTodoIndexes, 'todos');
             const lastUpdate = new Date().toLocaleString();
-            if (!dataStore.hasCloudBaseline || forceFull || dataStore.syncState.deletedPatientIds.length || dataStore.syncState.deletedTreatmentIds.length) {
+            if (!dataStore.hasCloudBaseline || forceFull || dataStore.syncState.deletedPatientIds.length || dataStore.syncState.deletedTreatmentIds.length || dataStore.syncState.deletedTodoIds.length) {
               await dataStore.fetchWithRetry(CONFIG.dbUrl, {
                 method: 'PUT',
                 body: JSON.stringify({
                   patients: dataStore.patients,
                   treatments: dataStore.treatments,
+                  todos: dataStore.todos,
                   lastUpdate
                 })
               });
               dataStore.cloudCollectionMode = 'array';
               dataStore.hasCloudBaseline = true;
             } else {
-              const patch = { ...patientChanges.patch, ...treatmentChanges.patch, lastUpdate };
+              const patch = { ...patientChanges.patch, ...treatmentChanges.patch, ...todoChanges.patch, lastUpdate };
               await dataStore.fetchWithRetry(CONFIG.dbUrl, {
                 method: 'PATCH',
                 body: JSON.stringify(patch)
@@ -1201,10 +1448,12 @@
             }
             dataStore.syncedPatients = patientChanges.current;
             dataStore.syncedTreatments = treatmentChanges.current;
+            dataStore.syncedTodos = todoChanges.current;
             dataStore.syncedPatientIndexes = patientChanges.currentIndexes;
             dataStore.syncedTreatmentIndexes = treatmentChanges.currentIndexes;
+            dataStore.syncedTodoIndexes = todoChanges.currentIndexes;
             if (dataStore.mutationVersion === syncVersion) {
-              dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] };
+              dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [], deletedTodoIds: [] };
               dataStore.persistSyncState();
               app.updateBadge();
             } else {
@@ -1452,7 +1701,8 @@
           createdAt: new Date().toISOString(),
           reason,
           patients: dataStore.patients,
-          treatments: dataStore.treatments
+          treatments: dataStore.treatments,
+          todos: dataStore.todos
         });
         return dataStore.persistLocalBackups(backups);
       },
@@ -1532,6 +1782,16 @@
           };
         }));
         XLSX.utils.book_append_sheet(wb, wsT, '全部流水');
+        const wsO = XLSX.utils.json_to_sheet(app.getMyTodos().map(todo => ({
+          '内容': todo.text,
+          '日期': todo.dueDate || '',
+          '开始时间': todo.startTime || '',
+          '结束时间': todo.endTime || '',
+          '状态': todo.completed ? '已完成' : '未完成',
+          '创建时间': todo.createdAt || '',
+          '完成时间': todo.completedAt || ''
+        })));
+        XLSX.utils.book_append_sheet(wb, wsO, '我的待办');
         XLSX.writeFile(wb, `全量备份_${getLocalDateString()}.xlsx`);
       }
     };
@@ -1553,7 +1813,8 @@
         } catch {
           dataStore.patients = [];
           dataStore.treatments = [];
-          dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [] };
+          dataStore.todos = [];
+          dataStore.syncState = { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [], deletedTodoIds: [] };
           dataStore.localStorageRecovered = true;
           dataStore.rebuildStatsCache();
           dataStore.captureSyncState();
@@ -1566,12 +1827,14 @@
         app.initSearchDropdown('lender-search', 'lender-dropdown', 'field-p-lender-id');
         app.initSearchDropdown('referrer-search', 'referrer-dropdown', 'field-p-referrer-id');
         app.updateNotebookBadge();
+        app.updateTodoBadge();
         const cloudRefresh = dataStore.refreshFromCloud();
         app.showPage('patients');
         const connected = await cloudRefresh;
-        if (connected) app.state.lastCloudRefreshAt = Date.now();
-        app.updateBadge(connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
+        if (connected === true) app.state.lastCloudRefreshAt = Date.now();
+        app.updateBadge(connected === 'local' ? 'local' : connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
         app.updateNotebookBadge();
+        app.updateTodoBadge();
         app.showPage(app.state.currentPage);
       },
 
@@ -1585,9 +1848,11 @@
         const cloudRefresh = dataStore.refreshFromCloud();
         app.showPage(app.state.currentPage);
         const connected = await cloudRefresh;
-        if (connected) app.state.lastCloudRefreshAt = Date.now();
-        app.updateBadge(connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
+        if (connected === true) app.state.lastCloudRefreshAt = Date.now();
+        app.updateBadge(connected === 'local' ? 'local' : connected ? (dataStore.syncState.dirty ? 'pending' : 'online') : 'offline');
         app.updateNotebookBadge();
+        app.updateTodoBadge();
+        if (!$('todo-drawer')?.classList.contains('translate-x-full')) app.renderTodos();
         app.showPage(app.state.currentPage);
         return connected;
       },
@@ -1604,10 +1869,18 @@
         window.addEventListener('online', () => app.refreshAfterResume({ force: true }));
       },
 
-      verifyAuth() {
+      async verifyAuth() {
         const pwd = ($('login-pwd')?.value || '').trim();
-        if (pwd === CONFIG.authKey || sessionStorage.getItem('clinic_auth') === 'true') {
-          sessionStorage.setItem('clinic_auth', 'true');
+        const submit = $('login-submit');
+        try {
+          submit.disabled = true;
+          if (authSession.load()) await authSession.getIdToken();
+          else if (localAccess.load()) { /* 本机当前会话已验证 */ }
+          else {
+            if (!pwd) throw new Error('请输入系统密码');
+            if (authSession.isConfigured()) await authSession.signIn(pwd);
+            else if (!await localAccess.verify(pwd)) throw new Error('系统密码错误');
+          }
           $('login-screen').classList.add('opacity-0', 'pointer-events-none');
           setTimeout(() => {
             $('login-screen')?.remove();
@@ -1615,19 +1888,24 @@
             setTimeout(() => $('main-app').classList.remove('opacity-0'), 50);
             app.initSystem();
           }, 250);
-        } else if (pwd) {
-          ui.showToast('密钥错误，请重新核对', 'error');
+        } catch (error) {
+          authSession.clear();
+          ui.showToast(error.message || '安全登录失败', 'error');
+          submit.disabled = false;
+          app.bindLoginEvents();
         }
       },
 
       bindLoginEvents() {
         const submit = $('login-submit');
-        const input = $('login-pwd');
-        if (!submit || !input) return;
+        const inputs = [$('login-pwd')].filter(Boolean);
+        if (!submit || !inputs.length) return;
+        if (submit.dataset.bound === 'true') return;
+        submit.dataset.bound = 'true';
         submit.addEventListener('click', app.verifyAuth);
-        input.addEventListener('keydown', (e) => {
+        inputs.forEach(input => input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') app.verifyAuth();
-        });
+        }));
       },
 
       updateBadge(status = 'online') {
@@ -1637,11 +1915,12 @@
           online: 'bg-emerald-500',
           loading: 'bg-blue-500 animate-pulse',
           pending: 'bg-amber-500 animate-pulse',
+          local: 'bg-slate-400',
           offline: 'bg-red-500'
         };
         if (dot) {
           dot.className = `absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white ${dotClasses[status] || dotClasses.online}`;
-          dot.title = status === 'online' ? '已同步' : status === 'loading' ? '更新中' : status === 'pending' ? '待同步' : '离线';
+          dot.title = status === 'online' ? '已同步' : status === 'loading' ? '更新中' : status === 'pending' ? '待同步' : status === 'local' ? '本地保存' : '离线';
         }
         if (!b) return;
         if (status === 'loading') {
@@ -1652,6 +1931,11 @@
         if (status === 'pending') {
           b.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1.5 text-amber-500 animate-pulse"></i>本地已保存 · 待同步';
           b.className = 'hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold bg-amber-50 text-amber-700 rounded-full';
+          return;
+        }
+        if (status === 'local') {
+          b.innerHTML = '<i class="fa-solid fa-hard-drive mr-1.5 text-slate-400"></i>本地保存';
+          b.className = 'hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-full';
           return;
         }
         if (status === 'offline') {
@@ -1678,6 +1962,181 @@
         if (id === 'daily') app.renderDaily();
         if (id === 'notebook') app.renderNotebook();
         if (id === 'dashboard') app.renderDashboard();
+      },
+
+      getMyTodos() {
+        return dataStore.todos.filter(todo => todo.ownerId === 'single_user');
+      },
+
+      updateTodoBadge() {
+        const today = getLocalDateString();
+        const count = app.getDueTodos(today).length;
+        const badge = $('todo-count');
+        if (!badge) return;
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.classList.toggle('hidden', count === 0);
+      },
+
+      getDueTodos(date = getLocalDateString()) {
+        return app.getMyTodos().filter(todo => !todo.completed && todo.dueDate && todo.dueDate <= date);
+      },
+
+      setTodoDate(value) {
+        $('todo-date').value = value;
+        if (!value) {
+          $('todo-start-time').value = '';
+          $('todo-end-time').value = '';
+        }
+        document.querySelectorAll('.todo-date-shortcut').forEach(button => {
+          const expected = button.dataset.offset === '' ? '' : utils.addDays(getLocalDateString(), Number(button.dataset.offset));
+          const active = expected === value;
+          button.classList.toggle('bg-blue-50', active);
+          button.classList.toggle('text-primary', active);
+          button.classList.toggle('bg-slate-100', !active);
+          button.classList.toggle('text-slate-500', !active);
+        });
+      },
+
+      openTodos() {
+        app.resetTodoForm();
+        app.renderTodos();
+        $('todo-backdrop').classList.remove('hidden');
+        requestAnimationFrame(() => $('todo-backdrop').classList.remove('opacity-0'));
+        $('todo-drawer').classList.remove('translate-x-full');
+        $('todo-drawer').setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+        setTimeout(() => $('todo-input')?.focus(), 220);
+      },
+
+      closeTodos() {
+        $('todo-backdrop').classList.add('opacity-0');
+        $('todo-drawer').classList.add('translate-x-full');
+        $('todo-drawer').setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('overflow-hidden');
+        setTimeout(() => $('todo-backdrop').classList.add('hidden'), 300);
+      },
+
+      resetTodoForm() {
+        $('todo-edit-id').value = '';
+        $('todo-input').value = '';
+        $('todo-start-time').value = '';
+        $('todo-end-time').value = '';
+        $('todo-edit-bar').classList.add('hidden');
+        $('todo-edit-bar').classList.remove('flex');
+        $('todo-submit').innerHTML = '<i class="fa-solid fa-plus"></i>';
+        app.setTodoDate(getLocalDateString());
+      },
+
+      addTodo(event) {
+        event.preventDefault();
+        const text = $('todo-input').value.trim();
+        if (!text) return ui.showToast('先写下要做的事', 'warning');
+        const dueDate = $('todo-date').value || '';
+        const startTime = $('todo-start-time').value || '';
+        const endTime = $('todo-end-time').value || '';
+        if ((startTime || endTime) && !dueDate) return ui.showToast('设置时间前请先选择日期', 'warning');
+        if (endTime && !startTime) return ui.showToast('请先填写开始时间', 'warning');
+        if (startTime && endTime && endTime <= startTime) return ui.showToast('结束时间要晚于开始时间', 'warning');
+        const editId = $('todo-edit-id').value;
+        const existing = editId ? dataStore.todos.find(todo => todo.id === editId && todo.ownerId === 'single_user') : null;
+        if (existing) {
+          Object.assign(existing, { text: text.slice(0, 120), dueDate, startTime, endTime });
+        } else {
+          dataStore.todos.push({
+            id: uid('todo'),
+            ownerId: 'single_user',
+            text: text.slice(0, 120),
+            dueDate,
+            startTime,
+            endTime,
+            completed: false,
+            createdAt: new Date().toISOString(),
+            completedAt: ''
+          });
+        }
+        app.resetTodoForm();
+        dataStore.save();
+        if (app.state.currentPage === 'daily') app.renderDaily();
+        $('todo-input').focus();
+      },
+
+      editTodo(id) {
+        const todo = dataStore.todos.find(item => item.id === id && item.ownerId === 'single_user');
+        if (!todo) return;
+        $('todo-edit-id').value = todo.id;
+        $('todo-input').value = todo.text;
+        $('todo-start-time').value = todo.startTime || '';
+        $('todo-end-time').value = todo.endTime || '';
+        $('todo-edit-bar').classList.remove('hidden');
+        $('todo-edit-bar').classList.add('flex');
+        $('todo-submit').innerHTML = '<i class="fa-solid fa-check"></i>';
+        app.setTodoDate(todo.dueDate || '');
+        $('todo-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        $('todo-input').focus();
+      },
+
+      postponeTodo(id, dueDate) {
+        const todo = dataStore.todos.find(item => item.id === id && item.ownerId === 'single_user');
+        if (!todo || !dueDate) return;
+        todo.dueDate = dueDate;
+        todo.completed = false;
+        todo.completedAt = '';
+        if ($('todo-edit-id').value === id) app.resetTodoForm();
+        dataStore.save();
+        if (app.state.currentPage === 'daily') app.renderDaily();
+        ui.showToast(`已安排到 ${dueDate.slice(5).replace('-', '/')}`, 'success');
+      },
+
+      toggleTodo(id) {
+        const todo = dataStore.todos.find(item => item.id === id && app.getMyTodos().includes(item));
+        if (!todo) return;
+        if ($('todo-edit-id').value === id) app.resetTodoForm();
+        todo.completed = !todo.completed;
+        todo.completedAt = todo.completed ? new Date().toISOString() : '';
+        dataStore.save();
+        if (app.state.currentPage === 'daily') app.renderDaily();
+      },
+
+      renderTodos() {
+        const today = getLocalDateString();
+        const todos = app.getMyTodos();
+        const todayItems = app.getDueTodos(today)
+          .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)) || String(a.createdAt).localeCompare(String(b.createdAt)));
+        const laterItems = todos.filter(todo => !todo.completed && (!todo.dueDate || todo.dueDate > today))
+          .sort((a, b) => (a.dueDate ? 0 : 1) - (b.dueDate ? 0 : 1) || String(a.dueDate).localeCompare(String(b.dueDate)) || String(a.createdAt).localeCompare(String(b.createdAt)));
+        const doneItems = todos.filter(todo => todo.completed)
+          .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt))).slice(0, 30);
+        setText('todo-summary', todayItems.length ? `今天还有 ${todayItems.length} 件` : '今天都处理完了');
+
+        const formatDate = value => {
+          if (!value) return '暂不安排';
+          if (value === today) return '';
+          const label = value.slice(5).replace('-', '/');
+          return value < today ? `逾期 ${label}` : label;
+        };
+        const renderItem = (todo, done = false) => {
+          const dateLabel = formatDate(todo.dueDate);
+          const timeLabel = todo.startTime ? (todo.endTime ? `${todo.startTime}–${todo.endTime}` : todo.startTime) : '';
+          const meta = [dateLabel, timeLabel].filter(Boolean).join(' · ');
+          return `<div class="group flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+            <button type="button" class="todo-check ${done ? 'done' : ''}" data-todo-action="toggle" data-id="${escapeHtml(todo.id)}" aria-label="${done ? '恢复待办' : '完成待办'}">${done ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}</button>
+            <div class="min-w-0 flex-1 pt-0.5">
+              <p class="break-words text-sm font-semibold leading-5 ${done ? 'text-slate-400 line-through' : 'text-slate-700'}">${escapeHtml(todo.text)}</p>
+              ${meta ? `<p class="mt-1 text-[11px] font-semibold ${todo.dueDate && todo.dueDate < today && !done ? 'text-red-500' : 'text-slate-400'}"><i class="fa-regular fa-clock mr-1"></i>${escapeHtml(meta)}</p>` : ''}
+              ${done ? '' : `<div class="mt-2 flex items-center gap-1.5">
+                <button type="button" data-todo-action="edit" data-id="${escapeHtml(todo.id)}" class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-500"><i class="fa-solid fa-pen mr-1"></i>编辑</button>
+                <button type="button" data-todo-action="tomorrow" data-id="${escapeHtml(todo.id)}" class="rounded-lg bg-blue-50 px-2 py-1 text-[11px] font-bold text-primary">明天</button>
+                <label class="relative cursor-pointer overflow-hidden rounded-lg bg-blue-50 px-2 py-1 text-[11px] font-bold text-primary">改日期<input type="date" data-todo-postpone="${escapeHtml(todo.id)}" value="${escapeHtml(todo.dueDate || today)}" class="absolute inset-0 h-full w-full cursor-pointer opacity-0" aria-label="选择延期日期"></label>
+              </div>`}
+            </div>
+          </div>`;
+        };
+        const section = (title, items, done = false) => items.length ? `<section class="mb-5"><h3 class="mb-2 px-1 text-xs font-black text-slate-500">${title} · ${items.length}</h3><div class="space-y-2">${items.map(item => renderItem(item, done)).join('')}</div></section>` : '';
+        const empty = !todayItems.length && !laterItems.length
+          ? '<div class="mb-5 rounded-2xl border border-dashed border-slate-200 bg-white/60 px-4 py-8 text-center"><i class="fa-regular fa-circle-check mb-2 text-2xl text-emerald-400"></i><p class="text-sm font-bold text-slate-500">没有未完成的待办</p></div>'
+          : '';
+        $('todo-list').innerHTML = `${empty}${section('今天', todayItems)}${section('以后', laterItems)}${section('已完成', doneItems, true)}`;
+        app.updateTodoBadge();
       },
 
       openPatientModal(pid = null, defaultName = '') {
@@ -1858,6 +2317,30 @@
           course.remain = course.purchased - course.consumed;
           course.moxaRemain = Math.max(0, course.moxaTotal - course.moxaUsed);
         });
+
+        // 历史单只会结清到 0，跨单的超额消耗统一由最新一张单承接。
+        if (courses.length) {
+          const recordedConsumed = records
+            .filter(({ record }) => record.type === 'consume')
+            .reduce((sum, { record }) => sum + (Number(record.count) || 0), 0);
+          const convertedConsumed = courses.reduce((sum, course) => {
+            if (course.moxaTotal <= 0 || course.moxaUsed <= 0) return sum;
+            const target = Math.ceil(
+              Math.min(course.moxaUsed, course.moxaTotal) * course.purchased / course.moxaTotal
+            );
+            return sum + Math.max(0, target - course.rawConsumed);
+          }, 0);
+          let remainingConsumed = recordedConsumed + convertedConsumed;
+          courses.forEach((course, index) => {
+            const isLatest = index === courses.length - 1;
+            const allocated = isLatest
+              ? remainingConsumed
+              : Math.min(Math.max(remainingConsumed, 0), Math.max(Number(course.purchased) || 0, 0));
+            course.consumed = allocated;
+            course.remain = course.purchased - allocated;
+            remainingConsumed -= allocated;
+          });
+        }
         return courses;
       },
 
@@ -2539,6 +3022,10 @@
           return consumeRows.length > 1 || consumeRows.reduce((sum, t) => sum + (Number(t.count) || 0), 0) > 1;
         });
         const chargeNoConsumePids = paidPids.filter(pid => pMap[pid].consumes <= 0);
+        const dueTodos = targetDate === getLocalDateString()
+          ? app.getDueTodos(targetDate).sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)) || String(a.startTime || '99:99').localeCompare(String(b.startTime || '99:99')))
+          : [];
+        const dueTodoCount = dueTodos.length;
 
         setText('today-visited-count', actualVisitCount ?? pids.length);
         setText('today-consumed-patient-count', consumePids.length);
@@ -2546,7 +3033,8 @@
 
         const checks = [
           { ok: duplicateConsumePids.length === 0, label: duplicateConsumePids.length ? `重复扣次 ${duplicateConsumePids.length} 人` : '无重复', tone: duplicateConsumePids.length ? 'danger' : 'good' },
-          { ok: chargeNoConsumePids.length === 0, label: chargeNoConsumePids.length ? `收未扣 ${chargeNoConsumePids.length} 人` : '收扣正常', tone: chargeNoConsumePids.length ? 'warn' : 'good' }
+          { ok: chargeNoConsumePids.length === 0, label: chargeNoConsumePids.length ? `收未扣 ${chargeNoConsumePids.length} 人` : '收扣正常', tone: chargeNoConsumePids.length ? 'warn' : 'good' },
+          { ok: dueTodoCount === 0, label: dueTodoCount ? `待办 ${dueTodoCount} 件` : '待办清零', tone: dueTodoCount ? 'warn' : 'good' }
         ];
         const styleMap = {
           good: 'bg-emerald-50 text-emerald-700 border-emerald-100 fa-circle-check',
@@ -2557,7 +3045,29 @@
         $('closeout-list').innerHTML = checks.map(item => {
           const cls = styleMap[item.tone];
           const icon = cls.split(' ').at(-1);
-          return `<div class="rounded-xl border px-3 py-2 font-bold ${cls.replace(icon, '')}"><i class="fa-solid ${icon} mr-1.5"></i>${escapeHtml(item.label)}</div>`;
+          const content = `<i class="fa-solid ${icon} mr-1.5"></i>${escapeHtml(item.label)}`;
+          return `<div class="rounded-xl border px-3 py-2 font-bold ${cls.replace(icon, '')}">${content}</div>`;
+        }).join('');
+        const todoPanel = $('closeout-todos');
+        todoPanel.classList.toggle('hidden', dueTodoCount === 0);
+        setText('closeout-todo-count', `${dueTodoCount} 件`);
+        $('closeout-todo-list').innerHTML = dueTodos.map(todo => {
+          const timeLabel = todo.startTime
+            ? (todo.endTime ? `${todo.startTime}–${todo.endTime}` : todo.startTime)
+            : '当天内';
+          const overdueLabel = todo.dueDate < targetDate ? `逾期 ${todo.dueDate.slice(5).replace('-', '/')} · ` : '';
+          return `<div class="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-white px-3 py-2.5 shadow-sm">
+            <button type="button" data-closeout-todo-action="toggle" data-id="${escapeHtml(todo.id)}" class="todo-check mt-0.5" aria-label="完成待办"></button>
+            <div class="min-w-0 flex-1">
+              <p class="break-words text-sm font-bold leading-5 text-slate-700">${escapeHtml(todo.text)}</p>
+              <p class="mt-0.5 text-xs font-semibold ${todo.dueDate < targetDate ? 'text-red-500' : 'text-slate-400'}"><i class="fa-regular fa-clock mr-1"></i>${escapeHtml(overdueLabel + timeLabel)}</p>
+              <div class="mt-2 flex items-center gap-1.5">
+                <button type="button" data-closeout-todo-action="edit" data-id="${escapeHtml(todo.id)}" class="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-500">编辑</button>
+                <button type="button" data-closeout-todo-action="tomorrow" data-id="${escapeHtml(todo.id)}" class="rounded-lg bg-blue-50 px-2 py-1 text-xs font-bold text-primary">明天</button>
+                <label class="relative cursor-pointer overflow-hidden rounded-lg bg-blue-50 px-2 py-1 text-xs font-bold text-primary">改日期<input type="date" data-closeout-todo-postpone="${escapeHtml(todo.id)}" value="${escapeHtml(todo.dueDate || targetDate)}" class="absolute inset-0 h-full w-full cursor-pointer opacity-0" aria-label="选择延期日期"></label>
+              </div>
+            </div>
+          </div>`;
         }).join('');
         const needReview = checks.some(item => item.tone === 'warn' || item.tone === 'danger');
         $('closeout-status').className = `text-[10px] px-2 py-1 rounded-lg font-bold ${needReview ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`;
@@ -3170,7 +3680,7 @@
           const emptyAction = isCloudFailure
             ? '<button class="btn btn-primary mt-4 mx-auto px-6" data-retry-cloud><i class="fa-solid fa-rotate mr-2"></i>重新加载</button>'
             : safeSearch
-              ? `<button class="btn btn-primary mt-4 mx-auto px-6" data-create-name="${safeSearch}"><i class="fa-solid fa-user-plus mr-2"></i>新建 "${safeSearch}"</button>`
+              ? `<button class="btn btn-primary mt-4 mx-auto px-6" data-create-name="${escapeHtml(app.state.search)}"><i class="fa-solid fa-user-plus mr-2"></i>新建 "${safeSearch}"</button>`
               : '';
           const emptyIcon = isCloudLoading ? 'fa-circle-notch animate-spin' : isCloudFailure ? 'fa-cloud-arrow-down' : 'fa-magnifying-glass';
           const bindEmptyActions = root => {
@@ -3220,19 +3730,19 @@
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50 transition-colors border-b border-slate-50';
             tr.innerHTML = `
-              <td class="px-6 py-4 cursor-pointer text-center" data-action="detail" data-id="${p.id}"><div class="flex flex-col items-center justify-center">${remainHtml}<span class="text-[9px] px-1.5 py-0.5 border rounded-lg font-bold ${cCls} mt-1.5">${sTxt}</span></div></td>
-              <td class="px-6 py-4 cursor-pointer" data-action="detail" data-id="${p.id}"><div class="font-black text-slate-800 text-sm md:text-base flex items-center">${escapeHtml(p.name)} ${p.gender === '女' ? '<i class="fa-solid fa-venus ml-1.5 text-pink-400 text-xs"></i>' : '<i class="fa-solid fa-mars ml-1.5 text-blue-400 text-xs"></i>'} ${p.age ? `<span class="text-xs text-slate-500 ml-1.5 font-normal">${escapeHtml(p.age)}岁</span>` : ''}</div><div class="text-[10px] md:text-xs text-slate-400 mt-1"><i class="fa-solid fa-phone mr-1"></i>${escapeHtml(p.phone || '未录手机')}</div><div class="flex flex-wrap gap-1 mt-1.5">${todayBadges}${tags}</div></td>
+              <td class="px-6 py-4 cursor-pointer text-center" data-action="detail" data-id="${escapeHtml(p.id)}"><div class="flex flex-col items-center justify-center">${remainHtml}<span class="text-[9px] px-1.5 py-0.5 border rounded-lg font-bold ${cCls} mt-1.5">${sTxt}</span></div></td>
+              <td class="px-6 py-4 cursor-pointer" data-action="detail" data-id="${escapeHtml(p.id)}"><div class="font-black text-slate-800 text-sm md:text-base flex items-center">${escapeHtml(p.name)} ${p.gender === '女' ? '<i class="fa-solid fa-venus ml-1.5 text-pink-400 text-xs"></i>' : '<i class="fa-solid fa-mars ml-1.5 text-blue-400 text-xs"></i>'} ${p.age ? `<span class="text-xs text-slate-500 ml-1.5 font-normal">${escapeHtml(p.age)}岁</span>` : ''}</div><div class="text-[10px] md:text-xs text-slate-400 mt-1"><i class="fa-solid fa-phone mr-1"></i>${escapeHtml(p.phone || '未录手机')}</div><div class="flex flex-wrap gap-1 mt-1.5">${todayBadges}${tags}</div></td>
               <td class="px-6 py-4 whitespace-nowrap text-center">
                 <div class="flex items-center justify-center gap-2">
-                  <button data-action="quick-consume" data-id="${p.id}" class="btn bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 px-3 py-1.5 rounded-full text-xs md:text-[13px]">
+                  <button data-action="quick-consume" data-id="${escapeHtml(p.id)}" class="btn bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 px-3 py-1.5 rounded-full text-xs md:text-[13px]">
                     <i class="fa-solid fa-minus mr-1"></i>${quickLabel}
                   </button>
                   ${nextOrderHtml}
-                  <button data-action="record" data-id="${p.id}" class="btn btn-primary px-3.5 py-1.5 rounded-full text-xs md:text-[13px]"><i class="fa-solid fa-file-invoice md:mr-1.5"></i><span class="hidden md:inline">记账</span></button>
+                  <button data-action="record" data-id="${escapeHtml(p.id)}" class="btn btn-primary px-3.5 py-1.5 rounded-full text-xs md:text-[13px]"><i class="fa-solid fa-file-invoice md:mr-1.5"></i><span class="hidden md:inline">记账</span></button>
                 </div>
               </td>
-              <td class="px-6 py-4 cursor-pointer text-xs md:text-sm text-slate-400" data-action="detail" data-id="${p.id}"><div class="flex items-center"><i class="fa-regular fa-clock mr-1.5 text-xs"></i>${escapeHtml(rec)}</div></td>
-              <td class="px-6 py-4 text-right"><button data-action="detail" data-id="${p.id}" class="text-slate-400 hover:text-blue-600 p-2 text-base transition-colors"><i class="fa-solid fa-angle-right"></i></button></td>
+              <td class="px-6 py-4 cursor-pointer text-xs md:text-sm text-slate-400" data-action="detail" data-id="${escapeHtml(p.id)}"><div class="flex items-center"><i class="fa-regular fa-clock mr-1.5 text-xs"></i>${escapeHtml(rec)}</div></td>
+              <td class="px-6 py-4 text-right"><button data-action="detail" data-id="${escapeHtml(p.id)}" class="text-slate-400 hover:text-blue-600 p-2 text-base transition-colors"><i class="fa-solid fa-angle-right"></i></button></td>
             `;
             fragment.appendChild(tr);
           }
@@ -3242,10 +3752,10 @@
             card.className = 'patient-mobile-card';
             card.innerHTML = `
               <div class="flex items-center gap-2">
-                <button class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${cCls} px-1 text-center active:scale-95" data-action="quick-consume" data-id="${p.id}" aria-label="扣1次">
+                <button class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${cCls} px-1 text-center active:scale-95" data-action="quick-consume" data-id="${escapeHtml(p.id)}" aria-label="扣1次">
                   ${remainHtml}
                 </button>
-                <button class="flex min-w-0 flex-1 items-center text-left" data-action="detail" data-id="${p.id}">
+                <button class="flex min-w-0 flex-1 items-center text-left" data-action="detail" data-id="${escapeHtml(p.id)}">
                   <div class="flex min-w-0 flex-1 items-center gap-1.5">
                     <span class="min-w-0 truncate text-[15px] font-black leading-tight text-slate-800">${escapeHtml(p.name)}</span>
                     ${p.gender === '女' ? '<i class="fa-solid fa-venus text-pink-400 text-xs shrink-0"></i>' : '<i class="fa-solid fa-mars text-blue-400 text-xs shrink-0"></i>'}
@@ -3255,7 +3765,7 @@
                 </button>
                 <div class="flex shrink-0 items-center gap-1.5">
                   ${nextOrderHtml}
-                  <button data-action="record" data-id="${p.id}" class="h-10 w-10 rounded-xl bg-primary text-white shadow-sm active:scale-95" aria-label="诊疗记账">
+                  <button data-action="record" data-id="${escapeHtml(p.id)}" class="h-10 w-10 rounded-xl bg-primary text-white shadow-sm active:scale-95" aria-label="诊疗记账">
                     <i class="fa-solid fa-file-invoice"></i>
                   </button>
                 </div>
@@ -3467,7 +3977,7 @@
           remainList.forEach(({ p, stats, remain, lastDate, days }) => {
             const displayDays = Number.isFinite(days) ? `${days}天` : '未记录';
             total += remain;
-            html += `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${p.id}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(p.name)}</span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(lastDate || '未记录')} · ${displayDays}</span></div><span class="font-black ${colorCls} text-base shrink-0">${remain} 次</span></li>`;
+            html += `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${escapeHtml(p.id)}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(p.name)}</span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(lastDate || '未记录')} · ${displayDays}</span></div><span class="font-black ${colorCls} text-base shrink-0">${remain} 次</span></li>`;
           });
         } else {
           const ts = dataStore.treatments.filter(t => t.date >= startStr && t.date <= endStr).sort((a, b) => utils.parseDateToLocalMidnight(a.date) - utils.parseDateToLocalMidnight(b.date));
@@ -3477,7 +3987,7 @@
             const billing = parties.billingPatient;
             const partyText = actual && billing && actual.id !== billing.id ? `实治: ${actual.name} / 实缴: ${billing.name}` : (actual?.name || billing?.name || '匿名');
             const cleanRemark = app.stripBorrowerRemark(t.remark);
-            return `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${actual?.id || parties.actualPid}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(partyText)} <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold ml-1.5">${label}</span></span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(t.date.substring(5))}${cleanRemark ? ` | ${escapeHtml(cleanRemark)}` : ''}</span></div><span class="font-black ${colorCls} text-base shrink-0">${isAmt ? '¥' : ''}${val}${isAmt ? '' : '次'}</span></li>`;
+            return `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${escapeHtml(actual?.id || parties.actualPid)}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(partyText)} <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-semibold ml-1.5">${label}</span></span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(t.date.substring(5))}${cleanRemark ? ` | ${escapeHtml(cleanRemark)}` : ''}</span></div><span class="font-black ${colorCls} text-base shrink-0">${isAmt ? '¥' : ''}${val}${isAmt ? '' : '次'}</span></li>`;
           };
           if (type === 'rev') {
             title = `${periodName}实收`; colorCls = 'text-blue-600'; prefix = '¥';
@@ -3501,7 +4011,7 @@
               const stats = dataStore.calcStats(pid);
               const firstVisitDate = stats.history.at(-1)?.date || '';
               const isNew = firstVisitDate >= startStr && firstVisitDate <= endStr;
-              html += `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${pid}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(p.name)} <span class="text-[9px] px-1.5 py-0.5 rounded font-bold ml-1.5 ${isNew ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-slate-100 text-slate-500'}">${isNew ? '新' : '复诊'}</span></span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(firstVisitDate || '未知')}</span></div><span class="font-black ${isNew ? 'text-red-500' : 'text-slate-600'} text-base shrink-0"><i class="fa-solid fa-user-check"></i></span></li>`;
+              html += `<li class="px-4 py-3.5 flex justify-between items-center hover:bg-slate-50 cursor-pointer" data-pid="${escapeHtml(pid)}"><div class="flex flex-col min-w-0 pr-4"><span class="font-bold text-slate-800 text-[13px] truncate">${escapeHtml(p.name)} <span class="text-[9px] px-1.5 py-0.5 rounded font-bold ml-1.5 ${isNew ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-slate-100 text-slate-500'}">${isNew ? '新' : '复诊'}</span></span><span class="text-[11px] text-slate-400 mt-1 truncate">${escapeHtml(firstVisitDate || '未知')}</span></div><span class="font-black ${isNew ? 'text-red-500' : 'text-slate-600'} text-base shrink-0"><i class="fa-solid fa-user-check"></i></span></li>`;
             });
           }
         }
@@ -3844,8 +4354,8 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <span class="font-black text-base ${isMedicine ? 'text-purple-600' : 'text-slate-500'}">${escapeHtml(valStr)}</span>
-                  <button data-action="edit-treatment" data-id="${h.id}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
-                  <button data-action="delete-treatment" data-id="${h.id}" data-pid="${pid}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                  <button data-action="edit-treatment" data-id="${escapeHtml(h.id)}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button data-action="delete-treatment" data-id="${escapeHtml(h.id)}" data-pid="${escapeHtml(pid)}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
               </div>
             `;
@@ -3902,8 +4412,8 @@
                       <div class="text-[10px] text-slate-400 mt-0.5 truncate">${record.count ? `${escapeHtml(record.count)}次` : ''}${record.amount ? ` · ¥${money(record.amount)}` : ''}${record.remark ? ` · ${escapeHtml(app.stripBorrowerRemark(record.remark))}` : ''}</div>
                     </div>
                     <div class="flex items-center shrink-0 ${canManage ? '' : 'hidden'}">
-                      <button data-action="edit-treatment" data-id="${record.id}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
-                      <button data-action="delete-treatment" data-id="${record.id}" data-pid="${pid}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                      <button data-action="edit-treatment" data-id="${escapeHtml(record.id)}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                      <button data-action="delete-treatment" data-id="${escapeHtml(record.id)}" data-pid="${escapeHtml(pid)}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                   </div>
                 `}).join('')}
@@ -3919,8 +4429,8 @@
                         <div class="text-[10px] text-slate-400 mt-0.5 truncate">${record.startTime || record.endTime ? `${escapeHtml(record.startTime || '--:--')}–${escapeHtml(record.endTime || '--:--')}` : '未记时间'}${record.remark ? ` · ${escapeHtml(app.stripBorrowerRemark(record.remark))}` : ''}</div>
                       </div>
                       <div class="flex items-center shrink-0">
-                        <button data-action="edit-treatment" data-id="${record.id}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button data-action="delete-treatment" data-id="${record.id}" data-pid="${pid}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                        <button data-action="edit-treatment" data-id="${escapeHtml(record.id)}" class="text-amber-500 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button data-action="delete-treatment" data-id="${escapeHtml(record.id)}" data-pid="${escapeHtml(pid)}" class="text-red-400 p-2"><i class="fa-solid fa-trash-can"></i></button>
                       </div>
                     </div>
                   `;
@@ -3936,7 +4446,7 @@
         if (remaining > 0) {
           const more = document.createElement('div');
           more.className = 'p-3 bg-slate-50/60 text-center';
-          more.innerHTML = `<button data-action="detail-load-more" data-pid="${pid}" class="w-full py-2 text-xs font-bold text-primary active:scale-95">加载更多（剩 ${remaining} 张）</button>`;
+          more.innerHTML = `<button data-action="detail-load-more" data-pid="${escapeHtml(pid)}" class="w-full py-2 text-xs font-bold text-primary active:scale-95">加载更多（剩 ${remaining} 张）</button>`;
           list.appendChild(more);
         }
       },
@@ -4053,15 +4563,17 @@
           ui.showToast('正在执行数据抹除...', 'info');
           dataStore.createLocalSnapshot('清空前快照');
           try {
-            await dataStore.fetchWithRetry(CONFIG.dbUrl, { method: 'PUT', body: JSON.stringify({ patients: [], treatments: [], lastUpdate: new Date().toLocaleString() }) });
+            await dataStore.fetchWithRetry(CONFIG.dbUrl, { method: 'PUT', body: JSON.stringify({ patients: [], treatments: [], todos: [], lastUpdate: new Date().toLocaleString() }) });
           } catch {
             ui.showToast('云端连接失败，仅清空本地数据', 'warning');
           }
           localStorage.removeItem(dataStore.keys.P);
           localStorage.removeItem(dataStore.keys.T);
+          localStorage.removeItem(dataStore.keys.O);
           localStorage.removeItem(dataStore.keys.D);
           dataStore.clearLastUndo();
-          sessionStorage.removeItem('clinic_auth');
+          authSession.clear();
+          localAccess.clearSession();
           setTimeout(() => location.reload(), 500);
         });
       },
@@ -4074,6 +4586,7 @@
           dataStore.createLocalSnapshot('恢复前快照');
           dataStore.patients = Array.isArray(latest.patients) ? latest.patients : [];
           dataStore.treatments = Array.isArray(latest.treatments) ? latest.treatments : [];
+          dataStore.todos = Array.isArray(latest.todos) ? latest.todos : dataStore.todos;
           dataStore.clearLastUndo();
           dataStore.save({ forceFull: true });
           app.refreshViews();
@@ -4122,7 +4635,7 @@
               if (!wsP || !wsT) throw new Error('导入的 Excel 格式无效');
               const pRows = XLSX.utils.sheet_to_json(wsP);
               const tRows = XLSX.utils.sheet_to_json(wsT);
-              const newPatients = pRows.map((row, index) => ({
+              const newPatients = validateCollection(pRows.map((row, index) => ({
                 id: row['ID(系统勿动)'] || uid(`p_${index}`),
                 name: row['姓名'] ? String(row['姓名']).trim() : '匿名病友',
                 phone: row['手机号'] ? String(row['手机号']).trim() : '',
@@ -4133,8 +4646,8 @@
                 referrerId: row['推荐人ID'] || null,
                 tags: row['标签'] ? String(row['标签']).split(',').filter(Boolean) : [],
                 remark: row['备注'] || ''
-              }));
-              const newTreatments = tRows.map((row, index) => {
+              })), 'patient');
+              const newTreatments = validateCollection(tRows.map((row, index) => {
                 let pid = row['患者ID(勿动)'];
                 const pName = row['患者'] ? String(row['患者']).trim() : '';
                 if (!pid && pName) pid = newPatients.find(p => p.name === pName)?.id;
@@ -4157,7 +4670,7 @@
                   income: Number(row['预计收入']) || 0,
                   remark: row['备注'] || ''
                 };
-              });
+              }), 'treatment');
               dataStore.createLocalSnapshot('导入前快照');
               dataStore.patients = newPatients;
               dataStore.treatments = newTreatments;
@@ -4176,6 +4689,46 @@
       bindEvents() {
         document.querySelectorAll('[data-page-trigger], .nav-link, .mobile-nav-btn').forEach(btn => {
           btn.addEventListener('click', () => app.showPage(btn.dataset.page || btn.dataset.pageTrigger));
+        });
+        $('open-todos').addEventListener('click', app.openTodos);
+        $('close-todos').addEventListener('click', app.closeTodos);
+        $('todo-backdrop').addEventListener('click', app.closeTodos);
+        $('todo-form').addEventListener('submit', app.addTodo);
+        $('todo-cancel-edit').addEventListener('click', app.resetTodoForm);
+        document.querySelectorAll('.todo-date-shortcut').forEach(button => {
+          button.addEventListener('click', () => {
+            const value = button.dataset.offset === '' ? '' : utils.addDays(getLocalDateString(), Number(button.dataset.offset));
+            app.setTodoDate(value);
+          });
+        });
+        $('todo-date').addEventListener('change', event => app.setTodoDate(event.target.value));
+        $('todo-list').addEventListener('click', event => {
+          const button = event.target.closest('[data-todo-action]');
+          if (!button) return;
+          if (button.dataset.todoAction === 'toggle') app.toggleTodo(button.dataset.id);
+          if (button.dataset.todoAction === 'edit') app.editTodo(button.dataset.id);
+          if (button.dataset.todoAction === 'tomorrow') app.postponeTodo(button.dataset.id, utils.addDays(getLocalDateString(), 1));
+        });
+        $('todo-list').addEventListener('change', event => {
+          const input = event.target.closest('[data-todo-postpone]');
+          if (input) app.postponeTodo(input.dataset.todoPostpone, input.value);
+        });
+        $('closeout-todo-list').addEventListener('click', event => {
+          const button = event.target.closest('[data-closeout-todo-action]');
+          if (!button) return;
+          if (button.dataset.closeoutTodoAction === 'toggle') app.toggleTodo(button.dataset.id);
+          if (button.dataset.closeoutTodoAction === 'tomorrow') app.postponeTodo(button.dataset.id, utils.addDays(getLocalDateString(), 1));
+          if (button.dataset.closeoutTodoAction === 'edit') {
+            app.openTodos();
+            app.editTodo(button.dataset.id);
+          }
+        });
+        $('closeout-todo-list').addEventListener('change', event => {
+          const input = event.target.closest('[data-closeout-todo-postpone]');
+          if (input) app.postponeTodo(input.dataset.closeoutTodoPostpone, input.value);
+        });
+        document.addEventListener('keydown', event => {
+          if (event.key === 'Escape' && !$('todo-drawer').classList.contains('translate-x-full')) app.closeTodos();
         });
         $('add-patient').addEventListener('click', () => app.openPatientModal());
         $('mobile-add-patient').addEventListener('click', () => app.openPatientModal());
@@ -4414,7 +4967,7 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-      if (sessionStorage.getItem('clinic_auth') === 'true') app.verifyAuth();
+      if (authSession.load() || localAccess.load()) app.verifyAuth();
       else app.bindLoginEvents();
     });
   </script>
