@@ -7,12 +7,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="针推管理">
-  <script>window.CLINIC_CONFIG=Object.freeze({dbUrl:'https://clinic-data-913bd-default-rtdb.firebaseio.com/clinic_pro.json',firebaseApiKey:'REPLACE_WITH_FIREBASE_WEB_API_KEY',firebaseLoginEmail:'clinic-owner@local.invalid'});</script>
+  <script src="./assets/vendor/tailwind.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.js"></script>
+  <script src="./assets/vendor/chart.umd.min.js"></script>
+  <script src="./assets/vendor/xlsx.full.min.js"></script>
+  <script src="./assets/vendor/pinyin-pro.min.js"></script>
+  <script src="./clinic-config.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -413,6 +413,30 @@
 
         <div class="card mb-6">
           <div class="px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="font-bold text-xs md:text-sm text-slate-700 flex items-center">
+                <i class="fa-solid fa-person-walking-arrow-loop-left text-blue-500 text-xs mr-2"></i>
+                间隔后回访
+              </h3>
+              <p class="mt-1 text-[10px] text-slate-400">汇总全部历史 · 显示最近 20 次</p>
+            </div>
+            <span class="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-600"><span id="reactivation-total-count">0</span> 次</span>
+          </div>
+          <div class="grid grid-cols-2 border-b border-slate-100 text-center">
+            <div class="px-3 py-2.5 border-r border-slate-100">
+              <p class="text-[10px] font-bold text-slate-400">间隔 31–60 天</p>
+              <p id="reactivation-30-count" class="mt-0.5 text-xl font-black text-blue-600">0</p>
+            </div>
+            <div class="px-3 py-2.5">
+              <p class="text-[10px] font-bold text-slate-400">间隔超过 60 天</p>
+              <p id="reactivation-60-count" class="mt-0.5 text-xl font-black text-purple-600">0</p>
+            </div>
+          </div>
+          <div id="reactivation-list" class="divide-y divide-slate-50 max-h-80 overflow-y-auto"></div>
+        </div>
+
+        <div class="card mb-6">
+          <div class="px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-100 flex items-center justify-between gap-3">
             <h3 class="font-bold text-xs md:text-sm text-slate-700 flex items-center min-w-0">
               <i class="fa-solid fa-battery-empty text-red-500 text-xs mr-2"></i>
               <span class="truncate">高频活跃 · 余0</span>
@@ -571,11 +595,11 @@
               <label class="block text-[10px] font-bold text-blue-700">编号<input type="text" id="field-p-init-course-no" inputmode="numeric" pattern="[0-9]*" class="input-field !py-2 text-sm bg-white border-blue-200 mt-1 font-mono tracking-wider"></label>
               <div class="grid grid-cols-2 gap-3">
                 <label class="block text-[10px] font-bold text-emerald-700">本次扣次（选填）<input type="number" id="field-p-init-consume" min="0" inputmode="numeric" placeholder="不填不扣" class="input-field !py-2 text-xs bg-white border-emerald-200 mt-1"></label>
-                <label class="block text-[10px] font-bold text-purple-700">中药金额<input type="number" id="field-p-init-med" class="input-field !py-2 text-xs bg-white border-purple-200 mt-1"></label>
+                <label class="block text-[10px] font-bold text-purple-700">中药金额<input type="number" id="field-p-init-med" min="0" step="0.01" class="input-field !py-2 text-xs bg-white border-purple-200 mt-1"></label>
               </div>
               <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
-                <label class="block text-[10px] font-bold text-blue-700">新购疗程<input type="number" id="field-p-init-count" class="input-field !py-2 text-xs bg-white border-blue-200 mt-1"></label>
-                <label class="block text-[10px] font-bold text-blue-700">收值金额<input type="number" id="field-p-init-amount" class="input-field !py-2 text-xs bg-white border-blue-200 mt-1"></label>
+                <label class="block text-[10px] font-bold text-blue-700">新购疗程<input type="number" id="field-p-init-count" min="0" inputmode="numeric" class="input-field !py-2 text-xs bg-white border-blue-200 mt-1"></label>
+                <label class="block text-[10px] font-bold text-blue-700">收值金额<input type="number" id="field-p-init-amount" min="0" step="0.01" class="input-field !py-2 text-xs bg-white border-blue-200 mt-1"></label>
               </div>
               <div class="pt-2 border-t border-slate-200">
                 <button type="button" id="field-p-init-moxa-toggle" class="text-xs font-bold text-amber-700 py-1">＋兑换艾灸</button>
@@ -644,10 +668,10 @@
           <div class="p-3 bg-blue-50/40 border border-blue-100/50 rounded-2xl text-xs">
             <div class="grid grid-cols-[1.25fr_.75fr] gap-2 mb-2">
               <label class="text-[10px] font-bold text-blue-700">编号<input type="text" id="rec-p-course-no" inputmode="numeric" pattern="[0-9]*" class="input-field !py-1.5 !px-2 text-sm bg-white border-blue-200 mt-0.5 font-mono tracking-wider"></label>
-              <label class="text-[10px] font-bold text-blue-700">次数<input type="number" id="rec-p-count" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
+              <label class="text-[10px] font-bold text-blue-700">次数<input type="number" id="rec-p-count" min="0" inputmode="numeric" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
             </div>
             <div class="grid grid-cols-2 gap-2">
-              <label class="text-[9px] text-slate-400 col-span-2">金额<input type="number" id="rec-p-amount" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
+              <label class="text-[9px] text-slate-400 col-span-2">金额<input type="number" id="rec-p-amount" min="0" step="0.01" class="input-field !py-1.5 !px-2 text-xs bg-white border-blue-200 mt-0.5"></label>
             </div>
             <div class="pt-2 mt-2 border-t border-blue-100">
               <button type="button" id="rec-p-moxa-toggle" class="text-xs font-bold text-amber-700 py-1">＋兑换艾灸</button>
@@ -655,7 +679,7 @@
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <label class="p-3 bg-purple-50/40 border border-purple-100/50 rounded-2xl block text-[10px] font-bold text-purple-700">中药<input type="number" id="rec-m-amount" class="input-field !py-1.5 !px-2 text-xs bg-white border-purple-200 mt-1"></label>
+            <label class="p-3 bg-purple-50/40 border border-purple-100/50 rounded-2xl block text-[10px] font-bold text-purple-700">中药<input type="number" id="rec-m-amount" min="0" step="0.01" class="input-field !py-1.5 !px-2 text-xs bg-white border-purple-200 mt-1"></label>
             <div class="p-3 bg-slate-900 rounded-2xl flex flex-col justify-center items-center shadow-inner">
               <span class="text-[9px] text-slate-400 font-bold">净价值</span>
               <span class="text-base font-black text-white leading-none mt-1.5">¥<span id="record-income-val">0.00</span></span>
@@ -855,7 +879,18 @@
       }
       return record;
     };
-    const validateCollection = (collection, type) => collection.map(item => validateRecord(item, type));
+    const validateCollection = (collection, type) => {
+      const validated = collection.map(item => validateRecord(item, type));
+      const seenIds = new Set();
+      validated.forEach(record => {
+        if (seenIds.has(record.id)) {
+          const label = type === 'patient' ? '患者' : type === 'todo' ? '待办' : '流水';
+          throw new Error(`${label}ID重复：${record.id}`);
+        }
+        seenIds.add(record.id);
+      });
+      return validated;
+    };
     const compareRecordsNewestFirst = (a, b) => {
       const dateOrder = String(b?.date || '').localeCompare(String(a?.date || ''));
       if (dateOrder) return dateOrder;
@@ -1136,6 +1171,7 @@
       visibleStatsCache: {},
       homeSummaryCache: {},
       saveTimer: null,
+      syncInProgress: false,
       syncedPatients: new Map(),
       syncedTreatments: new Map(),
       syncedTodos: new Map(),
@@ -1148,6 +1184,7 @@
       cloudLoadFailed: false,
       refreshPromise: null,
       pendingSync: false,
+      pendingForceFull: false,
       mutationVersion: 0,
       localStorageRecovered: false,
       syncState: { dirty: false, deletedPatientIds: [], deletedTreatmentIds: [], deletedTodoIds: [] },
@@ -1397,6 +1434,7 @@
       },
 
       save({ sync = true, mutation = true, forceFull = false } = {}) {
+        if (forceFull) dataStore.pendingForceFull = true;
         if (mutation) dataStore.mutationVersion += 1;
         if (mutation) {
           dataStore.syncState.dirty = true;
@@ -1421,13 +1459,22 @@
             dataStore.pendingSync = true;
             return;
           }
+          // 同一份云端基线只能由一个保存请求更新；否则连续扣次时，较早请求
+          // 可能在较晚请求之后完成，并把同步基线退回到旧快照。
+          if (dataStore.syncInProgress) {
+            dataStore.pendingSync = true;
+            return;
+          }
+          dataStore.syncInProgress = true;
+          const syncForceFull = dataStore.pendingForceFull;
+          dataStore.pendingForceFull = false;
           const syncVersion = dataStore.mutationVersion;
           try {
             const patientChanges = dataStore.buildCollectionPatch(dataStore.patients, dataStore.syncedPatients, dataStore.syncedPatientIndexes, 'patients');
             const treatmentChanges = dataStore.buildCollectionPatch(dataStore.treatments, dataStore.syncedTreatments, dataStore.syncedTreatmentIndexes, 'treatments');
             const todoChanges = dataStore.buildCollectionPatch(dataStore.todos, dataStore.syncedTodos, dataStore.syncedTodoIndexes, 'todos');
             const lastUpdate = new Date().toLocaleString();
-            if (!dataStore.hasCloudBaseline || forceFull || dataStore.syncState.deletedPatientIds.length || dataStore.syncState.deletedTreatmentIds.length || dataStore.syncState.deletedTodoIds.length) {
+            if (!dataStore.hasCloudBaseline || syncForceFull || dataStore.syncState.deletedPatientIds.length || dataStore.syncState.deletedTreatmentIds.length || dataStore.syncState.deletedTodoIds.length) {
               await dataStore.fetchWithRetry(CONFIG.dbUrl, {
                 method: 'PUT',
                 body: JSON.stringify({
@@ -1461,7 +1508,14 @@
               dataStore.save({ mutation: false });
             }
           } catch {
+            if (syncForceFull) dataStore.pendingForceFull = true;
             app.updateBadge?.('offline');
+          } finally {
+            dataStore.syncInProgress = false;
+            if (dataStore.pendingSync && !dataStore.cloudLoading) {
+              dataStore.pendingSync = false;
+              dataStore.save({ mutation: false, forceFull: dataStore.pendingForceFull });
+            }
           }
         }, 400);
         return true;
@@ -2191,9 +2245,11 @@
       },
 
       getNextCourseNo() {
-        const previous = [...dataStore.treatments].reverse().find(t => t.type === 'purchase' && /^\d+$/.test(String(t.courseNo || '')));
-        if (!previous) return '';
-        const current = String(previous.courseNo);
+        const numericCourseNos = dataStore.treatments
+          .filter(t => t.type === 'purchase' && /^\d+$/.test(String(t.courseNo || '')))
+          .map(t => String(t.courseNo));
+        if (!numericCourseNos.length) return '';
+        const current = numericCourseNos.reduce((max, value) => BigInt(value) > BigInt(max) ? value : max);
         return (BigInt(current) + 1n).toString().padStart(current.length, '0');
       },
 
@@ -2318,29 +2374,9 @@
           course.moxaRemain = Math.max(0, course.moxaTotal - course.moxaUsed);
         });
 
-        // 历史单只会结清到 0，跨单的超额消耗统一由最新一张单承接。
-        if (courses.length) {
-          const recordedConsumed = records
-            .filter(({ record }) => record.type === 'consume')
-            .reduce((sum, { record }) => sum + (Number(record.count) || 0), 0);
-          const convertedConsumed = courses.reduce((sum, course) => {
-            if (course.moxaTotal <= 0 || course.moxaUsed <= 0) return sum;
-            const target = Math.ceil(
-              Math.min(course.moxaUsed, course.moxaTotal) * course.purchased / course.moxaTotal
-            );
-            return sum + Math.max(0, target - course.rawConsumed);
-          }, 0);
-          let remainingConsumed = recordedConsumed + convertedConsumed;
-          courses.forEach((course, index) => {
-            const isLatest = index === courses.length - 1;
-            const allocated = isLatest
-              ? remainingConsumed
-              : Math.min(Math.max(remainingConsumed, 0), Math.max(Number(course.purchased) || 0, 0));
-            course.consumed = allocated;
-            course.remain = course.purchased - allocated;
-            remainingConsumed -= allocated;
-          });
-        }
+        // 上方已按每条流水的 courseNo 分配。不能再按疗程创建顺序重新摊销，
+        // 否则艾灸卡与治疗卡并存时，扣在指定治疗卡上的次数会被挪到旧卡，
+        // 造成列表余额要连续扣多次才显示正确数字。
         return courses;
       },
 
@@ -2950,6 +2986,10 @@
         return dataStore.treatments.some(t => app.getTreatmentBillingPid(t) === pid && t.date === date && t.type === 'consume' && Number(t.count) > 0);
       },
 
+      hasActualConsumeOnDate(pid, date) {
+        return Boolean(pid) && dataStore.treatments.some(t => app.getTreatmentActualPid(t) === pid && t.date === date && t.type === 'consume' && Number(t.count) > 0);
+      },
+
       isNewPatientOnDate(pid, date) {
         const stats = dataStore.calcStats(pid);
         if (!stats.history.length) return false;
@@ -3003,9 +3043,10 @@
         });
       },
 
-      confirmConsumeIfNeeded({ pid, date, count, patientName, remain, run }) {
-        const duplicate = app.hasConsumeOnDate(pid, date);
-        const insufficient = Number(remain) <= 0;
+      confirmConsumeIfNeeded({ pid, actualPid = '', date, count, patientName, remain, run }) {
+        const duplicate = app.hasConsumeOnDate(pid, date)
+          || (actualPid && actualPid !== pid && app.hasActualConsumeOnDate(actualPid, date));
+        const insufficient = Number(count) > Number(remain);
         if (!duplicate && !insufficient) return run();
         const warnings = [];
         if (duplicate) warnings.push(`${patientName} 今天已经扣过治疗次数`);
@@ -3113,6 +3154,10 @@
           const mAmt = Number($('field-p-init-med').value) || 0;
           const moxaTotal = Number($('field-p-init-moxa').value) || 0;
           const moxaCount = $('field-p-init-moxa-value').value === '1' ? 1 : 0;
+          if ([cCount, pCount, pAmt, mAmt, moxaTotal].some(value => !Number.isFinite(value) || value < 0)) {
+            return ui.showToast('次数和金额不能为负数', 'warning');
+          }
+          if (![cCount, pCount, moxaTotal].every(Number.isInteger)) return ui.showToast('次数必须填写整数', 'warning');
           const wantsInitialMoxa = moxaCount > 0 && moxaTotal > 0;
           const wantsInitialTreatment = cCount > 0 || wantsInitialMoxa;
           app.syncCourseNoForPurchase('field-p-init-course-no', 'field-p-init-count', 'field-p-init-amount');
@@ -3218,6 +3263,10 @@
         const wantsMoxaTreatment = moxaCount > 0;
         const wantsTreatment = cCount > 0 || wantsMoxaTreatment;
         const mAmount = Number($('rec-m-amount').value) || 0;
+        if ([cCount, pCount, pAmount, moxaTotal, mAmount].some(value => !Number.isFinite(value) || value < 0)) {
+          return ui.showToast('次数和金额不能为负数', 'warning');
+        }
+        if (![cCount, pCount, moxaTotal].every(Number.isInteger)) return ui.showToast('次数必须填写整数', 'warning');
         app.syncCourseNoForPurchase('rec-p-course-no', 'rec-p-count', 'rec-p-amount');
         const courseNo = app.getCourseNo('rec-p-course-no');
         if ((pCntStr !== '' || pAmount > 0) && !courseNo) return ui.showToast('请填编号', 'warning');
@@ -3290,7 +3339,15 @@
           const remain = activeCourse
             ? (activeCourse.moxaTotal > 0 ? activeCourse.moxaRemain : activeCourse.remain)
             : dataStore.calcStats(pid).remain;
-          app.confirmConsumeIfNeeded({ pid, date, count: consumeCount, patientName, remain, run: commit });
+          app.confirmConsumeIfNeeded({
+            pid,
+            actualPid: borrowerId || pid,
+            date,
+            count: wantsMoxaTreatment ? 1 : consumeCount,
+            patientName,
+            remain,
+            run: commit
+          });
         } else {
           commit();
         }
@@ -3371,15 +3428,14 @@
       },
 
       commitQuickConsume(billingPid, actualPid = '', selectedCourseNo = '') {
-        const target = app.getBillingTarget(billingPid);
-        if (!target || !target.targetPatient) return ui.showToast('未找到可扣次的患者档案', 'error');
-        const actualPatient = actualPid && actualPid !== billingPid ? dataStore.getPatient(actualPid) : null;
-        const borrowerId = actualPatient ? actualPatient.id : (target.borrowerId || null);
-        const patientName = actualPatient ? `${actualPatient.name}（用${target.targetPatient.name}卡）` : target.targetPatient.name;
-        const selectedCourse = selectedCourseNo
-          ? app.getCourseBalances(target.targetPid).find(course => course.courseNo === selectedCourseNo)
-          : null;
         const run = () => {
+          // 确认框是异步的；在用户确认前，余额或借卡关系可能已经变化。
+          // 因此以执行瞬间的数据生成流水，不能复用打开确认框时的旧快照。
+          const target = app.getBillingTarget(billingPid);
+          if (!target || !target.targetPatient) return ui.showToast('未找到可扣次的患者档案', 'error');
+          const actualPatient = actualPid && actualPid !== billingPid ? dataStore.getPatient(actualPid) : null;
+          const borrowerId = actualPatient ? actualPatient.id : (target.borrowerId || null);
+          const patientName = actualPatient ? `${actualPatient.name}（用${target.targetPatient.name}卡）` : target.targetPatient.name;
           const date = getLocalDateString();
           const courseNo = app.allocateCourseConsumption(target.targetPid, date, 1, null, selectedCourseNo)[0]?.courseNo || '';
           const isOpeningTreatment = app.isOpeningDayFirstTreatment(target.targetPid, courseNo, date);
@@ -3405,8 +3461,16 @@
           app.refreshViews(app.state.currentDetailPid || actualPatient?.id || target.targetPid);
           app.showUndoToast(`${patientName} 已扣 1 次`);
         };
+        const target = app.getBillingTarget(billingPid);
+        if (!target || !target.targetPatient) return ui.showToast('未找到可扣次的患者档案', 'error');
+        const actualPatient = actualPid && actualPid !== billingPid ? dataStore.getPatient(actualPid) : null;
+        const patientName = actualPatient ? `${actualPatient.name}（用${target.targetPatient.name}卡）` : target.targetPatient.name;
+        const selectedCourse = selectedCourseNo
+          ? app.getCourseBalances(target.targetPid).find(course => course.courseNo === selectedCourseNo)
+          : null;
         app.confirmConsumeIfNeeded({
           pid: target.targetPid,
+          actualPid: actualPatient?.id || target.targetPid,
           date: getLocalDateString(),
           count: 1,
           patientName,
@@ -3554,6 +3618,8 @@
         if (!date) return ui.showToast('请填写发生日期', 'warning');
         let count = Number($('edit-t-count').value) || 0;
         const amount = Number($('edit-t-amount').value) || 0;
+        if (![count, amount].every(value => Number.isFinite(value) && value >= 0)) return ui.showToast('次数和金额不能为负数', 'warning');
+        if (current.type !== 'medicine' && !Number.isInteger(count)) return ui.showToast('次数必须填写整数', 'warning');
         const courseNo = current.type === 'purchase' ? app.getCourseNo('edit-t-course-no') : '';
         if (current.type === 'purchase' && !courseNo) return ui.showToast('请填编号', 'warning');
         if (current.type === 'purchase' && app.hasCourseNo(courseNo, current.id)) return ui.showToast('编号已存在', 'warning');
@@ -3562,6 +3628,7 @@
         if (current.type === 'purchase') {
           const usedMoxa = app.getMoxaStats(billingPid, oldCourseNo).used;
           const nextMoxaTotal = Number($('edit-t-moxa-total').value) || 0;
+          if (!Number.isInteger(nextMoxaTotal) || nextMoxaTotal < 0) return ui.showToast('艾灸次数必须填写非负整数', 'warning');
           if (usedMoxa > 0 && (count !== Number(current.count) || nextMoxaTotal !== Number(current.moxaTotal || 0))) {
             return ui.showToast('艾灸已使用，兑换比例不能修改', 'warning');
           }
@@ -4045,7 +4112,85 @@
         setText('dash-referral-rate', dataStore.patients.length ? `${((sourceCounts['推荐'] / dataStore.patients.length) * 100).toFixed(1)}%` : '0%');
         app.renderWeekdayAverages(todayStr);
         app.renderRankings();
+        app.renderReactivationList();
         app.renderActiveZeroList(todayStr);
+      },
+
+      getReactivationEvents() {
+        const visitsByPatient = new Map();
+        dataStore.treatments.forEach(record => {
+          if (!['consume', 'purchase', 'medicine'].includes(record.type) || !/^\d{4}-\d{2}-\d{2}$/.test(String(record.date || ''))) return;
+          const pid = app.getTreatmentActualPid(record);
+          if (!pid || !dataStore.getPatient(pid)) return;
+          if (!visitsByPatient.has(pid)) visitsByPatient.set(pid, new Map());
+          const visitsByDate = visitsByPatient.get(pid);
+          if (!visitsByDate.has(record.date) || compareRecordsNewestFirst(record, visitsByDate.get(record.date)) < 0) {
+            visitsByDate.set(record.date, record);
+          }
+        });
+
+        const events = [];
+        visitsByPatient.forEach((visitsByDate, pid) => {
+          const dates = [...visitsByDate.keys()].sort();
+          for (let index = 1; index < dates.length; index++) {
+            const previousDate = dates[index - 1];
+            const returnDate = dates[index];
+            const gapDays = Math.round((utils.parseDateToLocalMidnight(returnDate) - utils.parseDateToLocalMidnight(previousDate)) / 86400000);
+            if (gapDays <= 30) continue;
+            events.push({
+              pid,
+              patient: dataStore.getPatient(pid),
+              previousDate,
+              returnDate,
+              gapDays,
+              bucket: gapDays > 60 ? 'over60' : 'over30',
+              record: visitsByDate.get(returnDate)
+            });
+          }
+        });
+        return events.sort((a, b) =>
+          String(b.returnDate).localeCompare(String(a.returnDate))
+          || b.gapDays - a.gapDays
+          || String(a.patient?.name || '').localeCompare(String(b.patient?.name || ''), 'zh-CN')
+        );
+      },
+
+      renderReactivationList() {
+        const events = app.getReactivationEvents();
+        const over30Count = events.filter(event => event.bucket === 'over30').length;
+        const over60Count = events.filter(event => event.bucket === 'over60').length;
+        setText('reactivation-total-count', events.length);
+        setText('reactivation-30-count', over30Count);
+        setText('reactivation-60-count', over60Count);
+
+        const list = $('reactivation-list');
+        if (!events.length) {
+          list.className = 'py-8 text-center text-xs text-slate-400';
+          list.innerHTML = '暂无间隔超过 30 天后的回访记录';
+          return;
+        }
+        list.className = 'divide-y divide-slate-50 max-h-80 overflow-y-auto';
+        list.innerHTML = events.slice(0, 20).map(event => {
+          const isOver60 = event.bucket === 'over60';
+          const badgeClass = isOver60 ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100';
+          const tags = (event.patient.tags || []).slice(0, 2).join('、');
+          const meta = [event.patient.source || '', tags].filter(Boolean).join(' · ');
+          const remark = app.stripBorrowerRemark(event.record?.remark || '');
+          return `
+            <button type="button" data-reactivation-pid="${escapeHtml(event.pid)}" class="w-full px-3 py-3 md:px-4 text-left hover:bg-slate-50 active:bg-slate-100 transition-colors">
+              <span class="flex items-center justify-between gap-3">
+                <span class="min-w-0">
+                  <span class="flex items-center gap-2 min-w-0">
+                    <strong class="truncate text-xs md:text-sm text-slate-700">${escapeHtml(event.patient.name)}</strong>
+                    <span class="shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-black ${badgeClass}">${isOver60 ? '>60天' : '31–60天'}</span>
+                  </span>
+                  <span class="mt-1 block truncate text-[10px] font-semibold text-slate-400">${escapeHtml(event.previousDate)} → ${escapeHtml(event.returnDate)}${meta ? ` · ${escapeHtml(meta)}` : ''}${remark ? ` · ${escapeHtml(remark)}` : ''}</span>
+                </span>
+                <strong class="shrink-0 text-sm font-black ${isOver60 ? 'text-purple-600' : 'text-blue-600'}">${event.gapDays}天</strong>
+              </span>
+            </button>
+          `;
+        }).join('');
       },
 
       renderRankings() {
@@ -4632,6 +4777,7 @@
               const wb = XLSX.read(data, { type: 'array' });
               const wsP = wb.Sheets['患者主档'];
               const wsT = wb.Sheets['全部流水'];
+              const wsO = wb.Sheets['我的待办'];
               if (!wsP || !wsT) throw new Error('导入的 Excel 格式无效');
               const pRows = XLSX.utils.sheet_to_json(wsP);
               const tRows = XLSX.utils.sheet_to_json(wsT);
@@ -4671,9 +4817,36 @@
                   remark: row['备注'] || ''
                 };
               }), 'treatment');
+              const importedPatientIds = new Set(newPatients.map(patient => patient.id));
+              newPatients.forEach(patient => {
+                if (patient.lenderId && !importedPatientIds.has(patient.lenderId)) throw new Error(`患者 ${patient.name} 的关联用卡人不存在`);
+                if (patient.referrerId && !importedPatientIds.has(patient.referrerId)) throw new Error(`患者 ${patient.name} 的推荐人不存在`);
+              });
+              const importedCourseNos = new Set();
+              newTreatments.forEach((record, index) => {
+                if (!importedPatientIds.has(record.pid)) throw new Error(`流水行 ${index + 1} 引用的患者不存在`);
+                if (record.borrowerId && !importedPatientIds.has(record.borrowerId)) throw new Error(`流水行 ${index + 1} 引用的实际用卡人不存在`);
+                if (record.type !== 'purchase' || !record.courseNo) return;
+                if (importedCourseNos.has(record.courseNo)) throw new Error(`疗程编号重复：${record.courseNo}`);
+                importedCourseNos.add(record.courseNo);
+              });
+              const newTodos = wsO
+                ? validateCollection(XLSX.utils.sheet_to_json(wsO).map((row, index) => ({
+                    id: uid(`todo_${index}`),
+                    ownerId: 'single_user',
+                    text: row['内容'] || '',
+                    dueDate: row['日期'] ? utils.parseExcelDate(row['日期']) : '',
+                    startTime: row['开始时间'] ? String(row['开始时间']).trim() : '',
+                    endTime: row['结束时间'] ? String(row['结束时间']).trim() : '',
+                    completed: row['状态'] === '已完成',
+                    createdAt: row['创建时间'] ? String(row['创建时间']).trim() : new Date().toISOString(),
+                    completedAt: row['完成时间'] ? String(row['完成时间']).trim() : ''
+                  })), 'todo')
+                : dataStore.todos;
               dataStore.createLocalSnapshot('导入前快照');
               dataStore.patients = newPatients;
               dataStore.treatments = newTreatments;
+              dataStore.todos = newTodos;
               dataStore.save({ forceFull: true });
               ui.showToast('备份导入成功，正在刷新', 'success');
               setTimeout(() => location.reload(), 1000);
@@ -4951,6 +5124,10 @@
         $('active-zero-list').addEventListener('click', e => {
           const row = e.target.closest('[data-active-zero-pid]');
           if (row) app.showDetail(row.dataset.activeZeroPid);
+        });
+        $('reactivation-list').addEventListener('click', e => {
+          const row = e.target.closest('[data-reactivation-pid]');
+          if (row) app.showDetail(row.dataset.reactivationPid);
         });
         $('det-history-list').addEventListener('click', e => {
           const moreBtn = e.target.closest('[data-action="detail-load-more"]');
